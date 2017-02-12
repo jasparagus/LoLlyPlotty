@@ -20,7 +20,7 @@ ax.set_xticks(np.linspace(-5,5,5))
 ax.set_yticks(np.linspace(0,1,5))
 fig.savefig("histogram.png", dpi=150)  # results in 160x120 px image
 
-
+key = "api_key=RGAPI-d89bba97-f44c-433f-baf0-75e5fbe4db9c" # Jasper's key
 
 """
 %% LoL Summoner Statistics
