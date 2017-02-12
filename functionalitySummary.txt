@@ -1,0 +1,9 @@
+1. Get Summoner Info:
+    APIkey
+    SummonerName
+
+2. Format API call:
+    'https://na.api.pvp.net/api/lol/na/' + version + 'summoner/by-name/' + SummonerName + '?' + APIkey
+
+3. Make API call:
+    find python equivalent to webread
