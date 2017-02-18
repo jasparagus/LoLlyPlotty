@@ -1,28 +1,71 @@
 """
-===========================
-Testing Out Plotting
-===========================
+LEAGUE OF HISTOGRAMS, v0.1
+--------------------
+Obtains ranked summoner information and visualizes it.
+Features (planned or completed):
+Per-champion winrates
+Per-teammate winrates
+Per-number-teammate winrates (for most-played-with teammates)
+Rolling average winrate
+Per-role winrates
 
-This example reproduces the frontpage histogram example.
+Changelog:
+version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D. Cook.
 """
 
-import matplotlib.pyplot as plt
-import numpy as np
+# IMPORT REQUIRED MODULES
+from tkinter.filedialog import askopenfilename
+from tkinter.simpledialog import askstring
+import urllib.request # import ability to make URL requests
+# import urllib.error # import error handler for URL requests
+import json # import ability to parse JSON objects
+# import numpy # import numpy to data manipulation and plotting
+# import matplotlib.pyplot as plt # no idea if this is useful yet.
 
-random_state = np.random.RandomState(19680801)
+# FIGURE OUT TKINTER
+tkinter.filedialog.askopenfilename("r") # opens a file dialog - use for API key
+tkinter.simpledialog.askstring("a","b") # opens a simple dialog box (supposedly includes text input)
+
+
+# LOAD API KEY
+APIFilePath = "C:\\Users\Jasper\OneDrive\Documents\Python\Riot API Key.txt"
+APIFile = open(APIFilePath,"r")
+APIKey = APIFile.read()
+
+# GET SUMMONER NAME
+SummonerName = "jasparagus"
+BaseURL = "https://na.api.pvp.net/api/lol/na/"
+SIDCall = BaseURL + "v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
+
+print("Getting Summoner ID")
+try:
+    ProfReply = urllib.request.urlopen(SIDCall)
+    ProfReplyData = ProfReply.read()
+    ProfReplyJSONData = json.loads(ProfReplyData)
+    print(ProfReplyJSONData)
+    SID = ProfReplyJSONData[SummonerName]["id"]
+    print(SID)
+    print("SID Retrieved Successfully")
+except:
+    print("Error with request. Perhaps you are making too many calls.")
+
+
+
+"""
+random_state = numpy.random.RandomState(19680801)
 X = random_state.randn(10000)
 
 fig, ax = plt.subplots()
 ax.hist(X, bins=25, normed=True)
-x = np.linspace(-5, 5, 1000)
-ax.plot(x, 1 / np.sqrt(2*np.pi) * np.exp(-(x**2)/2), linewidth=4)
-ax.set_xticks(np.linspace(-5,5,5))
-ax.set_yticks(np.linspace(0,1,5))
+x = numpy.linspace(-5, 5, 1000)
+ax.plot(x, 1 / numpy.sqrt(2*np.pi) * numpy.exp(-(x**2)/2), linewidth=4)
+ax.set_xticks(numpy.linspace(-5,5,5))
+ax.set_yticks(numpy.linspace(0,1,5))
 fig.savefig("histogram.png", dpi=150)  # results in 160x120 px image
-
-key = "api_key=RGAPI-d89bba97-f44c-433f-baf0-75e5fbe4db9c" # Jasper's key
-
 """
+
+
+""" MATLAB CODE
 %% LoL Summoner Statistics
 % By JDC and SGS, Initial Version 2016-Oct
 % See end of file for planned features and changelog.
@@ -35,11 +78,7 @@ key = 'api_key=RGAPI-d89bba97-f44c-433f-baf0-75e5fbe4db9c'; % Jasper's key
 base = 'https://na.api.pvp.net/api/lol/na/'; % Base URL for all API calls
 MaxRetries = 75; % Upper limit of API calls before ending the program
 
-%% Get Summoner ID
-profcall = [base 'v1.4/summoner/by-name/' SummonerName '?' key];
-disp(['Getting Summoner ID'])
-SummonerProfile = webread(profcall);
-SID = num2str(SummonerProfile.(SummonerName).id); % get summoner ID for next step
+%% GET SUMMONER ID - PORTED OK
 
 %% Get List of Matches
 disp(['Retrieving List Of All Ranked Matches (Newest First)'])
