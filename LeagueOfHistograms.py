@@ -17,15 +17,15 @@ version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D
 from tkinter.filedialog import askopenfilename
 from tkinter.simpledialog import askstring
 import urllib.request # import ability to make URL requests
-# import urllib.error # import error handler for URL requests
+import urllib.error # import error handler for URL requests
 import json # import ability to parse JSON objects
 # import numpy # import numpy to data manipulation and plotting
 # import matplotlib.pyplot as plt # no idea if this is useful yet.
+import time # import time to allow for use of time.sleep(secs) to prevent excessive api calls
 
-# FIGURE OUT TKINTER
-tkinter.filedialog.askopenfilename("r") # opens a file dialog - use for API key
-tkinter.simpledialog.askstring("a","b") # opens a simple dialog box (supposedly includes text input)
-
+# FIGURE OUT TKINTER TO MAKE POPUPS (FOR NOW)
+# tkinter.filedialog.askopenfilename("r") # opens a file dialog - use for API key
+# tkinter.simpledialog.askstring("a","b") # opens a simple dialog box (supposedly includes text input)
 
 # LOAD API KEY
 APIFilePath = "C:\\Users\Jasper\OneDrive\Documents\Python\Riot API Key.txt"
@@ -36,19 +36,117 @@ APIKey = APIFile.read()
 SummonerName = "jasparagus"
 BaseURL = "https://na.api.pvp.net/api/lol/na/"
 SIDCall = BaseURL + "v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
+print(SIDCall)
 
-print("Getting Summoner ID")
-try:
-    ProfReply = urllib.request.urlopen(SIDCall)
-    ProfReplyData = ProfReply.read()
-    ProfReplyJSONData = json.loads(ProfReplyData)
-    print(ProfReplyJSONData)
-    SID = ProfReplyJSONData[SummonerName]["id"]
-    print(SID)
-    print("SID Retrieved Successfully")
-except:
-    print("Error with request. Perhaps you are making too many calls.")
+TimesTried = 0
+while TimesTried < 10:
+    TimesTried = TimesTried+1 # increment loop variable
+    print("Getting Summoner ID. Attempt #",TimesTried)
+    try:
+        time.sleep(3)
+        ProfReply = urllib.request.urlopen(SIDCall)
+        ProfReplyData = ProfReply.read()
+        ProfReplyJSONData = json.loads(ProfReplyData)
+        SID = ProfReplyJSONData[SummonerName]["id"]
+        print("SID Retrieved:",SID)
+        break
+    except urllib.error.URLError as ProfReply:\
+            print("Error with request: [",ProfReply,"]. Likely culprits: too many API calls; invalid API key; incorrect region.")
 
+# GET LIST OF RANKED MATCHES
+MatchlistCall = BaseURL + "v2.2/matchlist/by-summoner/" + str(SID) + "?api_key=" + APIKey
+print(MatchlistCall)
+time.sleep(3)
+
+TimesTried = 0
+while TimesTried < 10:
+    TimesTried = TimesTried+1 # increment loop variable
+    print("Getting list of all ranked matches (newest first). Attempt #",TimesTried)
+    try:
+        time.sleep(3)
+        MatchlistReply = urllib.request.urlopen(MatchlistCall)
+        MatchlistData = MatchlistReply.read()
+        MatchlistJSONData = json.loads(MatchlistData)
+        print("Matchlist Retrieved. Found",len(MatchlistJSONData["matches"]),"matches.")
+        break
+    except urllib.error.URLError as MatchlistReply:
+        print("Error getting matchlist. Oops.")
+
+# CHECK FOR EXISTING MATCHLIST FILE, COMPARE IT TO NEW MATCHLIST
+MatchlistFileLoaded = open(SummonerName + '_Matchlist.json', 'r')
+MatchlistJSONDataLoaded = json.loads(MatchlistFileLoaded.read())
+
+for mm in range(len(MatchlistJSONData["matches"])):
+    if MatchlistJSONData["matches"][mm]["matchId"] == MatchlistJSONDataLoaded["matches"][0]["matchId"]:
+        print("Found",mm,"new matches")
+
+# SAVE UPDATED MATCHLIST TO FILE
+with open(SummonerName + '_Matchlist.json', 'w') as MatchlistFile:
+    json.dump(MatchlistJSONData, MatchlistFile)
+
+# LOAD EXISTING MATCH DATA, GET NEW MATCH DATA, APPEND DATA, SAVE EVERYTHING -------- IN PROGRESS 2017-02-21
+for mm in range(len(MatchlistJSONData["matches"])): # for each match found
+    print("Grabbing info from match",mm+1,"/",len(MatchlistJSONData["matches"]))
+    # MatchlistJSONData["matches"][mm]["matchId"]
+    # MatchlistJSONData["matches"][mm]["champion"]
+    # MatchlistJSONData["matches"][mm]["lane"]
+
+
+
+# Matlab code for this part follows
+# %% Get Match Info
+# clear MatchInfo MatchesToAdd
+# try % try to load existing match info file, if it exists.
+#     load(['MatchInfo_' SummonerName '.mat']);
+#     LastMatchSaved = num2str(MatchInfo(1).matchId); % get the most recent match
+#         % that's in the match info file
+#     for ii = 1:length(matchIDs)
+#         MatchesSaved(ii) = strcmp(LastMatchSaved,matchIDs{ii}); % make a logical
+#             % array of the retrieved matches with a 1 where the most recent
+#             % match in the match info file is located
+#     end
+#     if sum(MatchesSaved)==1 % there should only be one one in the above array
+#         [~,FirstMatchFound] = max(MatchesSaved); % find the index in the above
+#             % array where the 1 is. That's where you'll start
+#     else
+#         disp('Something Wrong With Loaded Matches, Reloading')
+#         FirstMatchFound = length(matchIDs);
+#         MatchInfo = {};
+#     end
+# catch
+#     disp('Unable to Load Existing Matches From File; Starting Fresh')
+#     FirstMatchFound = length(matchIDs)+1; % this +1 is necessary to load the
+#         % very first match.
+#     MatchInfo = {};
+# end
+#
+# MatchesToAdd = fliplr(matchIDs(1:FirstMatchFound-1)); % I think this may be
+#     % the problem line
+# ii=1;
+# while ii<=length(MatchesToAdd)
+#     disp(['Getting Info For Match ' num2str(ii) '/' num2str(length(MatchesToAdd))])
+#     retried = 0;
+#     while retried < MaxRetries
+#         try
+#             MatchInfo = [webread([base 'v2.2/match/' MatchesToAdd{ii} '?' key]) MatchInfo];
+#             GotMatch(ii) = 1;
+#             break
+#         catch
+#             GotMatch(ii) = 0; % haven't gotten it yet
+#             retried = retried+1;
+#             disp(['Retried ' num2str(retried) ' Times. Pausing Before Retrying Again.'])
+#             pause(3)
+#         end
+#     end
+#     pause(1.3)
+#     ii=ii+1;
+# end
+#
+# for ii = 1:length(MatchInfo)
+#     Gotmatches(ii) = MatchInfo(ii).matchId == str2double(matchIDs{ii});
+# end
+# disp(['Are All Matches Loaded? (1/0): ' num2str(sum(Gotmatches)==length(matchIDs))])
+# save(['MatchInfo_' SummonerName '.mat'],'MatchInfo')
 
 
 """
@@ -65,7 +163,7 @@ fig.savefig("histogram.png", dpi=150)  # results in 160x120 px image
 """
 
 
-""" MATLAB CODE
+""" ORIGINAL MATLAB CODE (REMOVE AS ADAPTED FOR PYTHON
 %% LoL Summoner Statistics
 % By JDC and SGS, Initial Version 2016-Oct
 % See end of file for planned features and changelog.
@@ -78,24 +176,9 @@ key = 'api_key=RGAPI-d89bba97-f44c-433f-baf0-75e5fbe4db9c'; % Jasper's key
 base = 'https://na.api.pvp.net/api/lol/na/'; % Base URL for all API calls
 MaxRetries = 75; % Upper limit of API calls before ending the program
 
-%% GET SUMMONER ID - PORTED OK
+%% GET SUMMONER ID - PORTED/WORKING
 
-%% Get List of Matches
-disp(['Retrieving List Of All Ranked Matches (Newest First)'])
-matchescall = [base 'v2.2/matchlist/by-summoner/' SID '?' key];
-retried = 0;
-while retried < MaxRetries
-    try
-        MatchList = webread(matchescall);
-        break % if you got the match list, end the while loop
-    catch
-        retried = retried+1;
-        disp(['Retried ' num2str(retried) ' Times. Pausing Before Retrying Again.'])
-        pause(3) % Pause so you don't do too many API calls
-    end 
-end
-pause(1.3)
-
+%% GET LIST OF MATCHES - PORTED/WORKING
 for ii = 1:length(MatchList.matches)
     matchIDs{ii} = num2str(MatchList.matches(ii).matchId);
 end
