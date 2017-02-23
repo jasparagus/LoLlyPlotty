@@ -11,87 +11,38 @@ Per-role winrates
 
 Changelog:
 version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D. Cook.
+2017-02-22 - Breaking out subroutines into separate files & making UI
 """
 
 # IMPORT REQUIRED MODULES
-from tkinter.filedialog import askopenfilename
-from tkinter.simpledialog import askstring
-import urllib.request # import ability to make URL requests
-import urllib.error # import error handler for URL requests
-import json # import ability to parse JSON objects
-# import numpy # import numpy to data manipulation and plotting
-# import matplotlib.pyplot as plt # no idea if this is useful yet.
-import time # import time to allow for use of time.sleep(secs) to prevent excessive api calls
+import numpy # import numpy to data manipulation and plotting
+import matplotlib.pyplot # no idea if this is useful yet
+import LoadAPIKey
+import GetSID
 
-# FIGURE OUT TKINTER TO MAKE POPUPS (FOR NOW)
-# tkinter.filedialog.askopenfilename("r") # opens a file dialog - use for API key
-# tkinter.simpledialog.askstring("a","b") # opens a simple dialog box (supposedly includes text input)
 
-# LOAD API KEY
-APIFilePath = "C:\\Users\Jasper\OneDrive\Documents\Python\Riot API Key.txt"
-APIFile = open(APIFilePath,"r")
-APIKey = APIFile.read()
+# TRY TO LOAD CONFIG FILE; IF IT DOESN'T EXIST, MAKE IT
+# config file should include summoner name, summoner ID, API key
+try:
+    config_file = open("Configuration.LoHConfig", "r")
+    import json
+    config_loaded = json.loads(config_file.read())
+    APIKey = config_loaded["settings"]["APIKey"]
+    SID = config_loaded["settings"]["SID"]
+except:
+    # GRAB API KEY AND SUMMONER ID IF NEEDED
+    config = 0 # try to create a JSON object for config info
+    APIKey = LoadAPIKey.read_key(config)
+    SID = GetSID.get_sid(config,APIKey)
+    config_info = {"settings":{"region":"na","SID":SID,"APIKey":APIKey}}
+    import json
+    json.dump(config_info, open("Configuration.LoHConfig", 'w'))
 
-# GET SUMMONER NAME
-SummonerName = "jasparagus"
-BaseURL = "https://na.api.pvp.net/api/lol/na/"
-SIDCall = BaseURL + "v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
-print(SIDCall)
-
-TimesTried = 0
-while TimesTried < 10:
-    TimesTried = TimesTried+1 # increment loop variable
-    print("Getting Summoner ID. Attempt #",TimesTried)
-    try:
-        time.sleep(3)
-        ProfReply = urllib.request.urlopen(SIDCall)
-        ProfReplyData = ProfReply.read()
-        ProfReplyJSONData = json.loads(ProfReplyData)
-        SID = ProfReplyJSONData[SummonerName]["id"]
-        print("SID Retrieved:",SID)
-        break
-    except urllib.error.URLError as ProfReply:\
-            print("Error with request: [",ProfReply,"]. Likely culprits: too many API calls; invalid API key; incorrect region.")
 
 # GET LIST OF RANKED MATCHES
-MatchlistCall = BaseURL + "v2.2/matchlist/by-summoner/" + str(SID) + "?api_key=" + APIKey
-print(MatchlistCall)
-time.sleep(3)
+# exec(open("GetRankedMatches.py").read(), globals())
 
-TimesTried = 0
-while TimesTried < 10:
-    TimesTried = TimesTried+1 # increment loop variable
-    print("Getting list of all ranked matches (newest first). Attempt #",TimesTried)
-    try:
-        time.sleep(3)
-        MatchlistReply = urllib.request.urlopen(MatchlistCall)
-        MatchlistData = MatchlistReply.read()
-        MatchlistJSONData = json.loads(MatchlistData)
-        print("Matchlist Retrieved. Found",len(MatchlistJSONData["matches"]),"matches.")
-        break
-    except urllib.error.URLError as MatchlistReply:
-        print("Error getting matchlist. Oops.")
-
-# CHECK FOR EXISTING MATCHLIST FILE, COMPARE IT TO NEW MATCHLIST
-MatchlistFileLoaded = open(SummonerName + '_Matchlist.json', 'r')
-MatchlistJSONDataLoaded = json.loads(MatchlistFileLoaded.read())
-
-for mm in range(len(MatchlistJSONData["matches"])):
-    if MatchlistJSONData["matches"][mm]["matchId"] == MatchlistJSONDataLoaded["matches"][0]["matchId"]:
-        print("Found",mm,"new matches")
-
-# SAVE UPDATED MATCHLIST TO FILE
-with open(SummonerName + '_Matchlist.json', 'w') as MatchlistFile:
-    json.dump(MatchlistJSONData, MatchlistFile)
-
-# LOAD EXISTING MATCH DATA, GET NEW MATCH DATA, APPEND DATA, SAVE EVERYTHING -------- IN PROGRESS 2017-02-21
-for mm in range(len(MatchlistJSONData["matches"])): # for each match found
-    print("Grabbing info from match",mm+1,"/",len(MatchlistJSONData["matches"]))
-    # MatchlistJSONData["matches"][mm]["matchId"]
-    # MatchlistJSONData["matches"][mm]["champion"]
-    # MatchlistJSONData["matches"][mm]["lane"]
-
-
+print("Done")
 
 # Matlab code for this part follows
 # %% Get Match Info
