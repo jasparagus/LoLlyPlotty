@@ -11,50 +11,38 @@ Per-role winrates
 
 Changelog:
 version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D. Cook.
-2017-02-22 - Breaking out subroutines into separate files
+2017-02-22 - Breaking out subroutines into separate files & making UI
 """
 
 # IMPORT REQUIRED MODULES
-import tkinter.filedialog
-import tkinter.simpledialog
-import urllib.request # import ability to make URL requests
-import urllib.error # import error handler for URL requests
-import json # import ability to parse JSON objects
-# import numpy # import numpy to data manipulation and plotting
-# import matplotlib.pyplot as plt # no idea if this is useful yet.
-import time # import time to allow for use of time.sleep(secs) to prevent excessive api calls
+import numpy # import numpy to data manipulation and plotting
+import matplotlib.pyplot # no idea if this is useful yet
+import LoadAPIKey
+import GetSID
 
-# FIGURE OUT TKINTER TO MAKE POPUPS (FOR NOW)
-# tkinter.simpledialog.askstring("Title","b") # opens a simple dialog box (supposedly includes text input)
 
-# LOAD API KEY
-exec(open("LoadAPIKey.py").read(), globals())
+# TRY TO LOAD CONFIG FILE; IF IT DOESN'T EXIST, MAKE IT
+# config file should include summoner name, summoner ID, API key
+try:
+    config_file = open("Configuration.LoHConfig", "r")
+    import json
+    config_loaded = json.loads(config_file.read())
+    APIKey = config_loaded["settings"]["APIKey"]
+    SID = config_loaded["settings"]["SID"]
+except:
+    # GRAB API KEY AND SUMMONER ID IF NEEDED
+    config = 0 # try to create a JSON object for config info
+    APIKey = LoadAPIKey.read_key(config)
+    SID = GetSID.get_sid(config,APIKey)
+    config_info = {"settings":{"region":"na","SID":SID,"APIKey":APIKey}}
+    import json
+    json.dump(config_info, open("Configuration.LoHConfig", 'w'))
 
-# GET SUMMONER NAME
-exec(open("GetSummonerName.py").read(), globals())
 
 # GET LIST OF RANKED MATCHES
-exec(open("GetRankedMatches.py").read(), globals())
+# exec(open("GetRankedMatches.py").read(), globals())
 
-# CHECK FOR EXISTING MATCHLIST FILE, COMPARE IT TO NEW MATCHLIST
-MatchlistFileLoaded = open(SummonerName + '_Matchlist.json', 'r')
-MatchlistJSONDataLoaded = json.loads(MatchlistFileLoaded.read())
-
-for mm in range(len(MatchlistJSONData["matches"])):
-    if MatchlistJSONData["matches"][mm]["matchId"] == MatchlistJSONDataLoaded["matches"][0]["matchId"]:
-        print("Found",mm,"new matches")
-
-# SAVE UPDATED MATCHLIST TO FILE
-with open(SummonerName + '_Matchlist.json', 'w') as MatchlistFile:
-    json.dump(MatchlistJSONData, MatchlistFile)
-
-# LOAD EXISTING MATCH DATA, GET NEW MATCH DATA, APPEND DATA, SAVE EVERYTHING -------- IN PROGRESS 2017-02-21
-for mm in range(len(MatchlistJSONData["matches"])): # for each match found
-    print("Grabbing info from match",mm+1,"/",len(MatchlistJSONData["matches"]))
-    # MatchlistJSONData["matches"][mm]["matchId"]
-    # MatchlistJSONData["matches"][mm]["champion"]
-    # MatchlistJSONData["matches"][mm]["lane"]
-
+print("Done")
 
 # Matlab code for this part follows
 # %% Get Match Info
