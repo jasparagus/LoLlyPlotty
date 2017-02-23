@@ -11,11 +11,12 @@ Per-role winrates
 
 Changelog:
 version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D. Cook.
+2017-02-22 - Breaking out subroutines into separate files
 """
 
 # IMPORT REQUIRED MODULES
-from tkinter.filedialog import askopenfilename
-from tkinter.simpledialog import askstring
+import tkinter.filedialog
+import tkinter.simpledialog
 import urllib.request # import ability to make URL requests
 import urllib.error # import error handler for URL requests
 import json # import ability to parse JSON objects
@@ -24,53 +25,16 @@ import json # import ability to parse JSON objects
 import time # import time to allow for use of time.sleep(secs) to prevent excessive api calls
 
 # FIGURE OUT TKINTER TO MAKE POPUPS (FOR NOW)
-# tkinter.filedialog.askopenfilename("r") # opens a file dialog - use for API key
-# tkinter.simpledialog.askstring("a","b") # opens a simple dialog box (supposedly includes text input)
+# tkinter.simpledialog.askstring("Title","b") # opens a simple dialog box (supposedly includes text input)
 
 # LOAD API KEY
-APIFilePath = "C:\\Users\Jasper\OneDrive\Documents\Python\Riot API Key.txt"
-APIFile = open(APIFilePath,"r")
-APIKey = APIFile.read()
+exec(open("LoadAPIKey.py").read(), globals())
 
 # GET SUMMONER NAME
-SummonerName = "jasparagus"
-BaseURL = "https://na.api.pvp.net/api/lol/na/"
-SIDCall = BaseURL + "v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
-print(SIDCall)
-
-TimesTried = 0
-while TimesTried < 10:
-    TimesTried = TimesTried+1 # increment loop variable
-    print("Getting Summoner ID. Attempt #",TimesTried)
-    try:
-        time.sleep(3)
-        ProfReply = urllib.request.urlopen(SIDCall)
-        ProfReplyData = ProfReply.read()
-        ProfReplyJSONData = json.loads(ProfReplyData)
-        SID = ProfReplyJSONData[SummonerName]["id"]
-        print("SID Retrieved:",SID)
-        break
-    except urllib.error.URLError as ProfReply:\
-            print("Error with request: [",ProfReply,"]. Likely culprits: too many API calls; invalid API key; incorrect region.")
+exec(open("GetSummonerName.py").read(), globals())
 
 # GET LIST OF RANKED MATCHES
-MatchlistCall = BaseURL + "v2.2/matchlist/by-summoner/" + str(SID) + "?api_key=" + APIKey
-print(MatchlistCall)
-time.sleep(3)
-
-TimesTried = 0
-while TimesTried < 10:
-    TimesTried = TimesTried+1 # increment loop variable
-    print("Getting list of all ranked matches (newest first). Attempt #",TimesTried)
-    try:
-        time.sleep(3)
-        MatchlistReply = urllib.request.urlopen(MatchlistCall)
-        MatchlistData = MatchlistReply.read()
-        MatchlistJSONData = json.loads(MatchlistData)
-        print("Matchlist Retrieved. Found",len(MatchlistJSONData["matches"]),"matches.")
-        break
-    except urllib.error.URLError as MatchlistReply:
-        print("Error getting matchlist. Oops.")
+exec(open("GetRankedMatches.py").read(), globals())
 
 # CHECK FOR EXISTING MATCHLIST FILE, COMPARE IT TO NEW MATCHLIST
 MatchlistFileLoaded = open(SummonerName + '_Matchlist.json', 'r')
@@ -90,7 +54,6 @@ for mm in range(len(MatchlistJSONData["matches"])): # for each match found
     # MatchlistJSONData["matches"][mm]["matchId"]
     # MatchlistJSONData["matches"][mm]["champion"]
     # MatchlistJSONData["matches"][mm]["lane"]
-
 
 
 # Matlab code for this part follows
