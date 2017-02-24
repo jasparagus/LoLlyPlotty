@@ -23,7 +23,7 @@ import tkinter
 
 # IMPORT CUSTOM MODULES
 import ConfigureLoH
-import GetRankedMatches
+import GetRankedMatchData
 
 
 def lc():
@@ -35,8 +35,9 @@ def lc():
 
 
 def gm():
-    global config_info
-    GetRankedMatches.get_matchlist(config_info)
+    global config_info, match_data
+    match_data = GetRankedMatchData.update_matchdata(config_info)
+    return match_data
 
 
 def plt():
@@ -104,7 +105,7 @@ b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=lc)
 b_lc.grid(row=6, column=0, columnspan=2)
 
 
-b_gm = tkinter.Button(root, text="Get Matches", width=20, command=gm)
+b_gm = tkinter.Button(root, text="Update Match Data", width=20, command=gm)
 b_gm.grid(row=7, column=0, columnspan=2)
 
 # PLOTTING OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
@@ -116,7 +117,7 @@ c_wr = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=wr)
 c_wr.grid(row=1, column=3)
 
 
-b_plt = tkinter.Button(root, text="Generate Plots", width=20, command=plt)
+b_plt = tkinter.Button(root, text="Generate Selected Plots", width=20, command=plt)
 b_plt.grid(row=7, column=3, columnspan=2)
 
 
