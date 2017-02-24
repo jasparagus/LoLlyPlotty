@@ -33,16 +33,14 @@ def update_matchdata(config_info):
             matchlist_reply = matchlist_reply.read()
             matchlist = json.loads(matchlist_reply)
             print("Matchlist Retrieved. Found", len(matchlist["matches"]), "matches.")
+            with open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "w") as matchlist_file:
+                json.dump(matchlist, matchlist_file)
             break
         except:
-            print("Error getting matchlist. Oops.")
+            print("Error getting matchlist. This shouldn't happen ever. Oops.")
             matchlist = {}
 
-    # print(matchlist["matches"]["matchId"])
-
-
-
-    # # CHECK FOR EXISTING MATCHLIST FILE, COMPARE IT TO NEW MATCHLIST
+    # # CHECK FOR SAVED MATCHES, COMPARE TO DOWNLOADED MATCHLIST
     if matchlist != {}:
         try:
             MatchDataLoaded = open(config_info["settings"]["SummonerName"] + "_MatchData.json", "r")  # load saved data
@@ -50,9 +48,12 @@ def update_matchdata(config_info):
             for mm in range(len(MatchDataLoadedJSON["matches"])):
                 if matchlist["matches"][mm]["matchId"] == MatchDataLoadedJSON["matches"][0]["matchId"]:
                     print("Found", mm, "new matches")
+                    print("First match: " + matchlist[1])
         except:
-            print("Saved match data found. Downloading all matches instead.")
+            print("Saved match data not found. Downloading all matches instead.")
+            # print("First match: " + matchlist[1])
             MatchDataLoaded = {}
+
 
 
     # Save new matches
