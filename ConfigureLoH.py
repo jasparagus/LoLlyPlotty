@@ -14,9 +14,7 @@ def config(enteredkey, region, summname):
     APIKey = enteredkey
     APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
 
-    RegionList = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
     Region = region
-    # the above should eventually be changed to a dropdown list
 
     SummonerName = summname
     SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
