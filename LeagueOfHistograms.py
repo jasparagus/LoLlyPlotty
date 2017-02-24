@@ -27,19 +27,24 @@ import GetRankedMatches
 
 
 def lc():
-    global ci
+    global config_info
     apikey = e_apikey.get()
-    region = e_region.get()
+    region = reg.get()
     summname = e_summname.get()
-    ci = ConfigureLoH.config(apikey, region, summname)
+    config_info = ConfigureLoH.config(apikey, region, summname)
 
 
 def gm():
-    global ci
-    GetRankedMatches.get_matchlist(ci)
+    global config_info
+    GetRankedMatches.get_matchlist(config_info)
+
+
+def plt():
+    print(wr.get())
 
 
 # FIRST, TRY TO LOAD STUFF
+global config_info
 try:
     config_file = open("Configuration.LoHConfig", "r")
     config_info = json.loads(config_file.read())
@@ -49,83 +54,79 @@ try:
     sid = config_info["Settings"]["SID"]
     print("Config File Loaded At Startup")
 except:
+    apikey=""
+    region="na"
+    summname=""
     config_info = {}
 
-status = "Running"
+status_message = "Starting"
 
-# PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE
+# PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE. GRID SIZE IS 15x5
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.title("League of Histograms")
-root.config(width=root.winfo_screenwidth()/4, height=root.winfo_screenheight()/1.5)
+# root.config()
+# wwid = root.winfo_screenwidth()/4
+# whei = root.winfo_screenheight()/2
+# w = tkinter.Canvas(root, width=wwid, height=whei)
+# w.pack()
+# w.create_window(0, wwid/3, 0, whei/3)
 
+# CONFIGURATION OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
 l_apikey = tkinter.Label(root, text="Enter API Key")
-l_apikey.pack()
-e_apikey = tkinter.Entry(root, width=50)
+l_apikey.grid(row=0, column=0)
+e_apikey = tkinter.Entry(root, width=45, justify="center")
 if config_info !={}:
     e_apikey.insert(0, apikey)
-e_apikey.pack()
+e_apikey.grid(row=1, column=0)
 
-
-l_region = tkinter.Label(root, text="Enter Region")
-l_region.pack()
-e_region = tkinter.Entry(root, width=50)
+l_region = tkinter.Label(root, text="Select Region")
+l_region.grid(row=2, column=0)
 if config_info !={}:
-    e_region.insert(0, region)
-e_region.pack()
+    reg = tkinter.StringVar(value=region)
+else:
+    reg = tkinter.StringVar(value="na")
+o_region = tkinter.OptionMenu(root, reg,
+                              "br", "eune", "euw", "jp", "kr", "lan", "las",
+                              "na", "oce", "tr", "ru", "pbe", "global"
+                              )
+o_region.grid(row=3, column=0)
 
 
 l_summname = tkinter.Label(root, text="Enter Summoner Name")
-l_summname.pack()
-e_summname = tkinter.Entry(root, width=50)
+l_summname.grid(row=4, column=0)
+e_summname = tkinter.Entry(root, width=45, justify="center")
 if config_info !={}:
     e_summname.insert(0, summname)
-e_summname.pack()
+e_summname.grid(row=5, column=0)
 
 
-b_lc = tkinter.Button(root, text="Update Configuration", width=30, command=lc)
-b_lc.pack()
+b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=lc)
+b_lc.grid(row=6, column=0, columnspan=2)
 
 
-b_gm = tkinter.Button(root, text="Get Matchlist", width=30, command=gm)
-b_gm.pack()
+b_gm = tkinter.Button(root, text="Get Matches", width=20, command=gm)
+b_gm.grid(row=7, column=0, columnspan=2)
 
-# Pack this inside a function & update it every once in a while
-l_status = tkinter.Label(root, text="Status: " + status)
-l_status.pack()
+# PLOTTING OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
+l_plots = tkinter.Label(root, text="Select Plots To Generate")
+l_plots.grid(row=0, column=3)
+
+wr = tkinter.IntVar(value=0)
+c_wr = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=wr)
+c_wr.grid(row=1, column=3)
+
+
+b_plt = tkinter.Button(root, text="Generate Plots", width=20, command=plt)
+b_plt.grid(row=7, column=3, columnspan=2)
+
+
+# Should pack this inside a function & update it every once in a while
+l_status = tkinter.Label(root, text="Status: " + status_message)
+l_status.grid(row=10, column=3)
 
 
 e_apikey.focus_set() # set the focus on the first entry box
 root.mainloop() # start the application loop
-print("Exiting")
-
-
-
-# testfield = tkinter.Entry(testfield, width=50)
-# testfield.pack()
-#
-# text = testfield.get()
-# def makeentry(parent, caption, width=None, **options):
-#     tkinter.Label(parent, text=caption).pack(side=LEFT)
-#     entry = tkinter.Entry(parent, **options)
-#     if width:
-#         entry.config(width=width)
-#     entry.pack(side=LEFT)
-#     return entry
-#
-# user = makeentry(parent, "User name:", 10)
-# password = makeentry(parent, "Password:", 10, show="*")
-# content = tkinter.StringVar()
-# entry = tkinter.Entry(parent, text=caption, textvariable=content)
-#
-# text = content.get()
-# content.set(text)
-
-# testbutton2 = tkinter.Entry(root)
-# testbutton2.pack()
-# testbutton3 = tkinter.Entry(root)
-# testbutton3.pack()
-
-
 print("Done")
 
 
