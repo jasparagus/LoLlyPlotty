@@ -14,29 +14,58 @@ version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D
 2017-02-22 - Breaking out subroutines into separate files & making UI
 """
 
-# IMPORT REQUIRED MODULES
+# IMPORT STANDARD MODULES
 import numpy # import numpy to data manipulation and plotting
 import matplotlib.pyplot # no idea if this is useful yet
-import LoadAPIKey
+import tkinter.simpledialog # for getting user input
+import json
+
+
+# IMPORT CUSTOM MODULES
 import GetSID
 
 
-# TRY TO LOAD CONFIG FILE; IF IT DOESN'T EXIST, MAKE IT
-# config file should include summoner name, summoner ID, API key
+# PREPARE A BOX TO HOLD OPTIONS
+root = tkinter.Toplevel()  # prepare a toplevel widget to hold the UI
+root.title("League of Histograms")
+root.config(width=400, height=800)
+
+
+# the above is necessary or tkinter doesn't seem to know where to put things... turns out I have no idea what I'm doing.
+test = tkinter.simpledialog.askstring(title="test title", prompt="testprompt")
+
+# TRY TO LOAD CONFIG FILE; IF IT DOESN'T EXIST, MAKE IT FROM BASIC APP INFO
 try:
     config_file = open("Configuration.LoHConfig", "r")
     import json
     config_loaded = json.loads(config_file.read())
     APIKey = config_loaded["settings"]["APIKey"]
+    SummonerName = config_loaded["settings"]["SummonerName"]
     SID = config_loaded["settings"]["SID"]
+    print("Config File Loaded Successfully")
 except:
     # GRAB API KEY AND SUMMONER ID IF NEEDED
-    config = 0 # try to create a JSON object for config info
-    APIKey = LoadAPIKey.read_key(config)
-    SID = GetSID.get_sid(config,APIKey)
-    config_info = {"settings":{"region":"na","SID":SID,"APIKey":APIKey}}
-    import json
+    config_info = {} # try to create a JSON object for config info
+    APIKey = tkinter.simpledialog.askstring(title="Enter API Key", prompt="API Key")
+    APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
+    RegionList = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
+
+    Region = tkinter.simpledialog.askstring("Select Region", "Region", initialvalue="na")
+    # the above should eventually be changed to a dropdown list
+
+    SummonerName = tkinter.simpledialog.askstring(title="Enter Summoner Name", prompt="Summoner Name", initialvalue="SUMMONERNAME")
+    SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
+
+    SID = GetSID.get_sid(APIKey, Region, SummonerName)
+
+    config_info = ({"settings":{
+        "APIKey": APIKey,
+        "region":Region,
+        "SummonerName":SummonerName,
+        "SID":SID}}
+    )
     json.dump(config_info, open("Configuration.LoHConfig", 'w'))
+    print("Config File Created Successfully")
 
 
 # GET LIST OF RANKED MATCHES
