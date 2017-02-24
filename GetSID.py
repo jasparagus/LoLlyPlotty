@@ -1,4 +1,5 @@
 # GET SUMMONER ID FROM SUMMONER NAME
+# Summoner name must be lower-case letters only (no exceptions)
 
 
 import urllib.request # import ability to make URL requests
@@ -24,5 +25,5 @@ def get_sid(APIKey, Region, SummonerName):
             print("SID Retrieved: "+SID)
             break
         except urllib.error.URLError as ProfReply:
-                print("Error with request: [", ProfReply, "]. Likely culprits: too many API calls; invalid API key; incorrect region.")
+                print("Error with request: [", ProfReply, "]. Likely culprits: invalid summoner name; invalid API key; incorrect region.")
     return SID
