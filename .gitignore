@@ -3,9 +3,11 @@
 
 # Sometimes a pychache file gets made
 __pycache__/**
+*.pyc
 
 # Don't track configuration files of programmers
 Configuration.LoHConfig
 
 # Don't include a ton of matchlists that we make
 *_Matchlist.json
+
