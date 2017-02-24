@@ -5,9 +5,9 @@
 __pycache__/**
 *.pyc
 
-# Don't track configuration files of programmers
-Configuration.LoHConfig
+# Don't track configuration files
+*.LoHConfig
 
-# Don't include a ton of matchlists that we make
-*_Matchlist.json
-
+# Don't track stored application data
+*_MatchList.json
+*_MatchData.json
