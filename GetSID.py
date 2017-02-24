@@ -12,9 +12,8 @@ def get_sid(APIKey, Region, SummonerName):
     BaseURL = "https://na.api.pvp.net/api/lol/"
     SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
     TimesTried = 0
-    while TimesTried < 10:
-        TimesTried = TimesTried+1
-        print("Getting Summoner ID. Attempt #",TimesTried)
+    for attempt in range(10):
+        print("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
         try:
             time.sleep(2) # wait a sec - don't exceed API rate limit
             ProfReply = urllib.request.urlopen(SIDCall)

@@ -12,20 +12,29 @@ matchlist = json.loads(matchlist.read())
 
 match_data_all = {}
 for mm in range(len(matchlist["matches"])):
-    time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
-    mid = str(matchlist["matches"][mm]["matchId"])
-    print("Trying to get match" + mid)
-    BaseURL = "https://na.api.pvp.net/api/lol/"
-    match_call = (BaseURL + config_info["Settings"]["Region"]
-                  + "/v2.2/match/"
-                  + mid
-                  + "?api_key="
-                  + config_info["Settings"]["APIKey"])
-    match_data = urllib.request.urlopen(match_call)
-    match_data = match_data.read()
-    match_data = json.loads(match_data)
-
-    match_data_all[mm] = match_data
+    if True:
+        mid = str(matchlist["matches"][mm]["matchId"])
+        BaseURL = "https://na.api.pvp.net/api/lol/"
+        match_call = (BaseURL + config_info["Settings"]["Region"]
+                      + "/v2.2/match/"
+                      + mid
+                      + "?api_key="
+                      + config_info["Settings"]["APIKey"]
+                      )
+        for attempt in range(10):
+            try:
+                print("Trying to get match " + mid + ", Attempt #" + str(attempt+1) + "/10")
+                time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+                match_data = urllib.request.urlopen(match_call)
+                match_data = match_data.read()
+                match_data = json.loads(match_data)
+                match_data_all[mm] = match_data
+                print("Succeeded")
+                break
+            except:
+                print("Failed to get match. Retrying up to 10 times.")
+                match_data = {}
+                match_data_all[mm] = match_data
 
 with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as match_data_file:
     json.dump(match_data_all, match_data_file)
