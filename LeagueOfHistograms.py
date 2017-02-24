@@ -10,111 +10,126 @@ Rolling average winrate
 Per-role winrates
 
 Changelog:
-version 0.1, 2017-02-18, porting code from original MATLAB(TM) version. Jasper D. Cook.
+version 0.1
+2017-02-24 - Added GUI made with tkinter. To-do: stop using print and switch to info in a tkinter display
 2017-02-22 - Breaking out subroutines into separate files & making UI
+2017-02-18, porting code from original MATLAB(TM) version. Jasper D. Cook.
+
 """
 
-# IMPORT REQUIRED MODULES
-import numpy # import numpy to data manipulation and plotting
-import matplotlib.pyplot # no idea if this is useful yet
-import LoadAPIKey
-import GetSID
+# IMPORT STANDARD MODULES
+import json
+import tkinter
+
+# IMPORT CUSTOM MODULES
+import ConfigureLoH
+import GetRankedMatches
 
 
-# TRY TO LOAD CONFIG FILE; IF IT DOESN'T EXIST, MAKE IT
-# config file should include summoner name, summoner ID, API key
+def lc():
+    global ci
+    apikey = e_apikey.get()
+    region = e_region.get()
+    summname = e_summname.get()
+    ci = ConfigureLoH.config(apikey, region, summname)
+
+
+def gm():
+    global ci
+    GetRankedMatches.get_matchlist(ci)
+
+
+# FIRST, TRY TO LOAD STUFF
 try:
     config_file = open("Configuration.LoHConfig", "r")
-    import json
-    config_loaded = json.loads(config_file.read())
-    APIKey = config_loaded["settings"]["APIKey"]
-    SID = config_loaded["settings"]["SID"]
+    config_info = json.loads(config_file.read())
+    apikey = config_info["Settings"]["APIKey"] # check that all pieces of config_info exist - use an actual if later
+    region = config_info["Settings"]["Region"]
+    summname = config_info["Settings"]["SummonerName"]
+    sid = config_info["Settings"]["SID"]
+    print("Config File Loaded At Startup")
 except:
-    # GRAB API KEY AND SUMMONER ID IF NEEDED
-    config = 0 # try to create a JSON object for config info
-    APIKey = LoadAPIKey.read_key(config)
-    SID = GetSID.get_sid(config,APIKey)
-    config_info = {"settings":{"region":"na","SID":SID,"APIKey":APIKey}}
-    import json
-    json.dump(config_info, open("Configuration.LoHConfig", 'w'))
+    config_info = {}
+
+status = "Running"
+
+# PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE
+root = tkinter.Tk()  # prepare a widget to hold the UI
+root.title("League of Histograms")
+root.config(width=root.winfo_screenwidth()/4, height=root.winfo_screenheight()/1.5)
+
+l_apikey = tkinter.Label(root, text="Enter API Key")
+l_apikey.pack()
+e_apikey = tkinter.Entry(root, width=50)
+if config_info !={}:
+    e_apikey.insert(0, apikey)
+e_apikey.pack()
 
 
-# GET LIST OF RANKED MATCHES
-# exec(open("GetRankedMatches.py").read(), globals())
+l_region = tkinter.Label(root, text="Enter Region")
+l_region.pack()
+e_region = tkinter.Entry(root, width=50)
+if config_info !={}:
+    e_region.insert(0, region)
+e_region.pack()
+
+
+l_summname = tkinter.Label(root, text="Enter Summoner Name")
+l_summname.pack()
+e_summname = tkinter.Entry(root, width=50)
+if config_info !={}:
+    e_summname.insert(0, summname)
+e_summname.pack()
+
+
+b_lc = tkinter.Button(root, text="Update Configuration", width=30, command=lc)
+b_lc.pack()
+
+
+b_gm = tkinter.Button(root, text="Get Matchlist", width=30, command=gm)
+b_gm.pack()
+
+# Pack this inside a function & update it every once in a while
+l_status = tkinter.Label(root, text="Status: " + status)
+l_status.pack()
+
+
+e_apikey.focus_set() # set the focus on the first entry box
+root.mainloop() # start the application loop
+print("Exiting")
+
+
+
+# testfield = tkinter.Entry(testfield, width=50)
+# testfield.pack()
+#
+# text = testfield.get()
+# def makeentry(parent, caption, width=None, **options):
+#     tkinter.Label(parent, text=caption).pack(side=LEFT)
+#     entry = tkinter.Entry(parent, **options)
+#     if width:
+#         entry.config(width=width)
+#     entry.pack(side=LEFT)
+#     return entry
+#
+# user = makeentry(parent, "User name:", 10)
+# password = makeentry(parent, "Password:", 10, show="*")
+# content = tkinter.StringVar()
+# entry = tkinter.Entry(parent, text=caption, textvariable=content)
+#
+# text = content.get()
+# content.set(text)
+
+# testbutton2 = tkinter.Entry(root)
+# testbutton2.pack()
+# testbutton3 = tkinter.Entry(root)
+# testbutton3.pack()
+
 
 print("Done")
 
-# Matlab code for this part follows
-# %% Get Match Info
-# clear MatchInfo MatchesToAdd
-# try % try to load existing match info file, if it exists.
-#     load(['MatchInfo_' SummonerName '.mat']);
-#     LastMatchSaved = num2str(MatchInfo(1).matchId); % get the most recent match
-#         % that's in the match info file
-#     for ii = 1:length(matchIDs)
-#         MatchesSaved(ii) = strcmp(LastMatchSaved,matchIDs{ii}); % make a logical
-#             % array of the retrieved matches with a 1 where the most recent
-#             % match in the match info file is located
-#     end
-#     if sum(MatchesSaved)==1 % there should only be one one in the above array
-#         [~,FirstMatchFound] = max(MatchesSaved); % find the index in the above
-#             % array where the 1 is. That's where you'll start
-#     else
-#         disp('Something Wrong With Loaded Matches, Reloading')
-#         FirstMatchFound = length(matchIDs);
-#         MatchInfo = {};
-#     end
-# catch
-#     disp('Unable to Load Existing Matches From File; Starting Fresh')
-#     FirstMatchFound = length(matchIDs)+1; % this +1 is necessary to load the
-#         % very first match.
-#     MatchInfo = {};
-# end
-#
-# MatchesToAdd = fliplr(matchIDs(1:FirstMatchFound-1)); % I think this may be
-#     % the problem line
-# ii=1;
-# while ii<=length(MatchesToAdd)
-#     disp(['Getting Info For Match ' num2str(ii) '/' num2str(length(MatchesToAdd))])
-#     retried = 0;
-#     while retried < MaxRetries
-#         try
-#             MatchInfo = [webread([base 'v2.2/match/' MatchesToAdd{ii} '?' key]) MatchInfo];
-#             GotMatch(ii) = 1;
-#             break
-#         catch
-#             GotMatch(ii) = 0; % haven't gotten it yet
-#             retried = retried+1;
-#             disp(['Retried ' num2str(retried) ' Times. Pausing Before Retrying Again.'])
-#             pause(3)
-#         end
-#     end
-#     pause(1.3)
-#     ii=ii+1;
-# end
-#
-# for ii = 1:length(MatchInfo)
-#     Gotmatches(ii) = MatchInfo(ii).matchId == str2double(matchIDs{ii});
-# end
-# disp(['Are All Matches Loaded? (1/0): ' num2str(sum(Gotmatches)==length(matchIDs))])
-# save(['MatchInfo_' SummonerName '.mat'],'MatchInfo')
 
-
-"""
-random_state = numpy.random.RandomState(19680801)
-X = random_state.randn(10000)
-
-fig, ax = plt.subplots()
-ax.hist(X, bins=25, normed=True)
-x = numpy.linspace(-5, 5, 1000)
-ax.plot(x, 1 / numpy.sqrt(2*np.pi) * numpy.exp(-(x**2)/2), linewidth=4)
-ax.set_xticks(numpy.linspace(-5,5,5))
-ax.set_yticks(numpy.linspace(0,1,5))
-fig.savefig("histogram.png", dpi=150)  # results in 160x120 px image
-"""
-
-
-""" ORIGINAL MATLAB CODE (REMOVE AS ADAPTED FOR PYTHON
+""" ORIGINAL MATLAB CODE (REMOVING AS I GO ALONG ONCE REWRITTEN IN PYTHON)
 %% LoL Summoner Statistics
 % By JDC and SGS, Initial Version 2016-Oct
 % See end of file for planned features and changelog.
@@ -126,13 +141,6 @@ SummonerName(SummonerName==' ')='';
 key = 'api_key=RGAPI-d89bba97-f44c-433f-baf0-75e5fbe4db9c'; % Jasper's key
 base = 'https://na.api.pvp.net/api/lol/na/'; % Base URL for all API calls
 MaxRetries = 75; % Upper limit of API calls before ending the program
-
-%% GET SUMMONER ID - PORTED/WORKING
-
-%% GET LIST OF MATCHES - PORTED/WORKING
-for ii = 1:length(MatchList.matches)
-    matchIDs{ii} = num2str(MatchList.matches(ii).matchId);
-end
 
 %% Get Match Info
 clear MatchInfo MatchesToAdd

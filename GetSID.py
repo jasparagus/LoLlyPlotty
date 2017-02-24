@@ -1,18 +1,16 @@
 # GET SUMMONER ID FROM SUMMONER NAME
+# Summoner name must be lower-case letters only (no exceptions)
 
 
-import tkinter.simpledialog # for getting user input
 import urllib.request # import ability to make URL requests
 import urllib.error # import error handler for URL requests
 import json # import ability to parse JSON objects
 import time # import time to allow for use of time.sleep(secs). Prevents excessive api calls
 
 
-def get_sid(config,APIKey):
-    SummonerName = tkinter.simpledialog.askstring("Enter Summoner Name", "Summoner Name", initialvalue="SUMMONERNAME")
-    SummonerName = SummonerName.replace(" ", "").lower() # strip unacceptable spaces and caps from SummonerName
-    BaseURL = "https://na.api.pvp.net/api/lol/na/"
-    SIDCall = BaseURL + "v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
+def get_sid(APIKey, Region, SummonerName):
+    BaseURL = "https://na.api.pvp.net/api/lol/"
+    SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
     TimesTried = 0
     while TimesTried < 10:
         TimesTried = TimesTried+1
@@ -27,5 +25,5 @@ def get_sid(config,APIKey):
             print("SID Retrieved: "+SID)
             break
         except urllib.error.URLError as ProfReply:
-                print("Error with request: [", ProfReply, "]. Likely culprits: too many API calls; invalid API key; incorrect region.")
+                print("Error with request: [", ProfReply, "]. Likely culprits: invalid summoner name; invalid API key; incorrect region.")
     return SID
