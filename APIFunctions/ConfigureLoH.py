@@ -23,7 +23,6 @@ def get_sid(APIKey, Region, SummonerName):
     for attempt in range(10):
         print("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
         try:
-            time.sleep(2) # wait a sec - don't exceed API rate limit
             ProfReply = urllib.request.urlopen(SIDCall)
             ProfReplyData = ProfReply.read()
             ProfReplyJSONData = json.loads(ProfReplyData)
@@ -33,6 +32,7 @@ def get_sid(APIKey, Region, SummonerName):
             break
         except urllib.error.URLError as ProfReply:
                 print("Error with request: [", ProfReply, "]. Likely culprits: invalid summoner name; invalid API key; incorrect region.")
+        time.sleep(2) # wait a sec - don't exceed API rate limit
     return SID
 
 
