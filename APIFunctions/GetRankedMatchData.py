@@ -57,7 +57,6 @@ def update_matchdata(config_info):
                 for attempt in range(10):
                     try:
                         print("Trying to get match " + mid + ", Attempt #" + str(attempt + 1) + "/10")
-                        time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
                         match_data = urllib.request.urlopen(match_call)
                         match_data = match_data.read()
                         match_data = json.loads(match_data)
@@ -70,6 +69,7 @@ def update_matchdata(config_info):
                         print("Failed to get match. Retrying up to 10 times.")
                         match_data = {}
                         match_data_all[mid] = match_data
+                    time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
             break
         except:
             print("Error getting matchlist. This shouldn't happen ever, and no match data was saved. Oops. Exiting.")

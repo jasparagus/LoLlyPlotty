@@ -22,8 +22,10 @@ import json
 import tkinter
 
 # IMPORT CUSTOM MODULES
-import ConfigureLoH
-import GetRankedMatchData
+# import ConfigureLoH
+# import GetRankedMatchData
+from APIFunctions import ConfigureLoH
+from APIFunctions import GetRankedMatchData
 
 
 def lc():
@@ -257,7 +259,7 @@ for ii = 1:length(MatchesToAnalyze)
         MatchDate{iii} = datestr(MatchesToAnalyze(ii).matchCreation/86400000+...
             datenum(1970,1,1,-6,0,0),'yyyy-mm-dd HH:MM:SS'); % get the match date
         MatchLengths(iii) = MatchesToAnalyze(ii).matchDuration/60;
-        
+
         % See who played & find which one was you
         for pp = 1:10
             PlayedWith{(iii-1)*10+pp} = MatchesToAnalyze(ii).participantIdentities(pp).player.summonerName;
@@ -308,7 +310,7 @@ for ii = 1:length(MatchesToAnalyze)
 %             CSDAt20(iii) = MatchesToAnalyze(ii).participants{MySummNum,1}.timeline.csDiffPerMinDeltas.tenToTwenty;
 %             CSDAt30(iii) = MatchesToAnalyze(ii).participants{MySummNum,1}.timeline.csDiffPerMinDeltas.twentyToThirty;
         end
-        
+
         % See what side I was
         if Side(iii)==100 % blue side
             WinLoss(iii) = MatchesToAnalyze(ii).teams(1).winner;
@@ -320,7 +322,7 @@ end
 
 % Analysis of Data
 [UniquePlayers,ia,ic] = unique(PlayedWith);
-clear PlayedWithMat PlayedWithVec nPlayedWith WinRateWith nPlayedWithStr 
+clear PlayedWithMat PlayedWithVec nPlayedWith WinRateWith nPlayedWithStr
 clear SortInd WinRateByNTMs
 for ii = 1:length(UniquePlayers)
     PlayedWithMat = strfind(PlayersByGame,UniquePlayers{ii});
@@ -432,7 +434,7 @@ print([SummonerName ' Rolling Winrate.png'],'-dpng')
 %% Feature Wishlist
 % More detailed stats (CS differential, lane opponent, KDA, kill
     % participation
-    
+
 %% Changelog
 %{
 
