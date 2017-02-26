@@ -13,16 +13,18 @@ import json
 # import time to allow for use of time.sleep(secs). Prevents excessive api calls
 import time
 
+
 def get_sid(APIKey, Region, SummonerName):
     """Get summoner ID from summoner name. Summoner
     name must be lower-case letters only"""
-
+    SID = ""
     BaseURL = "https://na.api.pvp.net/api/lol/"
     SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
     TimesTried = 0
     for attempt in range(10):
         print("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
         try:
+            time.sleep(2)  # wait a sec - don't exceed API rate limit
             ProfReply = urllib.request.urlopen(SIDCall)
             ProfReplyData = ProfReply.read()
             ProfReplyJSONData = json.loads(ProfReplyData)
@@ -31,20 +33,15 @@ def get_sid(APIKey, Region, SummonerName):
             print("SID Retrieved: "+SID)
             break
         except urllib.error.URLError as ProfReply:
-                print("Error with request: [", ProfReply, "]. Likely culprits: invalid summoner name; invalid API key; incorrect region.")
-        time.sleep(2) # wait a sec - don't exceed API rate limit
+            print("Error with request: [", ProfReply, "]. Likely culprits: invalid summoner name; invalid API key; incorrect region.")
     return SID
 
 
 def config(enteredkey, region, summname):
-    """Try to load config file. If doesn't exist, make it from
-    basic app info."""
-
+    """Take inputted info and use it to write a config file."""
     APIKey = enteredkey
     APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
-
     Region = region
-
     SummonerName = summname
     SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
 

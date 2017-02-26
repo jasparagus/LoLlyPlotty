@@ -9,7 +9,15 @@ import json # import ability to parse JSON objects
 import time # import time to allow for use of time.sleep(secs). Prevents excessive api calls
 
 
+# config_file = open("Configuration.LoHConfig", "r")
+# config_info = json.loads(config_file.read())
+# matchlist = open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "r")
+# matchlist = json.loads(matchlist.read())
+# from APIFunctions import GetRankedMatchData
+
+
 def update_matchdata(config_info):
+
     match_data = {}
     BaseURL = "https://na.api.pvp.net/api/lol/"
     matchlist_call = (BaseURL + config_info["Settings"]["Region"]
@@ -17,36 +25,51 @@ def update_matchdata(config_info):
                      + config_info["Settings"]["SID"]
                      + "?api_key="
                      + config_info["Settings"]["APIKey"])
-
-    for attempt in range(10):
+    attempt = 0
+    while attempt < 10:
         print("Getting list of all ranked matches (newest first). Attempt #" + str(attempt+1) + "/10")
         time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
         try:
             matchlist_reply = urllib.request.urlopen(matchlist_call)
             matchlist_reply = matchlist_reply.read()
             matchlist = json.loads(matchlist_reply)
-            print("Matchlist Retrieved. Found", len(matchlist["matches"]), "matches.")
+            print("Matchlist retrieved. Found", len(matchlist["matches"]), "matches.")
             with open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "w") as matchlist_file:
                 json.dump(matchlist, matchlist_file)
-
-            print("Loading Match Data For XX New Matches")
-            # Check for saved matches and make a list of new matches. For now it's just doing all of them.
-            # try:
-            #     MatchDataLoaded = open(config_info["settings"]["SummonerName"] + "_MatchData.json", "r")  # load saved data
-            #     MatchDataLoaded = json.loads(MatchDataLoaded.read())
-            #     for mm in range(len(MatchDataLoadedJSON["matches"])):
-            #         if matchlist["matches"][mm]["matchId"] == MatchDataLoadedJSON["matches"][0]["matchId"]:
-            #             print("Found", mm, "new matches")
-            #             print("First match: " + matchlist[1])
-            # except:
-            # print("Saved match data not found. Downloading all matches instead.")
-            # matchlist = {}
-            new_matches = matchlist
+            n_matches = len(matchlist["matches"])
+            print("Matchlist saved.")
+            # stop iterating if things work
+            attempt = 999
+        except:
+            attempt += 1
+            print("Error getting matchlist. No match data was saved. Exiting.")
+            n_matches = 0
+        if n_matches !=0:
+            try:
+                print("Checking saved match data against matchlist.")
+                new_matches = []
+                match_data_loaded = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
+                match_data_loaded = json.loads(match_data_loaded.read())
+                for mm in range(n_matches):
+                    mid = str(matchlist["matches"][mm]["matchId"])
+                    if mid in match_data_loaded:
+                        print(mid, "found in file.")
+                    else:
+                        print(mid, "(match ",  mm, ") is new")
+                        new_matches.append(mid)
+                print("Found ", len(new_matches), " New Matches")
+            except:
+                print("Saved match data not found. Downloading all matches instead.")
+                new_matches = []
+                for mm in range(n_matches):
+                    mid = str(matchlist["matches"][mm]["matchId"])
+                    new_matches.append(mid)
 
             # prepare the match_data variable
             match_data_all = {}
-            for mm in range(len(new_matches["matches"])):
-                mid = str(new_matches["matches"][mm]["matchId"])
+            for mm in range(len(new_matches)):
+                print("preparing to pull down a new match")
+                mid = str(new_matches[mm])
                 BaseURL = "https://na.api.pvp.net/api/lol/"
                 match_call = (BaseURL + config_info["Settings"]["Region"]
                               + "/v2.2/match/"
@@ -57,6 +80,7 @@ def update_matchdata(config_info):
                 for attempt in range(10):
                     try:
                         print("Trying to get match " + mid + ", Attempt #" + str(attempt + 1) + "/10")
+                        time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
                         match_data = urllib.request.urlopen(match_call)
                         match_data = match_data.read()
                         match_data = json.loads(match_data)
@@ -69,20 +93,12 @@ def update_matchdata(config_info):
                         print("Failed to get match. Retrying up to 10 times.")
                         match_data = {}
                         match_data_all[mid] = match_data
-                    time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
-            break
-        except:
-            print("Error getting matchlist. This shouldn't happen ever, and no match data was saved. Oops. Exiting.")
-            matchlist = {}
-        print("Done")
+        print("Done getting match data.")
     return match_data
 
-# LOAD EXISTING MATCH DATA, GET NEW MATCH DATA, APPEND DATA, SAVE EVERYTHING -------- IN PROGRESS 2017-02-21
-# for mm in range(len(MatchlistJSONData["matches"])): # for each match found
-#     print("Grabbing info from match", mm+1,"/",len(MatchlistJSONData["matches"]))
-    # MatchlistJSONData["matches"][mm]["matchId"]
-    # MatchlistJSONData["matches"][mm]["champion"]
-    # MatchlistJSONData["matches"][mm]["lane"]
+
+
+# update_matchdata(config_info)
 
 """
 matlab code
