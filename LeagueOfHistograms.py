@@ -114,6 +114,8 @@ b_gm.grid(row=7, column=0, columnspan=2)
 l_plots = tkinter.Label(root, text="Select Plots To Generate")
 l_plots.grid(row=0, column=3)
 
+# SELECT TIMEFRAME TO PLOT, POPULATED BASED ON KNOWN MATCH RANGE, ETC, USING RADIO BUTTON
+
 wr = tkinter.IntVar(value=0)
 c_wr = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=wr)
 c_wr.grid(row=1, column=3)

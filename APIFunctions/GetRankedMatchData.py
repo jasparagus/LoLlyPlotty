@@ -1,8 +1,3 @@
-# GET DATA FOR RANKED MATCHES
-# 1) Gets matchlist & check against any stored matches, save
-# 2) Pull down match info for all matches
-
-
 import urllib.request # import ability to make URL requests
 import urllib.error # import error handler for URL requests
 import json # import ability to parse JSON objects
@@ -17,8 +12,10 @@ import time # import time to allow for use of time.sleep(secs). Prevents excessi
 
 
 def update_matchdata(config_info):
-
+    """ Pulls down list of matches, checks against saved data, grabs missing data, saves everything. """
+    match_data_loaded = {}
     match_data = {}
+    new_matches = []
     BaseURL = "https://na.api.pvp.net/api/lol/"
     matchlist_call = (BaseURL + config_info["Settings"]["Region"]
                      + "/v2.2/matchlist/by-summoner/"
@@ -38,6 +35,7 @@ def update_matchdata(config_info):
                 json.dump(matchlist, matchlist_file)
             n_matches = len(matchlist["matches"])
             print("Matchlist saved.")
+            print("Matchlist")
             # stop iterating if things work
             attempt = 999
         except:
@@ -47,7 +45,6 @@ def update_matchdata(config_info):
         if n_matches !=0:
             try:
                 print("Checking saved match data against matchlist.")
-                new_matches = []
                 match_data_loaded = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
                 match_data_loaded = json.loads(match_data_loaded.read())
                 for mm in range(n_matches):
@@ -60,14 +57,15 @@ def update_matchdata(config_info):
                 print("Found ", len(new_matches), " New Matches")
             except:
                 print("Saved match data not found. Downloading all matches instead.")
-                new_matches = []
                 for mm in range(n_matches):
                     mid = str(matchlist["matches"][mm]["matchId"])
                     new_matches.append(mid)
-
-            # prepare the match_data variable
-            match_data_all = {}
-            for mm in range(len(new_matches)):
+            n_nm = len(new_matches)
+            # prepare to compile all match data in match_data variable
+            # reverse the order to grab oldest first before prepending them.
+            new_matches = new_matches[::-1]
+            match_data_all = match_data_loaded
+            for mm in range(n_nm):
                 print("preparing to pull down a new match")
                 mid = str(new_matches[mm])
                 BaseURL = "https://na.api.pvp.net/api/lol/"
@@ -77,6 +75,7 @@ def update_matchdata(config_info):
                               + "?api_key="
                               + config_info["Settings"]["APIKey"]
                               )
+                attempt = 0
                 for attempt in range(10):
                     try:
                         print("Trying to get match " + mid + ", Attempt #" + str(attempt + 1) + "/10")
@@ -88,8 +87,10 @@ def update_matchdata(config_info):
                         print("Succeeded - saving to file.")
                         with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as match_data_file:
                             json.dump(match_data_all, match_data_file)
+                        attempt = 999
                         break
                     except:
+                        attempt += 1
                         print("Failed to get match. Retrying up to 10 times.")
                         match_data = {}
                         match_data_all[mid] = match_data
