@@ -2,7 +2,8 @@
 
 # import ability to parse JSON objects
 import json
-
+# import numpy to make working with data easier
+import numpy
 
 # config_file = open("Configuration.LoHConfig", "r")
 # config_info = json.loads(config_file.read())
@@ -12,35 +13,75 @@ import json
 # match_data_all = json.loads(match_data_all.read())
 
 
-def parse_match_data(match_data_all):
-    print(match_data_all)
+def parse_match_data(config_info, matchlist, match_data_all):
+    season = []
+    queue_type = []
+    win_lose = []
     n_matches = len(match_data_all)
-    print(n_matches)
+    print("Analyzing ", n_matches, "matches.")
     for mm in range(n_matches):
         # the below line is working
-        print(match_data_all[str(mm)]["season"])
+        season.append(match_data_all[str(mm)]["season"])
+        queue_type.append(match_data_all[str(mm)]["queueType"])
+    season_unique = list(set(season))
+    print(season_unique)
+    print(list(set(queue_type)))
 
+    # Choose number of most recent matches to keep
+    n_most_recent = 30
+
+    # Apply any filters from above (like specific seasons) to data.
+    matches_to_analyze = match_data_all
+
+# Indent needs to be fixed here; testing for now.
+n_to_analyze = len(matches_to_analyze)
+match_lengths = []
+my_summ_num = []
+teammates = {}
+enemies = {}
+for mm in range(n_to_analyze):
+    match_lengths.append(matches_to_analyze[str(mm)]["matchDuration"]/60)
+    other_players = []
+    for pp in range(10):
+        if matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerId"] == config_info["Settings"]["SID"]:
+            my_summ_num.append(pp)
+        else:
+            other_players.append(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerName"])
+    if my_sum_num[pp] <=4:
+        teammates[mm] = other_players
+        enemies[mm] = other_players
+    else:
+        teammates[mm] = other_players
+        enemies[mm] = other_players
+
+
+
+
+"""
+for ii = 1:length(MatchesToAnalyze)
+    if MatchesToAnalyze(ii).mapId == 11 && ~strcmp('RANKED_TEAM_5x5',MatchesToAnalyze(ii).queueType)
+        iii = iii+1;
+        MatchDate{iii} = datestr(MatchesToAnalyze(ii).matchCreation/86400000+...
+            datenum(1970,1,1,-6,0,0),'yyyy-mm-dd HH:MM:SS'); % get the match date
+        MatchLengths(iii) = MatchesToAnalyze(ii).matchDuration/60;
+
+        % See who played & find which one was you
+        for pp = 1:10
+            PlayedWith{(iii-1)*10+pp} = MatchesToAnalyze(ii).participantIdentities(pp).player.summonerName;
+            PlayersByGame{iii,pp} = MatchesToAnalyze(ii).participantIdentities(pp).player.summonerName;
+            if str2double(SID) == MatchesToAnalyze(ii).participantIdentities(pp).player.summonerId
+                MySummNum = pp; % which summoner were you?
+            end
+        end
+
+"""
 
 
 def wr_vs_time(match_data_all):
-        print(match_data_all)
+    print("Plotting win % vs. time for selected match range.")
 
 """ ORIGINAL MATLAB CODE (REMOVING AS I GO ALONG ONCE REWRITTEN IN PYTHON)
-%% LoL Summoner Statistics
-% By JDC and SGS, Initial Version 2016-Oct
-% See end of file for planned features and changelog.
-%% Parse Stuff
 clear WhatSeason WhatRole SeasonOpts ChooseSeason WinLoss PlayedWith PlayersByGame
-
-for ii = 1:length(MatchList.matches)
-    SeasonOpts{ii} = MatchList.matches(ii).season;
-end
-SeasonOpts = unique(SeasonOpts); % what seasons are available?
-try
-    ChooseSeason = menu('What Season',[SeasonOpts 'Last 15' 'Last 30' 'Last 50' 'All Games' 'Other']); % choose one
-catch
-    disp('Match analysis skipped')
-    return
 end
 if ChooseSeason<=length(SeasonOpts) % if you chose a season
     for ii = 1:length(MatchList.matches)

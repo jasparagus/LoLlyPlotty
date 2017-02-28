@@ -27,7 +27,7 @@ from APIFunctions import GetRankedMatchData
 from PlotFunctions import LoHPlots
 
 
-def lc():
+def update_config():
     global config_info
     apikey = e_apikey.get()
     region = reg.get()
@@ -35,17 +35,17 @@ def lc():
     config_info = ConfigureLoH.config(apikey, region, summname)
 
 
-def gm():
+def get_matches():
     global config_info, match_data_all
     match_data_all = GetRankedMatchData.update_matchdata(config_info)
     return match_data_all
 
 
-def plt():
+def do_plots():
     global match_data_all
-
+    # First, parse all of the data and return needed variables (as applicable).
     LoHPlots.parse_match_data(match_data_all)
-
+    # Second, run the desired analyses on it.
     if wr.get() == 1:
         print("WR trend selected.")
         LoHPlots.wr_vs_time(match_data_all)
@@ -120,25 +120,32 @@ if config_info !={}:
 e_summname.grid(row=5, column=0)
 
 
-b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=lc)
+b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=update_config)
 b_lc.grid(row=6, column=0, columnspan=2)
 
 
-b_gm = tkinter.Button(root, text="Update Match Data", width=20, command=gm)
+b_gm = tkinter.Button(root, text="Update Match Data", width=20, command=get_matches)
 b_gm.grid(row=7, column=0, columnspan=2)
 
 # PLOTTING OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
-l_plots = tkinter.Label(root, text="Select Plots To Generate")
-l_plots.grid(row=0, column=3)
+l_analysis_range = tkinter.Label(root, text="Select Filter For Matches (e.g. All)")
+l_analysis_range.grid(row=0, column=3)
 
 # SELECT TIMEFRAME TO PLOT, POPULATED BASED ON KNOWN MATCH RANGE, ETC, USING RADIO BUTTON
+rb = tkinter.Radiobutton(root)
+rb.grid(row=1, column=3, rowspan=2)
+
+
+# PLOTTING OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
+l_plots = tkinter.Label(root, text="Select Plots To Generate")
+l_plots.grid(row=5, column=3)
 
 wr = tkinter.IntVar(value=0)
 c_wr = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=wr)
-c_wr.grid(row=1, column=3)
+c_wr.grid(row=6, column=3)
 
 
-b_plt = tkinter.Button(root, text="Generate Selected Plots", width=20, command=plt)
+b_plt = tkinter.Button(root, text="Generate Selected Plots", width=20, command=do_plots)
 b_plt.grid(row=7, column=3, columnspan=2)
 
 
