@@ -14,12 +14,12 @@ from APIFunctions import GetRankedMatchData
 # match_data_all = json.loads(match_data_all.read())
 
 
-def parse_match_data(config_info, matchlist, match_data_all):
+def parse_match_data(config_info, match_data_all):
     season = []
     queue_type = []
 
     n_matches = len(match_data_all)
-    print("Analyzing ", n_matches, "matches.")
+    print("Parsing ", n_matches, "matches.")
     for mm in range(n_matches):
         # the below line is working
         season.append(match_data_all[str(mm)]["season"])
@@ -33,7 +33,6 @@ def parse_match_data(config_info, matchlist, match_data_all):
 
     # Apply any filters from above (like specific seasons) to data.
     matches_to_analyze = match_data_all
-
     n_to_analyze = len(matches_to_analyze)
 
     win_lose = []
@@ -89,7 +88,10 @@ def parse_match_data(config_info, matchlist, match_data_all):
                 cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
                 wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
                 wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                kda.append((kills[mm]+assists[mm])/deaths[mm])
+                try:
+                    kda.append((kills[mm]+assists[mm])/deaths[mm])
+                except:
+                    kda.append("perfect")
             else:
                 """ This case builds temporary teammate variables that are overwritten for each new match. """
                 other_players.append(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerName"])
@@ -103,17 +105,17 @@ def parse_match_data(config_info, matchlist, match_data_all):
         if summ_num[mm] <=4:
             teammates[mm] = other_players[0:4]
             enemies[mm] = other_players[4:9]
-            damage_total_frac.append(damage_total[mm]/sum(others_damage_total[0:4]))
-            damage_to_champs_frac.append(damage_to_champs[mm]/sum(others_damage_to_champs[0:4]))
-            damage_taken_frac.append(damage_taken[mm]/sum(others_damage_taken[0:4]))
-            gold_frac.append(gold[mm]/sum(others_gold[0:4]))
+            damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[0:4])))
+            damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[0:4])))
+            damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[0:4])))
+            gold_frac.append(gold[mm]/(1+sum(others_gold[0:4])))
         elif summ_num[mm] >= 5:
             teammates[mm] = other_players[5:9]
             enemies[mm] = other_players[0:5]
-            damage_total_frac.append(damage_total[mm]/sum(others_damage_total[5:9]))
-            damage_to_champs_frac.append(damage_to_champs[mm]/sum(others_damage_to_champs[5:9]))
-            damage_taken_frac.append(damage_taken[mm]/sum(others_damage_taken[5:9]))
-            gold_frac.append(gold[mm]/sum(others_gold[5:9]))
+            damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[5:9])))
+            damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[5:9])))
+            damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
+            gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
         # Get champ - this next part is ungodly slow because of the static API calls. Needs to be fixed.
         champ.append(
             GetRankedMatchData.get_champ(
@@ -123,6 +125,7 @@ def parse_match_data(config_info, matchlist, match_data_all):
     # match_data_parsed = {} # FIGURE OUT HOW TO COMPILE THE ABOVE VARIABLES INTO AN OBJECT/CLASS/WHATEVER.
     #
     return {
+        "season_unique":season_unique,
         "win_lose":win_lose,
         "match_lengths":match_lengths,
         "teammates":teammates,
@@ -130,7 +133,6 @@ def parse_match_data(config_info, matchlist, match_data_all):
         "champ":champ,
         "role":role,
         "map_side":map_side,
-        "champ":champ,
         "kills":kills,
         "deaths":deaths,
         "assists":assists,
@@ -141,20 +143,12 @@ def parse_match_data(config_info, matchlist, match_data_all):
         "damage_to_champs_frac":damage_to_champs_frac,
         "damage_taken":damage_taken,
         "damage_taken_frac":damage_taken_frac,
+        "gold":gold,
+        "gold_frac":gold_frac,
+        "cs":cs,
+        "wards":wards,
+        "wards_killed":wards_killed}
 
-
-
-
-
-
-
-         }
-    damage_taken = []
-    gold = []
-    gold_frac = []
-    cs = []
-    wards = []
-    wards_killed = []
 """
 %             CSAt10(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.zeroToTen;
 %             CSAt20(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.tenToTwenty;
