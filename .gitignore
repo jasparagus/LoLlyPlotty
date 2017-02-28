@@ -11,3 +11,4 @@ __pycache__/**
 # Don't track stored application data
 *_MatchList.json
 *_MatchData.json
+*_ParsedMatchData.LoHData

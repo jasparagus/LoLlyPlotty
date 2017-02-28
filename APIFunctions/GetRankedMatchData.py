@@ -100,3 +100,34 @@ def update_matchdata(config_info):
                         match_data_all[mid] = match_data
         print("Done getting match data.")
     return match_data_all
+
+
+def get_champ(config_info, champ_id):
+    champ_name = "MissingNo."
+    champ_call = ("https://global.api.pvp.net/api/lol/static-data/"
+                  + config_info["Settings"]["Region"]
+                  + "/v1.2/champion/"
+                  + str(champ_id)
+                  + "?api_key="
+                  + config_info["Settings"]["APIKey"])
+
+    """ Someday, set this up to use Data Dragon info """
+    # dd_version = urllib.request.urlopen("http://ddragon.leagueoflegends.com/realms/na.json").read()
+    # dd_version = json.loads(dd_version)
+    # champ_version = dd_version["n"]["champion"]
+    # champ_call = "http://ddragon.leagueoflegends.com/cdn/" + champ_version + "/data/en_US/champion.json"
+    # champ_data = urllib.request.urlopen(champ_call).read()
+    # champ_data = json.loads(champ_data)
+
+    attempt = 0
+    while attempt < 10:
+        try:
+            champ_name = urllib.request.urlopen(champ_call).read()
+            champ_name = json.loads(champ_name)
+            champ_name = champ_name["name"]
+            # stop iterating if things work
+            attempt = 999
+        except:
+            attempt += 1
+            time.sleep(1)
+    return champ_name
