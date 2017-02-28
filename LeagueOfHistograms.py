@@ -36,24 +36,25 @@ def update_config():
 
 
 def get_matches():
-    global config_info, match_data_all
+    global config_info, match_data_all, parsed_data
+    # First, update the match data.
     match_data_all = GetRankedMatchData.update_matchdata(config_info)
-    return match_data_all
 
-
-def parse_data():
-    global match_data_all, parsed_data
-    # First, parse all of the data and return needed variables (as applicable).
+    # Second, parse all of the data and return needed variables (as applicable).
     parsed_data = LoHPlots.parse_match_data(config_info, match_data_all)
     with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as parsed_data_file:
         json.dump(parsed_data, parsed_data_file)
     global ssn
     ssn = tkinter.StringVar(value=parsed_data["season_unique"][0])
-    print("Data parsed and saved.")
-    return parsed_data
+    print("Data pulled from web, parsed, and saved.")
+    return match_data_all
+
 
 def do_plots():
-    """ Run the selected analyses on it. This is probably better suited to a module with external functinos"""
+    """ Apply filters. """
+    print("Applying filters. [NOT IMPLEMENTED]")
+    """ Run the selected analyses. This is probably better suited to a module with external functions. """
+    print("Generating plots. [NOT IMPLEMENTED]")
     if wr.get() == 1:
         print("Winrate vs. time checked.")
         LoHPlots.wr_vs_time(match_data_all)
@@ -137,13 +138,14 @@ if config_info !={}:
     e_summname.insert(0, summname)
 e_summname.grid(row=5, column=0)
 
+l_region = tkinter.Label(root, text="")
+l_region.grid(row=6, column=0)
 
 b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=update_config)
-b_lc.grid(row=6, column=0, columnspan=2)
-
+b_lc.grid(row=7, column=0)
 
 b_gm = tkinter.Button(root, text="Update Match Data", width=20, command=get_matches)
-b_gm.grid(row=7, column=0, columnspan=2)
+b_gm.grid(row=8, column=0)
 
 # FILTER OPTIONS FRAME
 l_analysis_range = tkinter.Label(root, text="Select Filter For Matches [NOT IMPLEMENTED]")
@@ -153,26 +155,24 @@ def callback():
     print("Radio-d")
 
 r_filter = tkinter.IntVar(value=1)
-rb1 = tkinter.Radiobutton(root, text = "Analyze All Matches", variable=r_filter, value=1, anchor="w"
-                          ).grid(row=1, column=3)
+rb1 = tkinter.Radiobutton(root, text="Analyze All Matches [Apply No Filters]", variable=r_filter, value=1, anchor="w"
+                          ).grid(row=1, column=3, sticky="w")
 
-rb2 = tkinter.Radiobutton(root, text = "Choose a Season:", variable=r_filter, value=2).grid(row=2, column=3)
+rb2 = tkinter.Radiobutton(root, text="Filter By Season:", variable=r_filter, value=2).grid(row=2, column=3, sticky="w")
 global ssn
 if parsed_data !={}:
     ssn = tkinter.StringVar(value=parsed_data["season_unique"][0])
+    o_ssn = tkinter.OptionMenu(root, ssn, *parsed_data["season_unique"]).grid(row=2, column=4, sticky="w")
 else:
     ssn = tkinter.StringVar(value="Unknown")
-o_ssn = tkinter.OptionMenu(root, ssn, *parsed_data["season_unique"]).grid(row=2, column=4)
 
-rb3 = tkinter.Radiobutton(root, text = "Enter a Number of Recent Matches:", variable=r_filter, value=3).grid(row=3, column=3)
+rb3 = tkinter.Radiobutton(root, text="Filter By Most Recent [Enter Number of Matches]:", variable=r_filter, value=3
+                          ).grid(row=3, column=3, sticky="w")
 n_mat = tkinter.IntVar(value=20)
-e_rb3 = tkinter.Entry(root, width=8, justify="center").grid(row=3, column=4)
+e_rb3 = tkinter.Entry(root, width=8, justify="center").grid(row=3, column=4, sticky="w")
 
 l_filter = tkinter.Label(root, text="Selected: All Matches [not implemented]").grid(row=4, column=3, columnspan=2)
 
-
-b_parse = tkinter.Button(root, text="Parse Data According To Filter", width=30, command=parse_data
-                         ).grid(row=5, column=3, columnspan=2)
 
 # PLOTTING OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
 l_plots = tkinter.Label(root, text="Select Plots To Generate")
@@ -180,20 +180,19 @@ l_plots.grid(row=8, column=3)
 
 wr = tkinter.IntVar(value=0)
 c_wr = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=wr)
-c_wr.grid(row=9, column=3)
+c_wr.grid(row=9, column=3, sticky="w")
 
 b_plt = tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots)
 b_plt.grid(row=10, column=3, columnspan=2)
 
 
-
 # Should pack this inside a function & update it every once in a while
 l_status = tkinter.Label(root, text="Status: " + status_message)
-l_status.grid(row=12, column=3)
+l_status.grid(row=999, column=0)
+
+l_spacer = tkinter.Label(root, text="     ").grid(row=999, column=1)
 
 
 e_apikey.focus_set() # set the focus on the first entry box
 root.mainloop() # start the application loop
 print("Done")
-
-
