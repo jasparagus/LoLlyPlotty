@@ -14,7 +14,6 @@ import time # import time to allow for use of time.sleep(secs). Prevents excessi
 def update_matchdata(config_info):
     """ Pulls down list of matches, checks against saved data, grabs missing data, saves everything. """
     match_data_loaded = {}
-    n_loaded = 0
     match_data_all = {}
     match_data = {}
     new_matches = []
@@ -42,17 +41,16 @@ def update_matchdata(config_info):
             attempt = 999
         except:
             attempt += 1
-            print("Error getting matchlist. No matches found. Exiting.")
+            print("Error getting matchlist. No match data was saved. Exiting.")
             n_matches = 0
         if n_matches !=0:
             try:
                 print("Checking saved match data against matchlist.")
                 match_data_loaded = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
                 match_data_loaded = json.loads(match_data_loaded.read())
-                n_loaded = len(match_data_loaded)
                 for mm in range(n_matches):
                     mid = str(matchlist["matches"][mm]["matchId"])
-                    if str(n_matches-1-mm) in match_data_loaded.keys():
+                    if mid in match_data_loaded:
                         print(mid, "found in file.")
                     else:
                         print(mid, "(match ",  mm, ") is new")
@@ -60,7 +58,6 @@ def update_matchdata(config_info):
                 print("Found ", len(new_matches), " New Matches")
             except:
                 print("Saved match data not found. Downloading all matches instead.")
-                n_loaded = 0
                 for mm in range(n_matches):
                     mid = str(matchlist["matches"][mm]["matchId"])
                     new_matches.append(mid)
@@ -87,7 +84,7 @@ def update_matchdata(config_info):
                         match_data = urllib.request.urlopen(match_call)
                         match_data = match_data.read()
                         match_data = json.loads(match_data)
-                        match_data_all[n_loaded+mm] = match_data
+                        match_data_all[mid] = match_data
                         print("Succeeded - saving to file.")
                         with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as match_data_file:
                             json.dump(match_data_all, match_data_file)
