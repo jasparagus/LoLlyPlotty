@@ -25,8 +25,7 @@ def parse_match_data(config_info, match_data_all):
         season.append(match_data_all[str(mm)]["season"])
         queue_type.append(match_data_all[str(mm)]["queueType"])
     season_unique = list(set(season))
-    print(season_unique)
-    print(list(set(queue_type)))
+    # print(list(set(queue_type)))
 
     """ Scan through matches and only grab summoner's rift ones. """
     matches_to_analyze = {}

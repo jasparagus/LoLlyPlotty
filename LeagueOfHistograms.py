@@ -31,7 +31,7 @@ def get_matches():
     with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as parsed_match_data_file:
         json.dump(parsed_match_data, parsed_match_data_file)
     print("Data pulled from web, parsed, and saved.")
-    print("Updating radio button options [not implemented]")
+    print("Updating filter options [NOT IMPLEMENTED]")
     return match_data_all, parsed_match_data
 
 
@@ -90,15 +90,15 @@ def do_plots():
     filter_opts = {"BySeason": {"N": ""}, "ByChamp": {"N": ""}, "ByMatch": {"N": ""}}
 
     if f_season.get() == 1:
-        enabled_filters_text = enabled_filters_text + " (" + ssn_filter.get() + ")"
+        enabled_filters_text = enabled_filters_text + "(" + ssn_filter.get() + ") "
         filter_label.set(enabled_filters_text)
         filter_opts["BySeason"] = {"Y": ssn_filter.get()}
     if f_champ.get() == 1:
-        enabled_filters_text = enabled_filters_text + " (" + champ_filter.get() + ")"
+        enabled_filters_text = enabled_filters_text + "(" + champ_filter.get() + ") "
         filter_label.set(enabled_filters_text)
         filter_opts["ByChamp"] = {"Y": champ_filter.get()}
     if f_match.get() == 1:
-        enabled_filters_text = enabled_filters_text + " (Last " + str(match_filter.get()) + " Matches)"
+        enabled_filters_text = enabled_filters_text + "(Last " + str(match_filter.get()) + " Matches) "
         filter_label.set(enabled_filters_text)
         filter_opts["ByMatch"] = {"Y": match_filter.get()}
 
