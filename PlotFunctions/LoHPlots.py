@@ -6,13 +6,6 @@ import json
 import numpy
 from APIFunctions import GetRankedMatchData
 
-# config_file = open("Configuration.LoHConfig", "r")
-# config_info = json.loads(config_file.read())
-# matchlist = open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "r")
-# matchlist = json.loads(matchlist.read())
-# match_data_all = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
-# match_data_all = json.loads(match_data_all.read())
-
 
 def parse_match_data(config_info, match_data_all):
     season = []

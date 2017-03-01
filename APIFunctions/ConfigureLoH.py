@@ -14,7 +14,7 @@ import json
 import time
 
 
-def get_sid(APIKey, Region, SummonerName):
+def get_sid(APIKey, Region, SummonerName, status_label):
     """Get summoner ID from summoner name. Summoner
     name must be lower-case letters only"""
     SID = ""
@@ -22,7 +22,7 @@ def get_sid(APIKey, Region, SummonerName):
     SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey
     TimesTried = 0
     for attempt in range(10):
-        print("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
+        status_label.set("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
         try:
             # wait a sec - don't exceed API rate limit
             time.sleep(2)
@@ -31,14 +31,14 @@ def get_sid(APIKey, Region, SummonerName):
             ProfReplyJSONData = json.loads(ProfReplyData)
             SID = ProfReplyJSONData[SummonerName]["id"]
             SID = str(SID)
-            print("SID Retrieved: "+SID)
+            status_label.set("SID Retrieved (" + SID + ")")
             break
-        except urllib.error.URLError as ProfReply:
-            print("Error with request: [", ProfReply, "]. Likely culprits: invalid summoner name; invalid API key; incorrect region.")
+        except:
+            status_label.set("Error with request. Likely culprits: invalid summoner name, API key, or region.")
     return SID
 
 
-def config(enteredkey, region, summname):
+def config(enteredkey, region, summname, status_label):
     """ Take inputted info and use it to write a config file. """
     APIKey = enteredkey
     APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
@@ -46,7 +46,7 @@ def config(enteredkey, region, summname):
     SummonerName = summname
     SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
 
-    SID = get_sid(APIKey, Region, SummonerName)  # grab summoner ID using an API call
+    SID = get_sid(APIKey, Region, SummonerName, status_label)  # grab summoner ID using an API call
 
     config_info = ({"Settings": {
         "APIKey": APIKey,
