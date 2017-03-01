@@ -4,13 +4,6 @@ import json # import ability to parse JSON objects
 import time # import time to allow for use of time.sleep(secs). Prevents excessive api calls
 
 
-# config_file = open("Configuration.LoHConfig", "r")
-# config_info = json.loads(config_file.read())
-# matchlist = open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "r")
-# matchlist = json.loads(matchlist.read())
-# from APIFunctions import GetRankedMatchData
-
-
 def update_matchdata(config_info):
     """ Pulls down list of matches, checks against saved data, grabs missing data, saves everything. """
     match_data_loaded = {}
@@ -70,7 +63,7 @@ def update_matchdata(config_info):
             new_matches = new_matches[::-1]
             match_data_all = match_data_loaded
             for mm in range(n_nm):
-                print("preparing to pull down a new match")
+                print("Preparing to download match " + str(mm+1) + " of " + str(n_nm))
                 mid = str(new_matches[mm])
                 BaseURL = "https://na.api.pvp.net/api/lol/"
                 match_call = (BaseURL + config_info["Settings"]["Region"]
@@ -87,7 +80,7 @@ def update_matchdata(config_info):
                         match_data = urllib.request.urlopen(match_call)
                         match_data = match_data.read()
                         match_data = json.loads(match_data)
-                        match_data_all[n_loaded+mm] = match_data
+                        match_data_all[str(n_loaded+mm)] = match_data
                         print("Succeeded - saving to file.")
                         with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as match_data_file:
                             json.dump(match_data_all, match_data_file)
@@ -97,7 +90,7 @@ def update_matchdata(config_info):
                         attempt += 1
                         print("Failed to get match. Retrying up to 10 times.")
                         match_data = {}
-                        match_data_all[mid] = match_data
+                        match_data_all[str(n_loaded+mm)] = match_data
         print("Done getting match data.")
     return match_data_all
 

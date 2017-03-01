@@ -4,14 +4,8 @@
 import json
 # import numpy to make working with data easier
 import numpy
+import matplotlib.pyplot as plt
 from APIFunctions import GetRankedMatchData
-
-# config_file = open("Configuration.LoHConfig", "r")
-# config_info = json.loads(config_file.read())
-# matchlist = open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "r")
-# matchlist = json.loads(matchlist.read())
-# match_data_all = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
-# match_data_all = json.loads(match_data_all.read())
 
 
 def parse_match_data(config_info, match_data_all):
@@ -25,8 +19,7 @@ def parse_match_data(config_info, match_data_all):
         season.append(match_data_all[str(mm)]["season"])
         queue_type.append(match_data_all[str(mm)]["queueType"])
     season_unique = list(set(season))
-    print(season_unique)
-    print(list(set(queue_type)))
+    # print(list(set(queue_type)))
 
     """ Scan through matches and only grab summoner's rift ones. """
     matches_to_analyze = {}
@@ -88,9 +81,9 @@ def parse_match_data(config_info, match_data_all):
                 kills.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["kills"])
                 deaths.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["deaths"])
                 assists.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["assists"])
-                cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
+                cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["minionsKilled"])
+                wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsPlaced"])
+                wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsKilled"])
                 try:
                     kda.append((kills[mm]+assists[mm])/deaths[mm])
                 except:
@@ -125,15 +118,16 @@ def parse_match_data(config_info, match_data_all):
                 config_info,
                 str(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"]))
         )
-    # match_data_parsed = {} # FIGURE OUT HOW TO COMPILE THE ABOVE VARIABLES INTO AN OBJECT/CLASS/WHATEVER.
-    #
+    champ_unique = list(set(champ))
     return {
         "season_unique":season_unique,
+        "season":season,
         "win_lose":win_lose,
         "match_lengths":match_lengths,
         "teammates":teammates,
         "enemies":enemies,
         "champ":champ,
+        "champ_unique":champ_unique,
         "role":role,
         "map_side":map_side,
         "kills":kills,
@@ -161,17 +155,66 @@ def parse_match_data(config_info, match_data_all):
 %             CSDAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
 """
 
-def filter(match_data_all, parsed_match_data):
-    print("Filtering match data. [Not implemented yet]")
-    mm=0
-    print(match_data_all[str(mm)]["season"])
-    # print(match_data_all[str(mm)]["queueType"])
+def filter(parsed_match_data, filter_opts):
+    filtered_parsed_match_data = {}
+    if "Y" in filter_opts["BySeason"]:
+        print("Filtering For Season = " + filter_opts["BySeason"]["Y"])
+        # loop over matches, checking match season against filtered season
+        mm = 0
+        parsed_match_data[str(mm)]["season"] == filter_opts["BySeason"]["Y"]
+    if "Y" in filter_opts["ByChamp"]:
+        print("Filtering For Champ = " + filter_opts["ByChamp"]["Y"])
+    if "Y" in filter_opts["ByMatch"]:
+        print("Filtering For Last " + str(filter_opts["ByMatch"]["Y"]) + " matches")
+
     filtered_parsed_match_data = parsed_match_data
-    return(filtered_parsed_match_data)
+    return filtered_parsed_match_data
+
+""" FOR TESTING STUFF OUT
+import json
+import numpy
+import matplotlib.pyplot as plt
+config_file = open("Configuration.LoHConfig", "r")
+config_info = json.loads(config_file.read())
+filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
+filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
+"""
+
+def wr_vs_time(filtered_parsed_match_data):
+    n_matches = len(filtered_parsed_match_data["win_lose"])
+    wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
+    # test = numpy.histogram([1, 2, 5], bins=10)
+    a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], 7), label="Rolling Average WR")
+    b, = plt.plot([0, n_matches],[wr, wr], label="Average WR", linestyle="--")
+    plt.xlabel("Match Number (Chronological)")
+    plt.ylabel("Win Rate")
+    plt.title("Winrate Over Time")
+    plt.axis([0, n_matches, 0, 1])
+    l1 = plt.legend(handles=[a], loc=1)
+    plt.gca().add_artist(l1)
+    l2 = plt.legend(handles=[b], loc=2)
+    plt.gca().add_artist(l2)
+    plt.show()
 
 
-def wr_vs_time(match_data_all):
-    print("Plotting win % vs. time for selected match range.")
+def wr_vs_champ(filtered_parsed_match_data):
+    print("wr_vs_champ DNE yet")
+
+
+def wr_vs_teammate(filtered_parsed_match_data):
+    print("wr_vs_teammate DNE yet")
+
+
+def running_mean(l, N):
+    sum = 0
+    result = list( 0 for x in l)
+    for i in range( 0, N ):
+        sum = sum + l[i]
+        result[i] = sum / (i+1)
+    for i in range( N, len(l) ):
+        sum = sum - l[i-N] + l[i]
+        result[i] = sum / N
+    return result
 
 """ ORIGINAL MATLAB CODE (REMOVING AS I GO ALONG ONCE REWRITTEN IN PYTHON)
 if ChooseSeason<=length(SeasonOpts) % if you chose a season
