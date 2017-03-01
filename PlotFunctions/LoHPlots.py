@@ -88,9 +88,9 @@ def parse_match_data(config_info, match_data_all):
                 kills.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["kills"])
                 deaths.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["deaths"])
                 assists.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["assists"])
-                cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
+                cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["minionsKilled"])
+                wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsPlaced"])
+                wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsKilled"])
                 try:
                     kda.append((kills[mm]+assists[mm])/deaths[mm])
                 except:
@@ -125,15 +125,18 @@ def parse_match_data(config_info, match_data_all):
                 config_info,
                 str(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"]))
         )
+    champ_unique = list(set(champ))
     # match_data_parsed = {} # FIGURE OUT HOW TO COMPILE THE ABOVE VARIABLES INTO AN OBJECT/CLASS/WHATEVER.
     #
     return {
         "season_unique":season_unique,
+        "season":season,
         "win_lose":win_lose,
         "match_lengths":match_lengths,
         "teammates":teammates,
         "enemies":enemies,
         "champ":champ,
+        "champ_unique":champ_unique,
         "role":role,
         "map_side":map_side,
         "kills":kills,
@@ -161,11 +164,19 @@ def parse_match_data(config_info, match_data_all):
 %             CSDAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
 """
 
-def filter(match_data_all, parsed_match_data):
-    print("Filtering match data. [Not implemented yet]")
-    mm=0
-    print(match_data_all[str(mm)]["season"])
-    # print(match_data_all[str(mm)]["queueType"])
+def filter(match_data_all, parsed_match_data, filter_opts):
+    filtered_parsed_match_data = {}
+    if "Y" in filter_opts["BySeason"]:
+        print("Filtering For Season = " + filter_opts["BySeason"]["Y"])
+        filtered_parsed_match_data = parsed_match_data
+        # loop over matches, checking match season against filtered season
+        mm = 0
+        match_data_all[str(mm)]["season"] == filter_opts["BySeason"]["Y"]
+    if "Y" in filter_opts["ByChamp"]:
+        print("Filtering For Champ = " + filter_opts["ByChamp"]["Y"])
+    if "Y" in filter_opts["ByMatch"]:
+        print("Filtering For Last " + str(filter_opts["ByMatch"]["Y"]) + " matches")
+
     filtered_parsed_match_data = parsed_match_data
     return(filtered_parsed_match_data)
 

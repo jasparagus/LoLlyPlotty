@@ -19,12 +19,13 @@ def get_sid(APIKey, Region, SummonerName):
     name must be lower-case letters only"""
     SID = ""
     BaseURL = "https://na.api.pvp.net/api/lol/"
-    SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey # Put everythign together to make profile call
+    SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey
     TimesTried = 0
     for attempt in range(10):
         print("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
         try:
-            time.sleep(2)  # wait a sec - don't exceed API rate limit
+            # wait a sec - don't exceed API rate limit
+            time.sleep(2)
             ProfReply = urllib.request.urlopen(SIDCall)
             ProfReplyData = ProfReply.read()
             ProfReplyJSONData = json.loads(ProfReplyData)
@@ -38,7 +39,7 @@ def get_sid(APIKey, Region, SummonerName):
 
 
 def config(enteredkey, region, summname):
-    """Take inputted info and use it to write a config file."""
+    """ Take inputted info and use it to write a config file. """
     APIKey = enteredkey
     APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
     Region = region
