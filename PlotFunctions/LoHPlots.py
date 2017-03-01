@@ -28,11 +28,14 @@ def parse_match_data(config_info, match_data_all):
     print(season_unique)
     print(list(set(queue_type)))
 
-    # Choose number of most recent matches to keep
-    n_most_recent = 30
+    """ Scan through matches and only grab summoner's rift ones. """
+    matches_to_analyze = {}
+    mmm = 0
+    for mm in range(n_matches):
+        if match_data_all[str(mm)]["mapId"] == 11:
+            matches_to_analyze[str(mmm)] = match_data_all[str(mm)]
+            mmm += 1
 
-    # Apply any filters from above (like specific seasons) to data.
-    matches_to_analyze = match_data_all
     n_to_analyze = len(matches_to_analyze)
 
     win_lose = []
@@ -157,6 +160,14 @@ def parse_match_data(config_info, match_data_all):
 %             CSDAt20(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.tenToTwenty;
 %             CSDAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
 """
+
+def filter(match_data_all, parsed_match_data):
+    print("Filtering match data. [Not implemented yet]")
+    mm=0
+    print(match_data_all[str(mm)]["season"])
+    # print(match_data_all[str(mm)]["queueType"])
+    filtered_parsed_match_data = parsed_match_data
+    return(filtered_parsed_match_data)
 
 
 def wr_vs_time(match_data_all):
