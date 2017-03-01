@@ -18,27 +18,6 @@ global status_label, config_info, match_data_all, parsed_match_data, filtered_pa
     ssn_filter, champ_filter, match_filter, filter_label, status_label
 
 
-def update_config():
-    global config_info, status_label
-    status_label.set("Updating App Settings")
-    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
-    initialize()
-
-
-def get_matches():
-    global config_info, match_data_all, parsed_match_data, status_label
-    # First, update the match data.
-    match_data_all = GetRankedMatchData.update_matchdata(config_info)
-    # Second, parse all of the data and return needed variables (as applicable).
-    parsed_match_data = LoHPlots.parse_match_data(config_info, match_data_all)
-    with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as parsed_match_data_file:
-        json.dump(parsed_match_data, parsed_match_data_file)
-    status_label.set("Data pulled from web, parsed, and saved.")
-    initialize()
-
-
-
-# TRY TO LOAD PREEXISTING CONFIGRAUTION FILE AND MATCH DATA
 def initialize():
     global config_info, match_data_all, parsed_match_data, status_label
     try:
@@ -100,6 +79,25 @@ def initialize():
         pass
 
 
+def update_config():
+    global config_info, status_label
+    status_label.set("Updating App Settings")
+    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
+    initialize()
+
+
+def get_matches():
+    global config_info, match_data_all, parsed_match_data, status_label
+    # First, update the match data.
+    match_data_all = GetRankedMatchData.update_matchdata(config_info)
+    # Second, parse all of the data and return needed variables (as applicable).
+    parsed_match_data = LoHPlots.parse_match_data(config_info, match_data_all)
+    with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as parsed_match_data_file:
+        json.dump(parsed_match_data, parsed_match_data_file)
+    status_label.set("Data pulled from web, parsed, and saved.")
+    initialize()
+
+
 def do_plots():
     global config_info, match_data_all, parsed_match_data, filtered_parsed_match_data, \
         filter_label, ssn_filter, champ_filter, match_filter
@@ -122,12 +120,12 @@ def do_plots():
         filter_opts["ByMatch"] = {"Y": match_filter.get()}
 
     print(filter_opts)
-    LoHPlots.filter(match_data_all, parsed_match_data, filter_opts)
+    filtered_parsed_match_data = LoHPlots.filter(parsed_match_data, filter_opts)
 
     print("Generating plots. [NOT IMPLEMENTED]")
     if cb_w_v_time.get() == 1:
         print("Winrate vs. time checked.")
-        LoHPlots.wr_vs_time(match_data_all)
+        LoHPlots.wr_vs_time(filtered_parsed_match_data)
     else:
         print("Winrate vs. time not checked.")
     print("Done generating selected plots. [NOT IMPLEMENTED]")
@@ -212,7 +210,7 @@ tkinter.Label(root, text="     ").grid(row=6, column=c2, columnspan=2, sticky="e
 # PLOTTING OPTIONS SUB-PANEL
 l_plots = tkinter.Label(root, text="Select Plots To Generate:").grid(row=7, column=c2, columnspan=2)
 
-cb_w_v_time = tkinter.IntVar(value=0)
+cb_w_v_time = tkinter.IntVar(value=1)
 c_w_v_time = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=cb_w_v_time)
 c_w_v_time.grid(row=8, column=c2, sticky="w")
 

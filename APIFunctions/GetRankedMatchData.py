@@ -4,13 +4,6 @@ import json # import ability to parse JSON objects
 import time # import time to allow for use of time.sleep(secs). Prevents excessive api calls
 
 
-# config_file = open("Configuration.LoHConfig", "r")
-# config_info = json.loads(config_file.read())
-# matchlist = open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "r")
-# matchlist = json.loads(matchlist.read())
-# from APIFunctions import GetRankedMatchData
-
-
 def update_matchdata(config_info):
     """ Pulls down list of matches, checks against saved data, grabs missing data, saves everything. """
     match_data_loaded = {}

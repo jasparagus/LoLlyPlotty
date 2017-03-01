@@ -4,6 +4,7 @@
 import json
 # import numpy to make working with data easier
 import numpy
+import matplotlib.pyplot as plt
 from APIFunctions import GetRankedMatchData
 
 
@@ -118,8 +119,6 @@ def parse_match_data(config_info, match_data_all):
                 str(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"]))
         )
     champ_unique = list(set(champ))
-    # match_data_parsed = {} # FIGURE OUT HOW TO COMPILE THE ABOVE VARIABLES INTO AN OBJECT/CLASS/WHATEVER.
-    #
     return {
         "season_unique":season_unique,
         "season":season,
@@ -156,25 +155,66 @@ def parse_match_data(config_info, match_data_all):
 %             CSDAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
 """
 
-def filter(match_data_all, parsed_match_data, filter_opts):
+def filter(parsed_match_data, filter_opts):
     filtered_parsed_match_data = {}
     if "Y" in filter_opts["BySeason"]:
         print("Filtering For Season = " + filter_opts["BySeason"]["Y"])
-        filtered_parsed_match_data = parsed_match_data
         # loop over matches, checking match season against filtered season
         mm = 0
-        match_data_all[str(mm)]["season"] == filter_opts["BySeason"]["Y"]
+        parsed_match_data[str(mm)]["season"] == filter_opts["BySeason"]["Y"]
     if "Y" in filter_opts["ByChamp"]:
         print("Filtering For Champ = " + filter_opts["ByChamp"]["Y"])
     if "Y" in filter_opts["ByMatch"]:
         print("Filtering For Last " + str(filter_opts["ByMatch"]["Y"]) + " matches")
 
     filtered_parsed_match_data = parsed_match_data
-    return(filtered_parsed_match_data)
+    return filtered_parsed_match_data
+
+""" FOR TESTING STUFF OUT
+import json
+import numpy
+import matplotlib.pyplot as plt
+config_file = open("Configuration.LoHConfig", "r")
+config_info = json.loads(config_file.read())
+filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
+filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
+"""
+
+def wr_vs_time(filtered_parsed_match_data):
+    n_matches = len(filtered_parsed_match_data["win_lose"])
+    wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
+    # test = numpy.histogram([1, 2, 5], bins=10)
+    a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], 7), label="Rolling Average WR")
+    b, = plt.plot([0, n_matches],[wr, wr], label="Average WR", linestyle="--")
+    plt.xlabel("Match Number (Chronological)")
+    plt.ylabel("Win Rate")
+    plt.title("Winrate Over Time")
+    plt.axis([0, n_matches, 0, 1])
+    l1 = plt.legend(handles=[a], loc=1)
+    plt.gca().add_artist(l1)
+    l2 = plt.legend(handles=[b], loc=2)
+    plt.gca().add_artist(l2)
+    plt.show()
 
 
-def wr_vs_time(match_data_all):
-    print("Plotting win % vs. time for selected match range.")
+def wr_vs_champ(filtered_parsed_match_data):
+    print("wr_vs_champ DNE yet")
+
+
+def wr_vs_teammate(filtered_parsed_match_data):
+    print("wr_vs_teammate DNE yet")
+
+
+def running_mean(l, N):
+    sum = 0
+    result = list( 0 for x in l)
+    for i in range( 0, N ):
+        sum = sum + l[i]
+        result[i] = sum / (i+1)
+    for i in range( N, len(l) ):
+        sum = sum - l[i-N] + l[i]
+        result[i] = sum / N
+    return result
 
 """ ORIGINAL MATLAB CODE (REMOVING AS I GO ALONG ONCE REWRITTEN IN PYTHON)
 if ChooseSeason<=length(SeasonOpts) % if you chose a season

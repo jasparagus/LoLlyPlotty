@@ -1,13 +1,6 @@
-# IMPORT STANDARD MODULES
-# for getting user input. Ideally this will be replaced.
-import tkinter.simpledialog
-import json
-
 # GET SID IMPORTS
 # import ability to make URL requests
 import urllib.request
-# import error handler for URL requests
-import urllib.error
 # import ability to parse JSON objects
 import json
 # import time to allow for use of time.sleep(secs). Prevents excessive api calls
