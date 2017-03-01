@@ -5,10 +5,9 @@
 __pycache__/**
 *.pyc
 
-# Don't track configuration files
-*.LoHConfig
 
 # Don't track stored application data
+*.LoHConfig
 *_MatchList.json
 *_MatchData.json
 *_ParsedMatchData.LoHData
