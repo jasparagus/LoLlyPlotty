@@ -14,7 +14,8 @@ from APIFunctions import GetRankedMatchData
 from PlotFunctions import LoHPlots
 
 # Declare globals
-global status_label, config_info, match_data_all, parsed_match_data, filtered_parsed_match_data
+global status_label, config_info, match_data_all, parsed_match_data, filtered_parsed_match_data, \
+    ssn_filter, champ_filter, match_filter, filter_label, status_label
 
 def update_config():
     global config_info, status_label
@@ -60,7 +61,32 @@ def initialize():
     except:
         parsed_match_data = {}
         print("Parsed match data not found at startup; please update match data.")
-initialize()
+
+    try:
+        reg.set(config_info["Settings"]["Region"])
+    except:
+        pass
+
+    try:
+        e_apikey.insert(0, config_info["Settings"]["APIKey"])
+    except:
+        pass
+
+    try:
+        e_summname.insert(0, config_info["Settings"]["SummonerName"])
+    except:
+        pass
+
+    try:
+        ssn_list = parsed_match_data["season_unique"]
+        ssn_filter.set(parsed_match_data["season_unique"][0])
+    except:
+        pass
+
+    try:
+        champ_filter_list = parsed_match_data["champ_unique"]
+        champ_filter.set(parsed_match_data["champ_unique"][0])
+
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE. GRID SIZE IS 15x5
 root = tkinter.Tk()  # prepare a widget to hold the UI
@@ -127,10 +153,13 @@ o_region = tkinter.OptionMenu(root, reg, *reg_list)
 o_region.grid(row=3, column=0)
 
 
+
 l_summname = tkinter.Label(root, text="Enter Summoner Name:").grid(row=4, column=0)
 e_summname = tkinter.Entry(root, width=45, justify="center")
-if config_info !={}:
+try:
     e_summname.insert(0, config_info["Settings"]["SummonerName"])
+except:
+    pass
 e_summname.grid(row=5, column=0)
 
 b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=update_config)
@@ -154,30 +183,20 @@ c_champ = tkinter.Checkbutton(root, text="By Champion: ", variable=f_champ).grid
 c_match = tkinter.Checkbutton(root, text="By # Recent Matches: ", variable=f_match).grid(row=3, column=3, sticky="w")
 
 # add options menus/entry boxes for filters and create their corresponding variables
-global ssn_filter, champ_filter, match_filter, filter_label, status_label
-ssn_filter = tkinter.StringVar(value="Please select a season")
-champ_filter = tkinter.StringVar(value="Unknown")
-match_filter = tkinter.IntVar()
-filter_label = tkinter.StringVar()
-status_label = tkinter.StringVar()
-
+ssn_filter = tkinter.StringVar(root, value="Please select a season")
 ssn_list = [""]
-try:
-    ssn_list = parsed_match_data["season_unique"]
-    ssn_filter = tkinter.StringVar(value=parsed_match_data["season_unique"][0])
-except:
-    pass
+champ_filter = tkinter.StringVar(root, value="Please select a champion")
+champ_filter_list = [""]
+match_filter = tkinter.IntVar(root)
+filter_label = tkinter.StringVar(root)
+status_label = tkinter.StringVar(root)
+
+# take a stab at setting up buttons for season and champ filtering - need to work out a way to repopulate the dropdowns.
 o_season = tkinter.OptionMenu(root, ssn_filter, *ssn_list)
 o_season.grid(row=1, column=4, sticky="ew")
 
-
-try:
-    champ_filter = tkinter.StringVar(value=parsed_match_data["champ_unique"][0])
-    o_champ = tkinter.OptionMenu(root, champ_filter, *parsed_match_data["champ_unique"])
-    o_champ.grid(row=2, column=4, sticky="ew")
-except:
-    pass
-
+o_champ = tkinter.OptionMenu(root, champ_filter, *champ_filter_list)
+o_champ.grid(row=2, column=4, sticky="ew")
 
 match_filter.set(20)
 e_match = tkinter.Entry(root, width=10, justify="center", textvariable=match_filter)
@@ -202,6 +221,7 @@ l_status = tkinter.Label(root, textvariable=status_label).grid(row=998, column=0
 
 tkinter.Label(root, text="     ").grid(row=999, column=1)
 
+initialize()
 e_apikey.focus_set() # set the focus on the first entry box
 root.mainloop() # start the application loop
 print("Done")
