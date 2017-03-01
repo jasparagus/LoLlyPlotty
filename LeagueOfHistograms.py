@@ -17,14 +17,16 @@ from PlotFunctions import LoHPlots
 global status_label, config_info, match_data_all, parsed_match_data, filtered_parsed_match_data, \
     ssn_filter, champ_filter, match_filter, filter_label, status_label
 
+
 def update_config():
     global config_info, status_label
     status_label.set("Updating App Settings")
-    config_info = ConfigureLoH.config(e_apikey.get(), reg.get(), e_summname.get(), status_label)
+    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
+    initialize()
 
 
 def get_matches():
-    global config_info, match_data_all, parsed_match_data
+    global config_info, match_data_all, parsed_match_data, status_label
     # First, update the match data.
     match_data_all = GetRankedMatchData.update_matchdata(config_info)
     # Second, parse all of the data and return needed variables (as applicable).
@@ -32,7 +34,8 @@ def get_matches():
     with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as parsed_match_data_file:
         json.dump(parsed_match_data, parsed_match_data_file)
     status_label.set("Data pulled from web, parsed, and saved.")
-    print("Updating filter options [NOT IMPLEMENTED]")
+    initialize()
+
 
 
 # TRY TO LOAD PREEXISTING CONFIGRAUTION FILE AND MATCH DATA
@@ -41,10 +44,8 @@ def initialize():
     try:
         config_file = open("Configuration.LoHConfig", "r")
         config_info = json.loads(config_file.read())
-        # status_label.set("Configuration options found and loaded at startup")
     except:
         config_info = {}
-        # status_label.set("Configuration options not found. Please run configuration.")
 
     try:
         match_data_all = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
@@ -68,37 +69,35 @@ def initialize():
         pass
 
     try:
-        e_apikey.insert(0, config_info["Settings"]["APIKey"])
+        apikey.set(config_info["Settings"]["APIKey"])
     except:
         pass
 
     try:
-        e_summname.insert(0, config_info["Settings"]["SummonerName"])
+        summname.set(config_info["Settings"]["SummonerName"])
     except:
         pass
 
+    # update options in season filtering menu
     try:
+        o_season["menu"].delete(0, "end")
         ssn_list = parsed_match_data["season_unique"]
+        for choice in ssn_list:
+            o_season["menu"].add_command(label=choice, command=tkinter._setit(ssn_filter, choice))
         ssn_filter.set(parsed_match_data["season_unique"][0])
     except:
         pass
 
+    # update options in champ filtering menu
     try:
+        o_champ["menu"].delete(0, "end")
         champ_filter_list = parsed_match_data["champ_unique"]
+        for choice in champ_filter_list:
+            o_champ["menu"].add_command(label=choice, command=tkinter._setit(champ_filter, choice))
+            # ssn_filter.set(parsed_match_data["season_unique"][0])
         champ_filter.set(parsed_match_data["champ_unique"][0])
     except:
         pass
-
-
-# PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE. GRID SIZE IS 15x5
-root = tkinter.Tk()  # prepare a widget to hold the UI
-root.title("League of Histograms")
-# root.config()
-# wwid = root.winfo_screenwidth()/4
-# whei = root.winfo_screenheight()/2
-# w = tkinter.Canvas(root, width=wwid, height=whei)
-# w.pack()
-# w.create_window(0, wwid/3, 0, whei/3)
 
 
 def do_plots():
@@ -136,43 +135,45 @@ def do_plots():
     return filtered_parsed_match_data
 
 
-# CONFIGURATION OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
-l_apikey = tkinter.Label(root, text="Enter API Key:").grid(row=0, column=0)
-e_apikey = tkinter.Entry(root, width=45, justify="center")
-e_apikey.grid(row=1, column=0)
-try:
-    e_apikey.insert(0, config_info["Settings"]["APIKey"])
-except:
-    pass
+# PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
+root = tkinter.Tk()  # prepare a widget to hold the UI
+root.title("League of Histograms")
+c1 = 1 # column 1 startpoint
+c2 = 4 # column 2 startpoint
 
+# PANEL 1 - CONFIGURATION OPTIONS AND API CALL BUTTONS
+tkinter.Label(root, text="   ").grid(row=0, column=0)
+
+tkinter.Label(root, text="Enter API Key:").grid(row=0, column=c1, columnspan=2)
+apikey = tkinter.StringVar()
+tkinter.Entry(root, width=45, justify="center", textvariable=apikey).grid(row=1, column=c1, columnspan=2)
+
+tkinter.Label(root, text="Enter Summoner Name:").grid(row=2, column=c1, columnspan=2)
+summname = tkinter.StringVar()
+tkinter.Entry(root, width=45, justify="center", textvariable=summname).grid(row=3, column=c1, columnspan=2)
+
+tkinter.Label(root, text="     ").grid(row=4, column=c1+1, columnspan=2)
+
+tkinter.Label(root, text="Select Region:").grid(row=5, column=c1, sticky="e")
 reg_list = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
-l_region = tkinter.Label(root, text="Select Region:").grid(row=2, column=0)
 try:
     reg = tkinter.StringVar(value=config_info["Settings"]["Region"])
 except:
     reg = tkinter.StringVar(value="na")
 o_region = tkinter.OptionMenu(root, reg, *reg_list)
-o_region.grid(row=3, column=0)
-
-
-
-l_summname = tkinter.Label(root, text="Enter Summoner Name:").grid(row=4, column=0)
-e_summname = tkinter.Entry(root, width=45, justify="center")
-try:
-    e_summname.insert(0, config_info["Settings"]["SummonerName"])
-except:
-    pass
-e_summname.grid(row=5, column=0)
+o_region.grid(row=5, column=c1+1, sticky="ew")
 
 b_lc = tkinter.Button(root, text="Update LoH Settings", width=25, command=update_config)
-b_lc.grid(row=7, column=0)
+b_lc.grid(row=7, column=c1, columnspan=2)
 
 b_gm = tkinter.Button(root, text="Update Match Data", width=20, command=get_matches)
-b_gm.grid(row=8, column=0)
+b_gm.grid(row=8, column=c1, columnspan=2)
 
-# FILTER OPTIONS FRAME
-l_analysis_range = tkinter.Label(root, text="Select Filter(s) For Analysis (None: All Matches):                   ")
-l_analysis_range.grid(row=0, column=3, columnspan=2, sticky="w")
+# SPACER BETWEEN PANEL 1 AND 2
+tkinter.Label(root, text="   ").grid(row=0, column=c2-c1)
+
+# PANEL 2 - FILTERING OPTIONS AND PLOT COMMAND
+tkinter.Label(root, text="Select Desired Filter(s):").grid(row=0, column=c2, columnspan=2, sticky="ew")
 
 # make variables for filter checkboxes (true/false variables for enabled check buttons)
 f_season = tkinter.IntVar(value=0)
@@ -180,9 +181,9 @@ f_champ = tkinter.IntVar(value=0)
 f_match = tkinter.IntVar(value=0)
 
 # make filter checkboxes with (if needed) additional entry options
-c_season = tkinter.Checkbutton(root, text="By Season: ", variable=f_season).grid(row=1, column=3, sticky="w")
-c_champ = tkinter.Checkbutton(root, text="By Champion: ", variable=f_champ).grid(row=2, column=3, sticky="w")
-c_match = tkinter.Checkbutton(root, text="By # Recent Matches: ", variable=f_match).grid(row=3, column=3, sticky="w")
+c_season = tkinter.Checkbutton(root, text="By Season: ", variable=f_season).grid(row=1, column=c2, sticky="w")
+c_champ = tkinter.Checkbutton(root, text="By Champion: ", variable=f_champ).grid(row=2, column=c2, sticky="w")
+c_match = tkinter.Checkbutton(root, text="By # Recent Matches: ", variable=f_match).grid(row=3, column=c2, sticky="w")
 
 # add options menus/entry boxes for filters and create their corresponding variables
 ssn_filter = tkinter.StringVar(root, value="Please select a season")
@@ -195,35 +196,34 @@ status_label = tkinter.StringVar(root)
 
 # take a stab at setting up buttons for season and champ filtering - need to work out a way to repopulate the dropdowns.
 o_season = tkinter.OptionMenu(root, ssn_filter, *ssn_list)
-o_season.grid(row=1, column=4, sticky="ew")
+o_season.grid(row=1, column=c2+1, sticky="ew")
 
 o_champ = tkinter.OptionMenu(root, champ_filter, *champ_filter_list)
-o_champ.grid(row=2, column=4, sticky="ew")
+o_champ.grid(row=2, column=c2+1, sticky="ew")
 
 match_filter.set(20)
-e_match = tkinter.Entry(root, width=10, justify="center", textvariable=match_filter)
-e_match.grid(row=3, column=4, sticky="w")
+tkinter.Entry(root, width=10, justify="center", textvariable=match_filter).grid(row=3, column=c2+1, sticky="w")
 
 filter_label.set("Filtering By: All Matches")
-l_filter = tkinter.Label(root, textvariable=filter_label).grid(row=5, column=3, columnspan=2)
-tkinter.Label(root, text="     ").grid(row=6, column=1)
+tkinter.Label(root, textvariable=filter_label).grid(row=5, column=c2, columnspan=2)
 
-# PLOTTING OPTIONS FRAME (SHOULD MAKE THIS A FRAME... ONCE I FIGURE OUT WHAT THAT IS)
-l_plots = tkinter.Label(root, text="Select Plots To Generate").grid(row=7, column=3, sticky="w")
+tkinter.Label(root, text="     ").grid(row=6, column=c2, columnspan=2, sticky="ew")
+
+# PLOTTING OPTIONS SUB-PANEL
+l_plots = tkinter.Label(root, text="Select Plots To Generate:").grid(row=7, column=c2, columnspan=2)
 
 cb_w_v_time = tkinter.IntVar(value=0)
 c_w_v_time = tkinter.Checkbutton(root, text="Winrate vs. Time", variable=cb_w_v_time)
-c_w_v_time.grid(row=8, column=3, sticky="w")
+c_w_v_time.grid(row=8, column=c2, sticky="w")
 
 b_plt = tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots)
-b_plt.grid(row=10, column=3, columnspan=2)
+b_plt.grid(row=10, column=c2, columnspan=2)
 
 status_label.set("Starting app")
-l_status = tkinter.Label(root, textvariable=status_label).grid(row=998, column=0)
+tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnspan=2, sticky="ew")
 
-tkinter.Label(root, text="     ").grid(row=999, column=1)
+tkinter.Label(root, text="   ").grid(row=999, column=c2+2)
 
 initialize()
-e_apikey.focus_set() # set the focus on the first entry box
 root.mainloop() # start the application loop
 print("Done")
