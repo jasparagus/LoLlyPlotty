@@ -86,6 +86,8 @@ def initialize():
     try:
         champ_filter_list = parsed_match_data["champ_unique"]
         champ_filter.set(parsed_match_data["champ_unique"][0])
+    except:
+        pass
 
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE. GRID SIZE IS 15x5
