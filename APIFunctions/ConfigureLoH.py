@@ -46,5 +46,4 @@ def config(enteredkey, region, summname, status_label):
         "SID": SID}}
     )
     json.dump(config_info, open("Configuration.LoHConfig", 'w'))
-    print("Config File Created Successfully")
     return config_info

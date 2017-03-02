@@ -13,14 +13,16 @@ filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_Pa
 filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 """
 
+
 def wr_vs_time(filtered_parsed_match_data):
     roll = 5
     n_matches = len(filtered_parsed_match_data["win_lose"])
     wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
     # test = numpy.histogram([1, 2, 5], bins=10)
     if n_matches > roll:
-        a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], roll), label="Rolling Average WR")
-        b, = plt.plot([0, n_matches],[wr, wr], label="Average WR", linestyle="--")
+        a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], roll), label="Rolling WR")
+        b, = plt.plot([0, n_matches],[wr, wr], label="Your Average WR", linestyle="--")
+        c, = plt.plot([0, n_matches],[0.5, 0.5], label="50% WR", linestyle="--", color='k')
         plt.xlabel("Match Number (Chronological)")
         plt.ylabel("Win Rate")
         plt.title("Winrate Over Time")
@@ -29,17 +31,36 @@ def wr_vs_time(filtered_parsed_match_data):
         plt.gca().add_artist(l1)
         l2 = plt.legend(handles=[b], loc=2)
         plt.gca().add_artist(l2)
+        l3 = plt.legend(handles=[b], loc=3)
+        plt.gca().add_artist(l3)
         plt.show()
     else:
         print("Too few matches")
 
 
-def wr_vs_champ(filtered_parsed_match_data):
-    print("wr_vs_champ DNE yet")
+def wr_by_champ(filtered_parsed_match_data):
+    """ Winrates for each champion played more than 3 games. """
+    print("wr_by_champ DNE yet")
 
 
-def wr_vs_teammate(filtered_parsed_match_data):
+def wr_by_partysize(filtered_parsed_match_data, N):
+    """ Winrates by number of recurring teammates (with an N game cutoff for "teammates") """
+    print("wr_by_partysize DNE yet")
+
+
+def wr_vs_teammate(filtered_parsed_match_data, N):
+    """ Winrates on a per-teammate basis (with an N game cutoff for "teammates") """
     print("wr_vs_teammate DNE yet")
+
+
+def wr_vs_dmg(filtered_parsed_match_data):
+    """ Winrate as a function of damage share (to champs / total / taken) """
+    print("wr_vs_dmg DNE yet")
+
+
+def wr_vs_mapside(filtered_parsed_match_data):
+    """ Winrate as a function of map side """
+    print("wr_vs_mapside DNE yet")
 
 
 def running_mean(l, N):
