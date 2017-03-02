@@ -18,8 +18,8 @@ def update_matchdata(config_info):
                      + "?api_key="
                      + config_info["Settings"]["APIKey"])
     attempt = 0
-    while attempt < 10:
-        print("Getting list of all ranked matches (newest first). Attempt #" + str(attempt+1) + "/10")
+    while attempt < 5:
+        print("Getting list of all ranked matches (newest first). Attempt #" + str(attempt+1) + "/5")
         time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
         try:
             matchlist_reply = urllib.request.urlopen(matchlist_call)
@@ -73,9 +73,9 @@ def update_matchdata(config_info):
                               + config_info["Settings"]["APIKey"]
                               )
                 attempt = 0
-                for attempt in range(10):
+                for attempt in range(5):
                     try:
-                        print("Trying to get match " + mid + ", Attempt #" + str(attempt + 1) + "/10")
+                        print("Trying to get match " + mid + ", Attempt #" + str(attempt + 1) + "/5")
                         time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
                         match_data = urllib.request.urlopen(match_call)
                         match_data = match_data.read()
@@ -93,34 +93,3 @@ def update_matchdata(config_info):
                         match_data_all[str(n_loaded+mm)] = match_data
         print("Done getting match data.")
     return match_data_all
-
-
-def get_champ(config_info, champ_id):
-    champ_name = "MissingNo."
-    champ_call = ("https://global.api.pvp.net/api/lol/static-data/"
-                  + config_info["Settings"]["Region"]
-                  + "/v1.2/champion/"
-                  + str(champ_id)
-                  + "?api_key="
-                  + config_info["Settings"]["APIKey"])
-
-    """ Someday, set this up to use Data Dragon info """
-    # dd_version = urllib.request.urlopen("http://ddragon.leagueoflegends.com/realms/na.json").read()
-    # dd_version = json.loads(dd_version)
-    # champ_version = dd_version["n"]["champion"]
-    # champ_call = "http://ddragon.leagueoflegends.com/cdn/" + champ_version + "/data/en_US/champion.json"
-    # champ_data = urllib.request.urlopen(champ_call).read()
-    # champ_data = json.loads(champ_data)
-
-    attempt = 0
-    while attempt < 10:
-        try:
-            champ_name = urllib.request.urlopen(champ_call).read()
-            champ_name = json.loads(champ_name)
-            champ_name = champ_name["name"]
-            # stop iterating if things work
-            attempt = 999
-        except:
-            attempt += 1
-            time.sleep(1)
-    return champ_name
