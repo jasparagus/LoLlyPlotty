@@ -33,35 +33,88 @@ def wr_vs_time(filtered_parsed_match_data):
         plt.gca().add_artist(l2)
         l3 = plt.legend(handles=[b], loc=3)
         plt.gca().add_artist(l3)
-        plt.show()
     else:
         print("Too few matches")
 
 
 def wr_by_champ(filtered_parsed_match_data):
-
     """ Winrates for each champion played more than 3 games. """
-    print("wr_by_champ DNE yet")
+
+    """
+    ========
+    Barchart
+    ========
+    A bar plot with errorbars and height labels on individual bars
+    """
+    plt.figure()
+    N = 5
+    men_means = (20, 35, 30, 35, 27)
+
+    ind = numpy.arange(N)  # the x locations for the groups
+    width = 0.35  # the width of the bars
+
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, men_means, width, color='r')
+
+    women_means = (25, 32, 34, 20, 25)
+    rects2 = ax.bar(ind + width, women_means, width, color='y')
+
+    # add some text for labels, title and axes ticks
+    ax.set_ylabel('Scores')
+    ax.set_title('Scores by group and gender')
+    ax.set_xticks(ind + width / 2)
+    ax.set_xticklabels(('G1', 'G2', 'G3', 'G4', 'G5'))
+
+    ax.legend((rects1[0], rects2[0]), ('Men', 'Women'))
+
+    def autolabel(rects):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
+                    '%d' % int(height),
+                    ha='center', va='bottom')
+
+    autolabel(rects1)
+    autolabel(rects2)
+
+    print("wr_by_champ in progress")
+
+
+def wr_by_teammate(filtered_parsed_match_data, N):
+    """ Winrates on a per-teammate basis (with an N game cutoff for "teammates") """
+    plt.figure()
+    print("wr_vs_teammate DNE")
 
 
 def wr_by_partysize(filtered_parsed_match_data, N):
     """ Winrates by number of recurring teammates (with an N game cutoff for "teammates") """
-    print("wr_by_partysize DNE yet")
+    plt.figure()
+    x = 10 + 1 * numpy.random.randn(10000)
+    n, bins, patches = plt.hist(x, 50, normed=0, facecolor='green', alpha=0.75)
+
+    plt.xlabel('Meh')
+    plt.ylabel('Probability')
+    plt.title(r'$\mathrm{Histogram\ of\ IQ:}\ \mu=100,\ \sigma=15$')
+    # plt.axis([40, 160, 0, 0.03])
+    plt.grid(True)
 
 
-def wr_vs_teammate(filtered_parsed_match_data, N):
-    """ Winrates on a per-teammate basis (with an N game cutoff for "teammates") """
-    print("wr_vs_teammate DNE yet")
+    print("wr_by_partysize in progress")
 
 
 def wr_vs_dmg(filtered_parsed_match_data):
     """ Winrate as a function of damage share (to champs / total / taken) """
-    print("wr_vs_dmg DNE yet")
+    plt.figure()
+    print("wr_vs_dmg DNE")
 
 
-def wr_vs_mapside(filtered_parsed_match_data):
+def wr_by_mapside(filtered_parsed_match_data):
     """ Winrate as a function of map side """
-    print("wr_vs_mapside DNE yet")
+    plt.figure()
+    print("wr_vs_mapside DNE")
 
 
 def running_mean(l, N):

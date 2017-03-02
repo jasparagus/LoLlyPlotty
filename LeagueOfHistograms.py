@@ -7,6 +7,8 @@ Work in progress.
 # IMPORT STANDARD MODULES
 import json
 import tkinter
+import matplotlib.pyplot as plt
+
 
 # IMPORT CUSTOM MODULES
 from APIFunctions import ConfigureLoH
@@ -176,6 +178,13 @@ def do_plots():
     if cb_w_b_champ.get() == 1:
         LoHPlots.wr_by_champ(filtered_parsed_match_data)
 
+    if cb_w_b_teammate.get() == 1:
+        LoHPlots.wr_by_teammate(filtered_parsed_match_data, 3)
+
+    if cb_w_b_partysize.get() == 1:
+        LoHPlots.wr_by_partysize(filtered_parsed_match_data, 3)
+
+    plt.show()
     status_label.set("Done Generating Plots (" + str(len(filtered_match_data_all)) + " Matches)")
 
 
@@ -268,15 +277,15 @@ tkinter.Label(root, text="     ").grid(row=7, column=c2, columnspan=2, sticky="e
 tkinter.Label(root, text="Select Plots To Generate From Filtered Data:").grid(row=8, column=c2, columnspan=2)
 
 # checkbox variables and their checkboxes
-cb_w_v_time = tkinter.IntVar(value=1)
-tkinter.Checkbutton(root, text="Winrate vs. Time (Rolling Average)", variable=cb_w_v_time).grid(row=9, column=c2, sticky="w")
-
+cb_w_v_time = tkinter.IntVar(value=0)
 cb_w_b_champ = tkinter.IntVar(value=1)
+cb_w_b_teammate = tkinter.IntVar(value=0)
+cb_w_b_partysize = tkinter.IntVar(value=0)
+
+tkinter.Checkbutton(root, text="Winrate vs. Time (Rolling Average)", variable=cb_w_v_time).grid(row=9, column=c2, sticky="w")
 tkinter.Checkbutton(root, text="Winrate by Champion", variable=cb_w_b_champ).grid(row=10, column=c2, sticky="w")
-
-cb_w_b_teammate = tkinter.IntVar(value=1)
 tkinter.Checkbutton(root, text="Winrate by Teammate", variable=cb_w_b_teammate).grid(row=11, column=c2, sticky="w")
-
+tkinter.Checkbutton(root, text="Winrate by Party Size", variable=cb_w_b_partysize).grid(row=12, column=c2, sticky="w")
 
 tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots).grid(row=997, column=c2, columnspan=2)
 
