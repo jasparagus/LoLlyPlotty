@@ -1,4 +1,3 @@
-# GET SID IMPORTS
 # import ability to make URL requests
 import urllib.request
 # import ability to parse JSON objects
@@ -8,8 +7,7 @@ import time
 
 
 def get_sid(APIKey, Region, SummonerName, status_label):
-    """Get summoner ID from summoner name. Summoner
-    name must be lower-case letters only"""
+    """ Get summoner ID from summoner name. Summoner name must be lower-case letters only """
     SID = ""
     BaseURL = "https://na.api.pvp.net/api/lol/"
     SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey

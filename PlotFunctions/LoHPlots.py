@@ -1,174 +1,7 @@
-# COMPILED FUNCTIONS FOR GENERATING PLOTS
-
-# import ability to parse JSON objects
 import json
-# import numpy to make working with data easier
 import numpy
 import matplotlib.pyplot as plt
-from APIFunctions import GetRankedMatchData
 
-
-def parse_match_data(config_info, match_data_all):
-    season = []
-    queue_type = []
-
-    n_matches = len(match_data_all)
-    print("Parsing ", n_matches, "matches.")
-    for mm in range(n_matches):
-        # the below line is working
-        season.append(match_data_all[str(mm)]["season"])
-        queue_type.append(match_data_all[str(mm)]["queueType"])
-    season_unique = list(set(season))
-    # print(list(set(queue_type)))
-
-    """ Scan through matches and only grab summoner's rift ones. """
-    matches_to_analyze = {}
-    mmm = 0
-    for mm in range(n_matches):
-        if match_data_all[str(mm)]["mapId"] == 11:
-            matches_to_analyze[str(mmm)] = match_data_all[str(mm)]
-            mmm += 1
-
-    n_to_analyze = len(matches_to_analyze)
-
-    win_lose = []
-    match_lengths = []
-    summ_num = []
-    teammates = {}
-    enemies = {}
-    champ = []
-    role = []
-    map_side = []
-    kills = []
-    deaths = []
-    assists = []
-    kda = []
-    damage_total = []
-    damage_to_champs = []
-    damage_total_frac = []
-    damage_to_champs_frac = []
-    damage_taken = []
-    damage_taken_frac = []
-    gold = []
-    gold_frac = []
-    cs = []
-    wards = []
-    wards_killed = []
-
-    for mm in range(n_to_analyze):
-        match_lengths.append(matches_to_analyze[str(mm)]["matchDuration"]/60)
-        other_players = []
-        others_damage_total = []
-        others_damage_to_champs = []
-        others_gold = []
-        others_damage_taken = []
-        for pp in range(10):
-            if (str(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerId"])
-                    == config_info["Settings"]["SID"]):
-                """ This case gathers data for the summoner using the app. """
-                summ_num.append(pp)
-                damage_total.append(
-                    matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageDealt"])
-                damage_to_champs.append(
-                    matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageDealtToChampions"])
-                damage_taken.append(
-                    matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageTaken"])
-                gold.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["goldEarned"])
-                win_lose.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["winner"])
-                role.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"])
-                """ 100 is blue side; 200 is red side """
-                map_side.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                kills.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["kills"])
-                deaths.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["deaths"])
-                assists.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["assists"])
-                cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["minionsKilled"])
-                wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsPlaced"])
-                wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsKilled"])
-                try:
-                    kda.append((kills[mm]+assists[mm])/deaths[mm])
-                except:
-                    kda.append("perfect")
-            else:
-                """ This case builds temporary teammate variables that are overwritten for each new match. """
-                other_players.append(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerName"])
-                others_damage_total.append(
-                    matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageDealt"])
-                others_damage_to_champs.append(
-                    matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageDealtToChampions"])
-                others_damage_taken.append(
-                    matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageTaken"])
-                others_gold.append(matches_to_analyze[str(mm)]["participants"][pp]["stats"]["goldEarned"])
-        if summ_num[mm] <=4:
-            teammates[mm] = other_players[0:4]
-            enemies[mm] = other_players[4:9]
-            damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[0:4])))
-            damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[0:4])))
-            damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[0:4])))
-            gold_frac.append(gold[mm]/(1+sum(others_gold[0:4])))
-        elif summ_num[mm] >= 5:
-            teammates[mm] = other_players[5:9]
-            enemies[mm] = other_players[0:5]
-            damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[5:9])))
-            damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[5:9])))
-            damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
-            gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
-        # Get champ - this next part is ungodly slow because of the static API calls. Needs to be fixed.
-        champ.append(
-            GetRankedMatchData.get_champ(
-                config_info,
-                str(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"]))
-        )
-    champ_unique = list(set(champ))
-    return {
-        "season_unique":season_unique,
-        "season":season,
-        "win_lose":win_lose,
-        "match_lengths":match_lengths,
-        "teammates":teammates,
-        "enemies":enemies,
-        "champ":champ,
-        "champ_unique":champ_unique,
-        "role":role,
-        "map_side":map_side,
-        "kills":kills,
-        "deaths":deaths,
-        "assists":assists,
-        "kda":kda,
-        "damage_total":damage_total,
-        "damage_to_champs":damage_to_champs,
-        "damage_total_frac":damage_total_frac,
-        "damage_to_champs_frac":damage_to_champs_frac,
-        "damage_taken":damage_taken,
-        "damage_taken_frac":damage_taken_frac,
-        "gold":gold,
-        "gold_frac":gold_frac,
-        "cs":cs,
-        "wards":wards,
-        "wards_killed":wards_killed}
-
-"""
-%             CSAt10(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.zeroToTen;
-%             CSAt20(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.tenToTwenty;
-%             CSAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.twentyToThirty;
-%             CSDAt10(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.zeroToTen;
-%             CSDAt20(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.tenToTwenty;
-%             CSDAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
-"""
-
-def filter(parsed_match_data, filter_opts):
-    filtered_parsed_match_data = {}
-    if "Y" in filter_opts["BySeason"]:
-        print("Filtering For Season = " + filter_opts["BySeason"]["Y"])
-        # loop over matches, checking match season against filtered season
-        mm = 0
-        parsed_match_data[str(mm)]["season"] == filter_opts["BySeason"]["Y"]
-    if "Y" in filter_opts["ByChamp"]:
-        print("Filtering For Champ = " + filter_opts["ByChamp"]["Y"])
-    if "Y" in filter_opts["ByMatch"]:
-        print("Filtering For Last " + str(filter_opts["ByMatch"]["Y"]) + " matches")
-
-    filtered_parsed_match_data = parsed_match_data
-    return filtered_parsed_match_data
 
 """ FOR TESTING STUFF OUT
 import json
@@ -181,20 +14,24 @@ filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 """
 
 def wr_vs_time(filtered_parsed_match_data):
+    roll = 5
     n_matches = len(filtered_parsed_match_data["win_lose"])
     wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
     # test = numpy.histogram([1, 2, 5], bins=10)
-    a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], 7), label="Rolling Average WR")
-    b, = plt.plot([0, n_matches],[wr, wr], label="Average WR", linestyle="--")
-    plt.xlabel("Match Number (Chronological)")
-    plt.ylabel("Win Rate")
-    plt.title("Winrate Over Time")
-    plt.axis([0, n_matches, 0, 1])
-    l1 = plt.legend(handles=[a], loc=1)
-    plt.gca().add_artist(l1)
-    l2 = plt.legend(handles=[b], loc=2)
-    plt.gca().add_artist(l2)
-    plt.show()
+    if n_matches > roll:
+        a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], roll), label="Rolling Average WR")
+        b, = plt.plot([0, n_matches],[wr, wr], label="Average WR", linestyle="--")
+        plt.xlabel("Match Number (Chronological)")
+        plt.ylabel("Win Rate")
+        plt.title("Winrate Over Time")
+        plt.axis([0, n_matches, 0, 1])
+        l1 = plt.legend(handles=[a], loc=1)
+        plt.gca().add_artist(l1)
+        l2 = plt.legend(handles=[b], loc=2)
+        plt.gca().add_artist(l2)
+        plt.show()
+    else:
+        print("Too few matches")
 
 
 def wr_vs_champ(filtered_parsed_match_data):
