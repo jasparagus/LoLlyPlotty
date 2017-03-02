@@ -1,7 +1,9 @@
 from APIFunctions import GetChamp
 
 
-def parse_match_data(config_info, match_data_all):
+def parse_match_data(config_info, match_data_all, champLookup):
+    # Converts raw match data into a set of (mostly) lists for analysis
+
     season = []
     queue_type = []
 
@@ -11,10 +13,10 @@ def parse_match_data(config_info, match_data_all):
         # the below line is working
         season.append(match_data_all[str(mm)]["season"])
         queue_type.append(match_data_all[str(mm)]["queueType"])
-    season_unique = list(set(season))
-    # print(list(set(queue_type)))
+    season_unique = sorted(list(set(season)))
+    queue_types = sorted(list(set(queue_type)))
 
-    """ Scan through matches and only grab summoner's rift ones. """
+    # Scan through matches and only grab summoner's rift ones
     matches_to_analyze = {}
     mmm = 0
     for mm in range(n_matches):
@@ -130,44 +132,47 @@ def parse_match_data(config_info, match_data_all):
             damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
             gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
         # Get champ - this next part is ungodly slow because of the static API calls. Needs to be fixed.
-        champ.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"])
-    champId_unique = list(set(champ))
-    for cc in champId_unique:
-        champs_played.append(GetChamp.get_champ(config_info, str(cc)))
+        champ.append(
+            GetChamp.champ_name(champLookup, matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"])
+        )
+        champs_played = sorted(list(set(champ)))
+
     return {
-        "season_unique":season_unique,
-        "season":season,
-        "win_lose":win_lose,
-        "match_lengths":match_lengths,
-        "teammates":teammates,
-        "enemies":enemies,
-        "champ":champ,
-        "champs_played":champs_played,
-        "role":role,
-        "map_side":map_side,
-        "kills":kills,
-        "deaths":deaths,
-        "assists":assists,
-        "kda":kda,
-        "damage_total":damage_total,
-        "damage_to_champs":damage_to_champs,
-        "damage_total_frac":damage_total_frac,
-        "damage_to_champs_frac":damage_to_champs_frac,
-        "damage_taken":damage_taken,
-        "damage_taken_frac":damage_taken_frac,
-        "gold":gold,
-        "gold_frac":gold_frac,
-        "cs":cs,
-        "csm_at_10":csm_at_10,
-        "csmd_at_10":csmd_at_10,
-        "csm_at_20":csm_at_20,
-        "csmd_at_20":csmd_at_20,
-        "csm_at_30":csm_at_30,
-        "csmd_at_30":csmd_at_30,
-        "csm_aft_30":csm_aft_30,
-        "csmd_aft_30":csmd_aft_30,
-        "wards":wards,
-        "wards_killed":wards_killed}
+        "season_unique": season_unique,
+        "season": season,
+        "queue_type": queue_type,
+        "queue_types": queue_types,
+        "win_lose": win_lose,
+        "match_lengths": match_lengths,
+        "teammates": teammates,
+        "enemies": enemies,
+        "champ": champ,
+        "champs_played": champs_played,
+        "role": role,
+        "map_side": map_side,
+        "kills": kills,
+        "deaths": deaths,
+        "assists": assists,
+        "kda": kda,
+        "damage_total": damage_total,
+        "damage_to_champs": damage_to_champs,
+        "damage_total_frac": damage_total_frac,
+        "damage_to_champs_frac": damage_to_champs_frac,
+        "damage_taken": damage_taken,
+        "damage_taken_frac": damage_taken_frac,
+        "gold": gold,
+        "gold_frac": gold_frac,
+        "cs": cs,
+        "csm_at_10": csm_at_10,
+        "csmd_at_10": csmd_at_10,
+        "csm_at_20": csm_at_20,
+        "csmd_at_20": csmd_at_20,
+        "csm_at_30": csm_at_30,
+        "csmd_at_30": csmd_at_30,
+        "csm_aft_30": csm_aft_30,
+        "csmd_aft_30": csmd_aft_30,
+        "wards": wards,
+        "wards_killed": wards_killed}
 
 
 def filter(config_info, parsed_match_data, match_data_all, filter_opts):

@@ -10,13 +10,15 @@ import tkinter
 
 # IMPORT CUSTOM MODULES
 from APIFunctions import ConfigureLoH
+from APIFunctions import GetChamp
 from APIFunctions import GetRankedMatchData
 from PlotFunctions import LoHPlots
 from PlotFunctions import Parse
 
 
+
 # Declare globals
-global status_label, config_info, match_data_all, parsed_match_data, filtered_parsed_match_data, \
+global config_info, match_data_all, champLookup, parsed_match_data, filtered_parsed_match_data, \
     ssn_filter, champ_filter, match_filter, filter_label
 
 
@@ -25,24 +27,23 @@ def initialize():
     try:
         config_file = open("Configuration.LoHConfig", "r")
         config_info = json.loads(config_file.read())
+        config_file.close()
     except:
         config_info = {}
 
     try:
-        match_data_all = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
-        match_data_all = json.loads(match_data_all.read())
-        print("Match data loaded at startup (may be outdated).")
+        match_data_all_file = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
+        match_data_all = json.loads(match_data_all_file.read())
+        match_data_all_file.close()
     except:
         match_data_all = {}
-        print("Match data not found; please get match data.")
 
     try:
-        parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
-        parsed_match_data = json.loads(parsed_match_data.read())
-        print("Parsed match data found at startup (may be outdated).")
+        parsed_match_data_file = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
+        parsed_match_data = json.loads(parsed_match_data_file.read())
+        parsed_match_data_file.close()
     except:
         parsed_match_data = {}
-        print("Parsed match data not found at startup; please update match data.")
 
     try:
         reg.set(config_info["Settings"]["Region"])
@@ -79,32 +80,36 @@ def initialize():
         champ_filter.set(parsed_match_data["champs_played"][0])
     except:
         pass
-    status_label.set("Ready...")
 
 
 def update_config():
     global config_info, status_label
     config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
     initialize()
+    status_label.set("Settings Saved")
 
 
 def get_matches():
-    global config_info, match_data_all, parsed_match_data, status_label
-    # zeroth, update the configuration in case it's new
+    global config_info, match_data_all, champLookup, parsed_match_data, status_label
+    # Update the configuration in case it's new
     update_config()
+
+    # Prepare a champion lookup dictionary
+    champLookup = GetChamp.get_champ_dd()
+
     # First, update the match data
     match_data_all = GetRankedMatchData.update_matchdata(config_info)
     # Second, parse all of the data and return needed variables (as applicable).
-    parsed_match_data = Parse.parse_match_data(config_info, match_data_all)
+    parsed_match_data = Parse.parse_match_data(config_info, match_data_all, champLookup)
     with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
         json.dump(parsed_match_data, file)
-    status_label.set("Data pulled from web, parsed, and saved.")
     initialize()
+    status_label.set("Data Pulled, Parsed, and Saved")
 
 
 def do_plots():
     update_config()
-    global config_info, match_data_all, parsed_match_data, filtered_parsed_match_data, \
+    global config_info, champLookup, match_data_all, parsed_match_data, filtered_parsed_match_data, \
         filter_label, ssn_filter, champ_filter, match_filter, status_label
 
     enabled_filters_text = "Filtering By: "
@@ -126,7 +131,7 @@ def do_plots():
 
     print(filter_opts)
     filtered_matches = Parse.filter(config_info, parsed_match_data, match_data_all, filter_opts)
-    filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_matches)
+    filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_matches, champLookup)
 
     print("Generating plots. [NOT IMPLEMENTED]")
     if cb_w_v_time.get() == 1:
@@ -138,7 +143,7 @@ def do_plots():
     if False:
         print("test")
 
-    status_label.set("Done Generating Plots.")
+    status_label.set("Done Generating Plots")
 
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
@@ -218,7 +223,7 @@ tkinter.Checkbutton(root, text="Winrate vs. Time", variable=cb_w_v_time).grid(ro
 
 tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots).grid(row=10, column=c2, columnspan=2)
 
-status_label.set("Starting app")
+status_label.set("App Started...")
 tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnspan=2, sticky="ew")
 
 tkinter.Label(root, text="   ").grid(row=999, column=c2+2)
