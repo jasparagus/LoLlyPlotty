@@ -265,7 +265,7 @@ tkinter.Label(root, textvariable=filter_label).grid(row=6, column=c2, columnspan
 tkinter.Label(root, text="     ").grid(row=7, column=c2, columnspan=2, sticky="ew")
 
 # PLOTTING OPTIONS SUB-PANEL
-tkinter.Label(root, text="Select Plots To Generate:").grid(row=8, column=c2, columnspan=2)
+tkinter.Label(root, text="Select Plots To Generate From Filtered Data:").grid(row=8, column=c2, columnspan=2)
 
 # checkbox variables and their checkboxes
 cb_w_v_time = tkinter.IntVar(value=1)
@@ -273,6 +273,9 @@ tkinter.Checkbutton(root, text="Winrate vs. Time (Rolling Average)", variable=cb
 
 cb_w_b_champ = tkinter.IntVar(value=1)
 tkinter.Checkbutton(root, text="Winrate by Champion", variable=cb_w_b_champ).grid(row=10, column=c2, sticky="w")
+
+cb_w_b_teammate = tkinter.IntVar(value=1)
+tkinter.Checkbutton(root, text="Winrate by Teammate", variable=cb_w_b_teammate).grid(row=11, column=c2, sticky="w")
 
 
 tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots).grid(row=997, column=c2, columnspan=2)

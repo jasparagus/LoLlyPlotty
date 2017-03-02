@@ -61,6 +61,7 @@ def parse_match_data(config_info, match_data_all, champLookup):
         others_damage_to_champs = []
         others_gold = []
         others_damage_taken = []
+        # loop over the players in the game and look for the target player
         for pp in range(10):
             if (str(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerId"])
                     == config_info["Settings"]["SID"]):
