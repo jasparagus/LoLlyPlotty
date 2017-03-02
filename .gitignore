@@ -11,3 +11,4 @@ __pycache__/**
 *_MatchList.json
 *_MatchData.json
 *_ParsedMatchData.LoHData
+*.png

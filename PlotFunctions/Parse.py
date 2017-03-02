@@ -3,6 +3,7 @@ from APIFunctions import GetChamp
 
 def parse_match_data(config_info, match_data_all, champLookup):
     """ Converts raw match data into a set of (mostly) lists for analysis """
+    summoner_name = config_info["Settings"]["SummonerName"]
     n_matches = len(match_data_all)
     matches_to_analyze = {}
     mmm = 0
@@ -137,6 +138,7 @@ def parse_match_data(config_info, match_data_all, champLookup):
         roles = sorted(list(set(role)))
 
     return {
+        "summoner_name": summoner_name,
         "season_unique": season_unique,
         "season": season,
         "queue_type": queue_type,

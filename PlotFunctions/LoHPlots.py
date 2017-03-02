@@ -14,15 +14,16 @@ filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 """
 
 
-def wr_vs_time(filtered_parsed_match_data):
-    roll = 5
+def wr_time(filtered_parsed_match_data):
+    roll = 6
     n_matches = len(filtered_parsed_match_data["win_lose"])
     wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
     # test = numpy.histogram([1, 2, 5], bins=10)
     if n_matches > roll:
-        a, = plt.plot(running_mean(filtered_parsed_match_data["win_lose"], roll), label="Rolling WR")
-        b, = plt.plot([0, n_matches],[wr, wr], label="Your Average WR", linestyle="--")
-        c, = plt.plot([0, n_matches],[0.5, 0.5], label="50% WR", linestyle="--", color='k')
+        a, = plt.plot(
+            running_mean(filtered_parsed_match_data["win_lose"], roll), label="Rolling WR", linestyle="-", color="r")
+        b, = plt.plot([0, n_matches],[wr, wr], label="Avg. WR", linestyle="--", color="b")
+        c, = plt.plot([0, n_matches],[0.5, 0.5], label="50% WR", linestyle=":", color="k")
         plt.xlabel("Match Number (Chronological)")
         plt.ylabel("Win Rate")
         plt.title("Winrate Over Time")
@@ -31,65 +32,75 @@ def wr_vs_time(filtered_parsed_match_data):
         plt.gca().add_artist(l1)
         l2 = plt.legend(handles=[b], loc=2)
         plt.gca().add_artist(l2)
-        l3 = plt.legend(handles=[b], loc=3)
+        l3 = plt.legend(handles=[c], loc=3)
         plt.gca().add_artist(l3)
     else:
         print("Too few matches")
 
 
-def wr_by_champ(filtered_parsed_match_data):
+def wr_champ(filtered_parsed_match_data):
     """ Winrates for each champion played more than 3 games. """
+    print("In progress")
 
-    """
-    ========
-    Barchart
-    ========
-    A bar plot with errorbars and height labels on individual bars
-    """
-    plt.figure()
-    N = 5
-    men_means = (20, 35, 30, 35, 27)
+    n_champs = len(filtered_parsed_match_data["champs_played"])
+    n_games = len(filtered_parsed_match_data["win_lose"])
+    wr = sum(filtered_parsed_match_data["win_lose"])/len(filtered_parsed_match_data["win_lose"])
+    wins_by_champ = []
+    n_by_champ = []
 
-    ind = numpy.arange(N)  # the x locations for the groups
-    width = 0.35  # the width of the bars
+    for cc in range(n_champs):
+        wins = []
+        for gg in range(n_games):
+            if filtered_parsed_match_data["champs_played"][cc] == filtered_parsed_match_data["champ"][gg]:
+                wins.append(filtered_parsed_match_data["win_lose"][gg])
+        wins_by_champ.append(sum(wins)/len(wins))
+        n_by_champ.append(len(wins))
 
     fig, ax = plt.subplots()
-    rects1 = ax.bar(ind, men_means, width, color='r')
 
-    women_means = (25, 32, 34, 20, 25)
-    rects2 = ax.bar(ind + width, women_means, width, color='y')
+    locs = numpy.arange(n_champs)  # the x locations for the groups
+    width = 0.5  # the width of the bars
+
+    rects1 = ax.bar(locs, wins_by_champ, width, color='r')
+    wrA, = plt.plot([0-width, n_champs+width], [wr, wr], label="Avg. WR", linestyle="--", color="b")
+    wr50, = plt.plot([0-width, n_champs+width], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
 
     # add some text for labels, title and axes ticks
-    ax.set_ylabel('Scores')
-    ax.set_title('Scores by group and gender')
-    ax.set_xticks(ind + width / 2)
-    ax.set_xticklabels(('G1', 'G2', 'G3', 'G4', 'G5'))
+    ax.set_ylabel('Winrate')
+    ax.set_title('Winrate by Champion')
+    ax.set_xticks(locs)
+    ax.set_xticklabels(filtered_parsed_match_data["champs_played"], rotation=45, ha="right")
+    plt.xlim([0-width, n_champs+width])
+    plt.ylim([0, 1.2])
 
-    ax.legend((rects1[0], rects2[0]), ('Men', 'Women'))
+    l2 = plt.legend(handles=[wrA], loc=2)
+    plt.gca().add_artist(l2)
+    l3 = plt.legend(handles=[wr50], loc=1)
+    plt.gca().add_artist(l3)
+
 
     def autolabel(rects):
         """
         Attach a text label above each bar displaying its height
         """
+        rr = 0
         for rect in rects:
             height = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
-                    '%d' % int(height),
-                    ha='center', va='bottom')
+            ax.text(rect.get_x() + rect.get_width() / 2., height + 0.05,
+                    'n = %d' % n_by_champ[rr],
+                    ha='center', va='top')
+            rr += 1
 
     autolabel(rects1)
-    autolabel(rects2)
-
-    print("wr_by_champ in progress")
 
 
-def wr_by_teammate(filtered_parsed_match_data, N):
+def wr_teammate(filtered_parsed_match_data, N):
     """ Winrates on a per-teammate basis (with an N game cutoff for "teammates") """
     plt.figure()
     print("wr_vs_teammate DNE")
 
 
-def wr_by_partysize(filtered_parsed_match_data, N):
+def wr_partysize(filtered_parsed_match_data, N):
     """ Winrates by number of recurring teammates (with an N game cutoff for "teammates") """
     plt.figure()
     x = 10 + 1 * numpy.random.randn(10000)
@@ -105,13 +116,18 @@ def wr_by_partysize(filtered_parsed_match_data, N):
     print("wr_by_partysize in progress")
 
 
-def wr_vs_dmg(filtered_parsed_match_data):
+def wr_role(filtered_parsed_match_data):
+    """ Winrate as a function of map side """
+    plt.figure()
+    print("wr_by_role DNE")
+
+def wr_dmg(filtered_parsed_match_data):
     """ Winrate as a function of damage share (to champs / total / taken) """
     plt.figure()
     print("wr_vs_dmg DNE")
 
 
-def wr_by_mapside(filtered_parsed_match_data):
+def wr_mapside(filtered_parsed_match_data):
     """ Winrate as a function of map side """
     plt.figure()
     print("wr_vs_mapside DNE")
