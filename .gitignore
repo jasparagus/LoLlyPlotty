@@ -8,7 +8,6 @@ __pycache__/**
 
 # Don't track stored application data
 *.LoHConfig
-*_MatchList.json
-*_MatchData.json
+*.json
 *_ParsedMatchData.LoHData
 *.png
