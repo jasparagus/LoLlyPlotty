@@ -156,7 +156,7 @@ def do_plots():
         enabled_filters_text = enabled_filters_text + "(Last " + str(match_filter.get()) + " Matches) "
         filter_label.set(enabled_filters_text)
         filtered_match_data_all = Parse.filter_match(
-            filtered_match_data_all, filtered_parsed_match_data, match_filter.get())
+            filtered_match_data_all, match_filter.get())
         filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
 
     if f_QueueType.get() == 1:
@@ -173,19 +173,29 @@ def do_plots():
             filtered_match_data_all, filtered_parsed_match_data, role_filter.get())
         filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
 
-    if cb_w_time.get() == 1:
+    if cb_wr_time.get() == 1:
         LoHPlots.wr_time(filtered_parsed_match_data)
 
-    if cb_w_champ.get() == 1:
+    if cb_wr_champ.get() == 1:
         LoHPlots.wr_champ(filtered_parsed_match_data)
 
-    if cb_w_teammate.get() == 1:
+    if cb_wr_teammate.get() == 1:
         LoHPlots.wr_teammate(filtered_parsed_match_data, 3)
 
-    if cb_w_partysize.get() == 1:
+    if cb_wr_partysize.get() == 1:
         LoHPlots.wr_partysize(filtered_parsed_match_data, 3)
 
+    if cb_wr_role.get() == 1:
+        LoHPlots.wr_role(filtered_parsed_match_data)
+
+    if cb_wr_dmg.get() == 1:
+        LoHPlots.wr_dmg(filtered_parsed_match_data)
+
+    if cb_wr_mapside.get() == 1:
+        LoHPlots.wr_mapside(filtered_parsed_match_data)
+
     plt.show()
+
     status_label.set("Done Generating Plots (" + str(len(filtered_match_data_all)) + " Matches)")
 
 
@@ -278,15 +288,21 @@ tkinter.Label(root, text="     ").grid(row=7, column=c2, columnspan=2, sticky="e
 tkinter.Label(root, text="Select Plots To Generate From Filtered Data:").grid(row=8, column=c2, columnspan=2)
 
 # checkbox variables and their checkboxes
-cb_w_time = tkinter.IntVar(value=0)
-cb_w_champ = tkinter.IntVar(value=1)
-cb_w_teammate = tkinter.IntVar(value=0)
-cb_w_partysize = tkinter.IntVar(value=0)
+cb_wr_time = tkinter.IntVar(value=0)
+cb_wr_champ = tkinter.IntVar(value=0)
+cb_wr_teammate = tkinter.IntVar(value=0)
+cb_wr_partysize = tkinter.IntVar(value=0)
+cb_wr_role = tkinter.IntVar(value=0)
+cb_wr_dmg = tkinter.IntVar(value=0)
+cb_wr_mapside = tkinter.IntVar(value=0)
 
-tkinter.Checkbutton(root, text="Winrate vs. Time (Rolling Average)", variable=cb_w_time).grid(row=9, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Champion", variable=cb_w_champ).grid(row=10, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Teammate", variable=cb_w_teammate).grid(row=11, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Party Size", variable=cb_w_partysize).grid(row=12, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate Over Time (Rolling Average)", variable=cb_wr_time).grid(row=9, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Champion", variable=cb_wr_champ).grid(row=10, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Teammate", variable=cb_wr_teammate).grid(row=11, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Party Size", variable=cb_wr_partysize).grid(row=12, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Role", variable=cb_wr_partysize).grid(row=13, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Damage", variable=cb_wr_partysize).grid(row=14, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_partysize).grid(row=15, column=c2, sticky="w")
 
 tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots).grid(row=997, column=c2, columnspan=2)
 

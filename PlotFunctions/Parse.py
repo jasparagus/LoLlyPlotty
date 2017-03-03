@@ -132,10 +132,10 @@ def parse_match_data(config_info, match_data_all, champLookup):
         champ.append(
             GetChamp.champ_name(champLookup, matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"])
         )
-        season_unique = sorted(list(set(season)))
-        queue_types = sorted(list(set(queue_type)))
-        champs_played = sorted(list(set(champ)))
-        roles = sorted(list(set(role)))
+    season_unique = sorted(list(set(season)))
+    queue_types = sorted(list(set(queue_type)))
+    champs_played = sorted(list(set(champ)))
+    roles = sorted(list(set(role)))
 
     return {
         "summoner_name": summoner_name,
@@ -190,6 +190,7 @@ def filter_remakes(match_data_all, parsed_match_data):
             nn += 1
     return filtered_match_data
 
+
 def filter_season(match_data_all, parsed_match_data, ssn_filter):
     """ Filter by desired season """
     n_mat = len(match_data_all)
@@ -214,7 +215,7 @@ def filter_champ(match_data_all, parsed_match_data, champ_filter):
     return filtered_match_data
 
 
-def filter_match(match_data_all, parsed_match_data, match_filter):
+def filter_match(match_data_all, match_filter):
     """ Filter for recent matches """
     n_mat = len(match_data_all)
     filtered_match_data = {}
