@@ -3,19 +3,19 @@ from APIFunctions import GetChamp
 SUMMONERSRIFT = 11
 
 
-def parse_match_data(config_info, match_data_all, champLookup):
+def parse_match_data(config_info, match_data, champLookup):
     """ Converts raw match data into a set of (mostly) lists for analysis """
     summoner_name = config_info["Settings"]["SummonerName"]
-    n_matches = len(match_data_all)
+    n_matches = len(match_data)
     matches_to_analyze = {}
     mmm = 0
+    # filter out matches by map (e.g. summoner's rift)
     for mm in range(n_matches):
-        if match_data_all[str(mm)]["mapId"] == SUMMONERSRIFT:
-            matches_to_analyze[str(mmm)] = match_data_all[str(mm)]
+        if match_data[str(mm)]["mapId"] == SUMMONERSRIFT:
+            matches_to_analyze[str(mmm)] = match_data[str(mm)]
             mmm += 1
 
     n_to_analyze = len(matches_to_analyze)
-    print("Parsing ", n_to_analyze, "matches.")
 
     season = []
     timestamp = []
@@ -53,8 +53,8 @@ def parse_match_data(config_info, match_data_all, champLookup):
     wards_killed = []
 
     for mm in range(n_to_analyze):
-        season.append(match_data_all[str(mm)]["season"])
-        queue_type.append(match_data_all[str(mm)]["queueType"])
+        season.append(matches_to_analyze[str(mm)]["season"])
+        queue_type.append(matches_to_analyze[str(mm)]["queueType"])
         timestamp.append(matches_to_analyze[str(mm)]["matchCreation"])
         match_lengths.append(matches_to_analyze[str(mm)]["matchDuration"]/60)
         other_players = []
@@ -181,72 +181,72 @@ def parse_match_data(config_info, match_data_all, champLookup):
     }
 
 
-def filter_remakes(match_data_all, parsed_match_data):
+def filter_remakes(match_data, parsed_match_data):
     """ Filter out remakes (games with length < 6 minutes) """
-    n_mat = len(match_data_all)
+    n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
         if parsed_match_data["match_lengths"][mm] > 6:
-            filtered_match_data[str(nn)] = match_data_all[str(mm)]
+            filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
 
 
-def filter_season(match_data_all, parsed_match_data, ssn_filter):
+def filter_season(match_data, parsed_match_data, ssn_filter):
     """ Filter by desired season """
-    n_mat = len(match_data_all)
+    n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
         if parsed_match_data["season"][mm] == ssn_filter:
-            filtered_match_data[str(nn)] = match_data_all[str(mm)]
+            filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
 
 
-def filter_champ(match_data_all, parsed_match_data, champ_filter):
+def filter_champ(match_data, parsed_match_data, champ_filter):
     """ Filter by desired champ """
-    n_mat = len(match_data_all)
+    n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
         if parsed_match_data["champ"][mm] == champ_filter:
-            filtered_match_data[str(nn)] = match_data_all[str(mm)]
+            filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
 
 
-def filter_match(match_data_all, match_filter):
+def filter_match(match_data, match_filter):
     """ Filter for recent matches """
-    n_mat = len(match_data_all)
+    n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat-match_filter, n_mat):
-        filtered_match_data[str(nn)] = match_data_all[str(mm)]
+        filtered_match_data[str(nn)] = match_data[str(mm)]
         nn += 1
     return filtered_match_data
 
 
-def filter_qtype(match_data_all, parsed_match_data, q_filter):
+def filter_qtype(match_data, parsed_match_data, q_filter):
     """ Filter for recent matches """
-    n_mat = len(match_data_all)
+    n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
         if parsed_match_data["queue_type"][mm] == q_filter:
-            filtered_match_data[str(nn)] = match_data_all[str(mm)]
+            filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
 
 
-def filter_role(match_data_all, parsed_match_data, role_filter):
+def filter_role(match_data, parsed_match_data, role_filter):
     """ Filter for recent matches """
-    n_mat = len(match_data_all)
+    n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
         if parsed_match_data["role"][mm] == role_filter:
-            filtered_match_data[str(nn)] = match_data_all[str(mm)]
+            filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
