@@ -1,5 +1,7 @@
 from APIFunctions import GetChamp
 
+SUMMONERSRIFT = 11
+
 
 def parse_match_data(config_info, match_data_all, champLookup):
     """ Converts raw match data into a set of (mostly) lists for analysis """
@@ -8,7 +10,7 @@ def parse_match_data(config_info, match_data_all, champLookup):
     matches_to_analyze = {}
     mmm = 0
     for mm in range(n_matches):
-        if match_data_all[str(mm)]["mapId"] == 11:
+        if match_data_all[str(mm)]["mapId"] == SUMMONERSRIFT:
             matches_to_analyze[str(mmm)] = match_data_all[str(mm)]
             mmm += 1
 
@@ -24,9 +26,7 @@ def parse_match_data(config_info, match_data_all, champLookup):
     teammates = {}
     enemies = {}
     champ = []
-    champs_played = []
     role = []
-    roles = []
     map_side = []
     kills = []
     deaths = []
@@ -114,6 +114,7 @@ def parse_match_data(config_info, match_data_all, champLookup):
                 others_damage_taken.append(
                     matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageTaken"])
                 others_gold.append(matches_to_analyze[str(mm)]["participants"][pp]["stats"]["goldEarned"])
+        # Team 1
         if summ_num[mm] <=4:
             teammates[mm] = other_players[0:4]
             enemies[mm] = other_players[4:9]
@@ -121,6 +122,7 @@ def parse_match_data(config_info, match_data_all, champLookup):
             damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[0:4])))
             damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[0:4])))
             gold_frac.append(gold[mm]/(1+sum(others_gold[0:4])))
+        # Team 2
         elif summ_num[mm] >= 5:
             teammates[mm] = other_players[5:9]
             enemies[mm] = other_players[0:5]
