@@ -36,6 +36,7 @@ def config(enteredkey, region, summname, status_label):
     Region = region
     SummonerName = summname
     SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
+    SummonerName = SummonerName.replace('\n', '')
 
     SID = get_sid(APIKey, Region, SummonerName, status_label)  # grab summoner ID using an API call
 
