@@ -21,11 +21,11 @@ from PlotFunctions import Parse
 
 
 # Declare globals
-global config_info, match_data_all, champLookup, parsed_match_data, filtered_parsed_match_data
+global config_info, match_data, champLookup, parsed_match_data, filtered_parsed_match_data
 
 
 def initialize():
-    global config_info, match_data_all, parsed_match_data
+    global config_info, match_data, parsed_match_data
 
     try:
         config_file = open("Configuration.LoHConfig", "r")
@@ -35,11 +35,11 @@ def initialize():
         config_info = {}
 
     try:
-        match_data_all_file = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
-        match_data_all = json.loads(match_data_all_file.read())
-        match_data_all_file.close()
+        match_data_file = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
+        match_data = json.loads(match_data_file.read())
+        match_data_file.close()
     except:
-        match_data_all = {}
+        match_data = {}
 
     try:
         parsed_match_data_file = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
@@ -97,25 +97,30 @@ def initialize():
     except:
         pass
 
+    status_label.set("Initialized")
+
 
 def update_config():
     global config_info, status_label
     config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
     initialize()
+    status_label.set("Configuration Updated")
 
 
 def get_matches():
-    global config_info, match_data_all, champLookup, parsed_match_data, status_label
+    global config_info, match_data, champLookup, parsed_match_data, status_label
     # Update the configuration in case it's new
     update_config()
 
     # Prepare a champion lookup dictionary
     champLookup = GetChamp.get_champ_dd()
 
-    # First, update the match data
-    match_data_all = GetRankedMatchData.update_matchdata(config_info)
+    # First, pull down the match list and get the match data from missing matches
+    matchlist, n_matches = GetRankedMatchData.get_matchlist(config_info)
+    match_data = GetRankedMatchData.update_match_data(config_info, matchlist, n_matches)
+
     # Second, parse all of the data and return needed variables (as applicable).
-    parsed_match_data = Parse.parse_match_data(config_info, match_data_all, champLookup)
+    parsed_match_data = Parse.parse_match_data(config_info, match_data, champLookup)
     with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
         json.dump(parsed_match_data, file)
     initialize()
@@ -123,8 +128,8 @@ def get_matches():
 
 
 def do_plots():
-    global config_info, champLookup, match_data_all, parsed_match_data, \
-        filter_label, ssn_filter, champ_filter, match_filter, status_label
+    global config_info, champLookup, match_data, parsed_match_data
+    # filter_label, ssn_filter, champ_filter, match_filter, status_label
     update_config()
 
     champLookup = GetChamp.get_champ_dd()
@@ -134,44 +139,47 @@ def do_plots():
     filter_label.set(enabled_filters_text + "All Matches")
 
     # prepare a variable to hold the filtered match data and quickly filter out remakes
-    filtered_match_data_all = Parse.filter_remakes(match_data_all, parsed_match_data)
-    filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
+    filtered_match_data = Parse.filter_remakes(match_data, parsed_match_data)
+    filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
 
     # apply filters if their boxes were checked
     if f_season.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + ssn_filter.get() + ") "
         filter_label.set(enabled_filters_text)
-        filtered_match_data_all = Parse.filter_season(
-            filtered_match_data_all, filtered_parsed_match_data, ssn_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
+        filtered_match_data = Parse.filter_season(
+            filtered_match_data, filtered_parsed_match_data, ssn_filter.get())
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
 
     if f_champ.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + champ_filter.get() + ") "
         filter_label.set(enabled_filters_text)
-        filtered_match_data_all = Parse.filter_champ(
-            filtered_match_data_all, filtered_parsed_match_data, champ_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
+        filtered_match_data = Parse.filter_champ(
+            filtered_match_data, filtered_parsed_match_data, champ_filter.get())
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
 
     if f_match.get() == 1:
         enabled_filters_text = enabled_filters_text + "(Last " + str(match_filter.get()) + " Matches) "
         filter_label.set(enabled_filters_text)
-        filtered_match_data_all = Parse.filter_match(
-            filtered_match_data_all, match_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
+        filtered_match_data = Parse.filter_match(
+            filtered_match_data, match_filter.get())
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
 
     if f_QueueType.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + str(q_filter.get()) + ")"
         filter_label.set(enabled_filters_text)
-        filtered_match_data_all = Parse.filter_qtype(
-            filtered_match_data_all, filtered_parsed_match_data, q_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
+        filtered_match_data = Parse.filter_qtype(
+            filtered_match_data, filtered_parsed_match_data, q_filter.get())
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
 
     if f_Role.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + str(role_filter.get()) + ") "
         filter_label.set(enabled_filters_text)
-        filtered_match_data_all = Parse.filter_role(
-            filtered_match_data_all, filtered_parsed_match_data, role_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data_all, champLookup)
+        filtered_match_data = Parse.filter_role(
+            filtered_match_data, filtered_parsed_match_data, role_filter.get())
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+
+    # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
+    plt.close("all")
 
     if cb_wr_time.get() == 1:
         LoHPlots.wr_time(filtered_parsed_match_data)
@@ -196,7 +204,7 @@ def do_plots():
 
     plt.show()
 
-    status_label.set("Done Generating Plots (" + str(len(filtered_match_data_all)) + " Matches)")
+    status_label.set("Done Generating Plots (" + str(len(filtered_match_data)) + " Matches)")
 
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
@@ -241,15 +249,15 @@ f_QueueType = tkinter.IntVar(value=0)
 f_Role = tkinter.IntVar(value=0)
 
 # PANEL 2 filter variables
-global filter_label
+# global filter_label
 filter_label = tkinter.StringVar(root)
-global ssn_filter
+# global ssn_filter
 ssn_filter = tkinter.StringVar(root, value="Select a Season")
 ssn_list = [""]
-global champ_filter
+# global champ_filter
 champ_filter = tkinter.StringVar(root, value="Select a Champion")
 champ_filter_list = [""]
-global match_filter
+# global match_filter
 match_filter = tkinter.IntVar(root)
 q_filter = tkinter.StringVar(root, value="Select a Queue")
 q_filter_list = [""]
@@ -306,11 +314,11 @@ tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_partysize).
 
 tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots).grid(row=997, column=c2, columnspan=2)
 
-status_label.set("App Started...")
+status_label.set("App Started")
 tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnspan=2, sticky="ew")
 
 tkinter.Label(root, width=spw).grid(row=999, column=c2+2)
 
 initialize()
 root.mainloop() # start the application loop
-print("Done")
+print("Exiting program gracefully")

@@ -58,7 +58,9 @@ def wr_champ(filtered_parsed_match_data):
         wins_by_champ.append(sum(wins)/len(wins))
         n_by_champ.append(len(wins))
 
+    # Make a figure to hold the plot and move it up relative to the baseline to leave room for labels
     fig, ax = plt.subplots()
+    fig.subplots_adjust(bottom=0.2)
 
     locs = numpy.arange(n_champs)  # the x locations for the groups
     width = 0.5  # the width of the bars
@@ -80,7 +82,6 @@ def wr_champ(filtered_parsed_match_data):
     l3 = plt.legend(handles=[wr50], loc=1)
     plt.gca().add_artist(l3)
 
-
     def autolabel(rects):
         """
         Attach a text label above each bar displaying its height
@@ -96,10 +97,73 @@ def wr_champ(filtered_parsed_match_data):
     autolabel(rects1)
 
 
-def wr_teammate(filtered_parsed_match_data, N):
+def wr_teammate(filtered_parsed_match_data, n_played):
     """ Winrates on a per-teammate basis (with an N game cutoff for "teammates") """
-    plt.figure()
-    print("wr_vs_teammate DNE")
+    print("wr_teammate in progress")
+    n_games = len(filtered_parsed_match_data["win_lose"])
+    all_teammates = []
+
+    # Get a list of every teammate
+    for tt in range(n_games):
+        all_teammates = all_teammates + filtered_parsed_match_data["teammates"][str(tt)]
+
+    teammates_unique = sorted(list(set(all_teammates)))
+    n_teammates = len(teammates_unique)
+    wr = sum(filtered_parsed_match_data["win_lose"])/len(filtered_parsed_match_data["win_lose"])
+    wins_by_teammate = []
+    games_with_teammate = []
+    teammates_unique_keep = []
+
+    # For each unique teammate, look at every game and see if they were there and (if so) if it was a W/L
+    for tt in range(n_teammates):
+        wins = []
+        for gg in range(n_games):
+            if teammates_unique[tt] in filtered_parsed_match_data["teammates"][str(gg)]:
+                wins.append(filtered_parsed_match_data["win_lose"][gg])
+        if len(wins) >= n_played:
+            wins_by_teammate.append(sum(wins)/len(wins))
+            games_with_teammate.append(len(wins))
+            teammates_unique_keep.append(teammates_unique[tt])
+
+    n_teammates_kept = len(teammates_unique_keep)
+
+    # Make plot
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(bottom=0.3)
+
+    locs = numpy.arange(n_teammates_kept)  # the x locations for the groups
+    width = 0.5  # the width of the bars
+
+    rects1 = ax.bar(locs, wins_by_teammate, width, color='r')
+    wrA, = plt.plot([0-width, n_teammates_kept+width], [wr, wr], label="Avg. WR", linestyle="--", color="b")
+    wr50, = plt.plot([0-width, n_teammates_kept+width], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
+
+    # add some text for labels, title and axes ticks
+    ax.set_ylabel('Winrate')
+    ax.set_title('Winrate by Teammate')
+    ax.set_xticks(locs)
+    ax.set_xticklabels(teammates_unique_keep, rotation=45, ha="right")
+    plt.xlim([0-width, n_teammates_kept+width])
+    plt.ylim([0, 1.2])
+
+    l2 = plt.legend(handles=[wrA], loc=2)
+    plt.gca().add_artist(l2)
+    l3 = plt.legend(handles=[wr50], loc=1)
+    plt.gca().add_artist(l3)
+
+    def autolabel(rects):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        rr = 0
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width() / 2., height + 0.05,
+                    'n = %d' % games_with_teammate[rr],
+                    ha='center', va='top')
+            rr += 1
+
+    autolabel(rects1)
 
 
 def wr_partysize(filtered_parsed_match_data, N):
