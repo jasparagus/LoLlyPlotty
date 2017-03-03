@@ -7,6 +7,8 @@ Work in progress.
 # IMPORT STANDARD MODULES
 import json
 import tkinter
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 
@@ -16,7 +18,6 @@ from APIFunctions import GetChamp
 from APIFunctions import GetRankedMatchData
 from PlotFunctions import LoHPlots
 from PlotFunctions import Parse
-
 
 
 # Declare globals
