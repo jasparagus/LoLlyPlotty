@@ -37,11 +37,12 @@ def get_champ_dd():
         json.dump(champ_data, file)
 
     champ_data = champ_data["data"]
-    c_names = champ_data.keys()
+    champ_IDs = champ_data.keys()
     champLookup = {}
 
-    for name in c_names:
-        champLookup[champ_data[name]["key"]] = name
+    # For every champ ID (unformatted champion name) get the pretty name and ID (with spaces, etc.)
+    for name in champ_IDs:
+        champLookup[champ_data[name]["key"]] = champ_data[name]["name"]
 
     return champLookup
 

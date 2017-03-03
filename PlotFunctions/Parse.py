@@ -7,15 +7,6 @@ def parse_match_data(config_info, match_data, champLookup):
     """ Converts raw match data into a set of (mostly) lists for analysis """
     summoner_name = config_info["Settings"]["SummonerName"]
     n_matches = len(match_data)
-    matches_to_analyze = {}
-    mmm = 0
-    # filter out matches by map (e.g. summoner's rift)
-    for mm in range(n_matches):
-        if match_data[str(mm)]["mapId"] == SUMMONERSRIFT:
-            matches_to_analyze[str(mmm)] = match_data[str(mm)]
-            mmm += 1
-
-    n_to_analyze = len(matches_to_analyze)
 
     season = []
     timestamp = []
@@ -52,11 +43,11 @@ def parse_match_data(config_info, match_data, champLookup):
     wards = []
     wards_killed = []
 
-    for mm in range(n_to_analyze):
-        season.append(matches_to_analyze[str(mm)]["season"])
-        queue_type.append(matches_to_analyze[str(mm)]["queueType"])
-        timestamp.append(matches_to_analyze[str(mm)]["matchCreation"])
-        match_lengths.append(matches_to_analyze[str(mm)]["matchDuration"]/60)
+    for mm in range(n_matches):
+        season.append(match_data[str(mm)]["season"])
+        queue_type.append(match_data[str(mm)]["queueType"])
+        timestamp.append(match_data[str(mm)]["matchCreation"])
+        match_lengths.append(match_data[str(mm)]["matchDuration"]/60)
         other_players = []
         others_damage_total = []
         others_damage_to_champs = []
@@ -64,56 +55,56 @@ def parse_match_data(config_info, match_data, champLookup):
         others_damage_taken = []
         # loop over the players in the game and look for the target player
         for pp in range(10):
-            if (str(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerId"])
+            if (str(match_data[str(mm)]["participantIdentities"][pp]["player"]["summonerId"])
                     == config_info["Settings"]["SID"]):
                 """ This case gathers data for the summoner using the app. """
                 summ_num.append(pp)
                 damage_total.append(
-                    matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageDealt"])
+                    match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageDealt"])
                 damage_to_champs.append(
-                    matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageDealtToChampions"])
+                    match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageDealtToChampions"])
                 damage_taken.append(
-                    matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageTaken"])
-                gold.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["goldEarned"])
-                win_lose.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["winner"])
-                role.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"])
+                    match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageTaken"])
+                gold.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["goldEarned"])
+                win_lose.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["winner"])
+                role.append(match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"])
                 """ teamId: 100 is blue side; 200 is red side """
-                map_side.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["teamId"])
-                kills.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["kills"])
-                deaths.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["deaths"])
-                assists.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["assists"])
-                cs.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["minionsKilled"])
+                map_side.append(match_data[str(mm)]["participants"][summ_num[mm]]["teamId"])
+                kills.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["kills"])
+                deaths.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["deaths"])
+                assists.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["assists"])
+                cs.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["minionsKilled"])
                 # try:
                 #     csm_at_10.append(
-                #         matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"][
+                #         match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"][
                 #             "zeroToTen"])
                 # except:
                 #     csm_at_10.append(["NaN"])
-                # matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]["zeroToTen"]
-                # CSAt10(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.zeroToTen;
-                # CSAt20(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.tenToTwenty;
-                # CSAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.twentyToThirty;
-                # CStoEnd(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.creepsPerMinDeltas.thirtyToEnd;
-                # CSDAt10(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.zeroToTen;
-                # CSDAt20(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.tenToTwenty;
-                # CSDAt30(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
-                # CSDtoEnd(iii) = MatchesToAnalyze(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.thirtyToEnd;
-                wards.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsPlaced"])
-                wards_killed.append(matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsKilled"])
+                # match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]["zeroToTen"]
+                # CSAt10(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.zeroToTen;
+                # CSAt20(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.tenToTwenty;
+                # CSAt30(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.twentyToThirty;
+                # CStoEnd(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.thirtyToEnd;
+                # CSDAt10(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.zeroToTen;
+                # CSDAt20(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.tenToTwenty;
+                # CSDAt30(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
+                # CSDtoEnd(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.thirtyToEnd;
+                wards.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsPlaced"])
+                wards_killed.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["wardsKilled"])
                 try:
                     kda.append((kills[mm]+assists[mm])/deaths[mm])
                 except:
                     kda.append("perfect")
             else:
                 """ This case builds temporary teammate variables that are overwritten for each new match. """
-                other_players.append(matches_to_analyze[str(mm)]["participantIdentities"][pp]["player"]["summonerName"])
+                other_players.append(match_data[str(mm)]["participantIdentities"][pp]["player"]["summonerName"])
                 others_damage_total.append(
-                    matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageDealt"])
+                    match_data[str(mm)]["participants"][pp]["stats"]["totalDamageDealt"])
                 others_damage_to_champs.append(
-                    matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageDealtToChampions"])
+                    match_data[str(mm)]["participants"][pp]["stats"]["totalDamageDealtToChampions"])
                 others_damage_taken.append(
-                    matches_to_analyze[str(mm)]["participants"][pp]["stats"]["totalDamageTaken"])
-                others_gold.append(matches_to_analyze[str(mm)]["participants"][pp]["stats"]["goldEarned"])
+                    match_data[str(mm)]["participants"][pp]["stats"]["totalDamageTaken"])
+                others_gold.append(match_data[str(mm)]["participants"][pp]["stats"]["goldEarned"])
         # Team 1
         if summ_num[mm] <=4:
             teammates[str(mm)] = other_players[0:4]
@@ -132,7 +123,7 @@ def parse_match_data(config_info, match_data, champLookup):
             gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
         # Get champ - this next part is ungodly slow because of the static API calls. Needs to be fixed.
         champ.append(
-            GetChamp.champ_name(champLookup, matches_to_analyze[str(mm)]["participants"][summ_num[mm]]["championId"])
+            GetChamp.champ_name(champLookup, match_data[str(mm)]["participants"][summ_num[mm]]["championId"])
         )
     season_unique = sorted(list(set(season)))
     queue_types = sorted(list(set(queue_type)))
@@ -181,13 +172,26 @@ def parse_match_data(config_info, match_data, champLookup):
     }
 
 
+"""
+# For debugging
+import json
+import urllib.request
+config_info = json.loads(open("Configuration.LoHConfig", "r").read())
+match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r").read())
+parsed_match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r").read())
+champLookup = get_champ_dd()
+"""
+
+
 def filter_remakes(match_data, parsed_match_data):
     """ Filter out remakes (games with length < 6 minutes) """
     n_mat = len(match_data)
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
+        print(mm)
         if parsed_match_data["match_lengths"][mm] > 6:
+            print(nn)
             filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
@@ -253,3 +257,18 @@ def filter_role(match_data, parsed_match_data, role_filter):
             filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
+
+
+
+"""
+DEPRECATED BITS
+
+    # filter out matches by map (e.g. summoner's rift) - this is a problem (modification in progress)
+    mmm = 0
+    for mm in range(n_matches):
+        print(match_data[str(mm)]["mapId"])
+        if match_data[str(mm)]["mapId"] == SUMMONERSRIFT:
+            matches_to_analyze[str(mmm)] = match_data[str(mm)]
+            mmm += 1
+
+"""

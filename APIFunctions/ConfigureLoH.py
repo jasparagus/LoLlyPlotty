@@ -9,8 +9,11 @@ import time
 def get_sid(APIKey, Region, SummonerName, status_label):
     """ Get summoner ID from summoner name. Summoner name must be lower-case letters only """
     SID = ""
-    BaseURL = "https://na.api.pvp.net/api/lol/"
-    SIDCall = BaseURL + Region + "/v1.4/summoner/by-name/" + SummonerName + "?api_key=" + APIKey
+    SIDCall = (
+        "https://na.api.pvp.net/api/lol/" + Region
+        + "/v1.4/summoner/by-name/" + SummonerName + "?"
+        + "api_key=" + APIKey
+    )
     TimesTried = 0
     for attempt in range(10):
         status_label.set("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
@@ -32,20 +35,46 @@ def get_sid(APIKey, Region, SummonerName, status_label):
 def config(enteredkey, region, summname, status_label):
     """ Take inputted info and use it to write a config file. """
     APIKey = enteredkey
-    APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
-    APIKey = APIKey.replace('\n', '')
+    APIKey = APIKey.replace(" ", "")  # strip accidental spaces from API key
+    APIKey = APIKey.replace('\n', '')  # strip accidental newline characters
     Region = region
     SummonerName = summname
-    SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
-    SummonerName = SummonerName.replace('\n', '')
+    SummonerName = SummonerName.replace(" ", "").lower()  # strip spaces and caps from SummonerName (not allowed)
+    SummonerName = SummonerName.replace('\n', '')  # strip accidental newline characters
 
     SID = get_sid(APIKey, Region, SummonerName, status_label)  # grab summoner ID using an API call
 
-    config_info = ({"Settings": {
-        "APIKey": APIKey,
-        "Region": Region,
-        "SummonerName": SummonerName,
-        "SID": SID}}
-    )
-    json.dump(config_info, open("Configuration.LoHConfig", 'w'))
+    try:
+        with open("Configuration.LoHConfig", "r") as file:
+            config_info = json.loads(file.read())
+        RegionList = config_info["RegionList"]
+    except:
+        RegionList = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
+
+    try:
+        with open("Configuration.LoHConfig", "r") as file:
+            config_info = json.loads(file.read())
+        RankedQueues = config_info["RankedQueues"]
+    except:
+        RankedQueues = ([
+            "RANKED_FLEX_SR",
+            "RANKED_SOLO_5x5",
+            "RANKED_TEAM_5x5",
+            "TEAM_BUILDER_DRAFT_RANKED_5x5",
+            "TEAM_BUILDER_RANKED_SOLO",
+        ])
+
+    config_info = {
+        "Settings": {
+            "APIKey": APIKey,
+            "Region": Region,
+            "SummonerName": SummonerName,
+            "SID": SID},
+        "RegionList": RegionList,
+        "RankedQueues": RankedQueues
+    }
+
+    with open("Configuration.LoHConfig", 'w') as file:
+        json.dump(config_info, file)
+
     return config_info

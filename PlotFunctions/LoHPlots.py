@@ -16,14 +16,14 @@ filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 """
 
 
-def wr_time(filtered_parsed_match_data):
+def wr_time(filtered_parsed_match_data, rollsize):
     roll = 6
     n_matches = len(filtered_parsed_match_data["win_lose"])
     wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
     # test = numpy.histogram([1, 2, 5], bins=10)
-    if n_matches > roll:
+    if n_matches > rollsize:
         a, = plt.plot(
-            running_mean(filtered_parsed_match_data["win_lose"], roll), label="Rolling WR", linestyle="-", color="r")
+            running_mean(filtered_parsed_match_data["win_lose"], rollsize), label="Rolling WR", linestyle="-", color="r")
         b, = plt.plot([0, n_matches],[wr, wr], label="Avg. WR", linestyle="--", color="b")
         c, = plt.plot([0, n_matches],[0.5, 0.5], label="50% WR", linestyle=":", color="k")
         plt.xlabel("Match Number (Chronological)")
@@ -42,8 +42,6 @@ def wr_time(filtered_parsed_match_data):
 
 def wr_champ(filtered_parsed_match_data):
     """ Winrates for each champion played more than 3 games. """
-    print("In progress")
-
     n_champs = len(filtered_parsed_match_data["champs_played"])
     n_games = len(filtered_parsed_match_data["win_lose"])
     wr = sum(filtered_parsed_match_data["win_lose"])/len(filtered_parsed_match_data["win_lose"])
@@ -58,48 +56,18 @@ def wr_champ(filtered_parsed_match_data):
         wins_by_champ.append(sum(wins)/len(wins))
         n_by_champ.append(len(wins))
 
-    # Make a figure to hold the plot and move it up relative to the baseline to leave room for labels
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(bottom=0.2)
+    n_of_things_to_plot = n_champs
+    bars_data = wins_by_champ
+    n_per_bar = n_by_champ
+    x_labels = filtered_parsed_match_data["champs_played"]
+    title_string = "Winrate By Champion"
+    avg_win_rate = wr
 
-    locs = numpy.arange(n_champs)  # the x locations for the groups
-    width = 0.5  # the width of the bars
-
-    rects1 = ax.bar(locs, wins_by_champ, width, color='r')
-    wrA, = plt.plot([0-width, n_champs+width], [wr, wr], label="Avg. WR", linestyle="--", color="b")
-    wr50, = plt.plot([0-width, n_champs+width], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
-
-    # add some text for labels, title and axes ticks
-    ax.set_ylabel('Winrate')
-    ax.set_title('Winrate by Champion')
-    ax.set_xticks(locs)
-    ax.set_xticklabels(filtered_parsed_match_data["champs_played"], rotation=45, ha="right")
-    plt.xlim([0-width, n_champs+width])
-    plt.ylim([0, 1.2])
-
-    l2 = plt.legend(handles=[wrA], loc=2)
-    plt.gca().add_artist(l2)
-    l3 = plt.legend(handles=[wr50], loc=1)
-    plt.gca().add_artist(l3)
-
-    def autolabel(rects):
-        """
-        Attach a text label above each bar displaying its height
-        """
-        rr = 0
-        for rect in rects:
-            height = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width() / 2., height + 0.05,
-                    'n = %d' % n_by_champ[rr],
-                    ha='center', va='top')
-            rr += 1
-
-    autolabel(rects1)
+    make_wr_barchart(n_of_things_to_plot, bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
 def wr_teammate(filtered_parsed_match_data, n_played):
     """ Winrates on a per-teammate basis (with an N game cutoff for "teammates") """
-    print("wr_teammate in progress")
     n_games = len(filtered_parsed_match_data["win_lose"])
     all_teammates = []
 
@@ -125,49 +93,46 @@ def wr_teammate(filtered_parsed_match_data, n_played):
             games_with_teammate.append(len(wins))
             teammates_unique_keep.append(teammates_unique[tt])
 
-    n_teammates_kept = len(teammates_unique_keep)
+    n_of_things_to_plot = len(teammates_unique_keep)
+    bars_data = wins_by_teammate
+    n_per_bar = games_with_teammate
+    x_labels = teammates_unique_keep
+    title_string = "Winrate by Teammate"
+    avg_win_rate = wr
 
-    # Make plot
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(bottom=0.3)
-
-    locs = numpy.arange(n_teammates_kept)  # the x locations for the groups
-    width = 0.5  # the width of the bars
-
-    rects1 = ax.bar(locs, wins_by_teammate, width, color='r')
-    wrA, = plt.plot([0-width, n_teammates_kept+width], [wr, wr], label="Avg. WR", linestyle="--", color="b")
-    wr50, = plt.plot([0-width, n_teammates_kept+width], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
-
-    # add some text for labels, title and axes ticks
-    ax.set_ylabel('Winrate')
-    ax.set_title('Winrate by Teammate')
-    ax.set_xticks(locs)
-    ax.set_xticklabels(teammates_unique_keep, rotation=45, ha="right")
-    plt.xlim([0-width, n_teammates_kept+width])
-    plt.ylim([0, 1.2])
-
-    l2 = plt.legend(handles=[wrA], loc=2)
-    plt.gca().add_artist(l2)
-    l3 = plt.legend(handles=[wr50], loc=1)
-    plt.gca().add_artist(l3)
-
-    def autolabel(rects):
-        """
-        Attach a text label above each bar displaying its height
-        """
-        rr = 0
-        for rect in rects:
-            height = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width() / 2., height + 0.05,
-                    'n = %d' % games_with_teammate[rr],
-                    ha='center', va='top')
-            rr += 1
-
-    autolabel(rects1)
+    make_wr_barchart(n_of_things_to_plot, bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
 def wr_partysize(filtered_parsed_match_data, N):
     """ Winrates by number of recurring teammates (with an N game cutoff for "teammates") """
+
+    # n_of_things_to_plot =
+    # bars_data =
+    # n_per_bar =
+    # x_labels =
+    # title_string =
+    # avg_win_rate = 0
+    #
+    # make_wr_barchart(n_of_things_to_plot, bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    print("wr_by_partysize in progress")
+
+
+def wr_role(filtered_parsed_match_data):
+    """ Winrate as a function of map side """
+    # n_of_things_to_plot =
+    # bars_data =
+    # n_per_bar =
+    # x_labels =
+    # title_string =
+    # avg_win_rate = 0
+    #
+    # make_wr_barchart(n_of_things_to_plot, bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    print("wr_by_role not built")
+
+
+def wr_dmg(filtered_parsed_match_data):
+    """ Winrate as a function of damage share (to champs / total / taken) """
+
     plt.figure()
     x = 10 + 1 * numpy.random.randn(10000)
     n, bins, patches = plt.hist(x, 50, normed=0, facecolor='green', alpha=0.75)
@@ -177,26 +142,13 @@ def wr_partysize(filtered_parsed_match_data, N):
     plt.title(r'$\mathrm{Histogram\ of\ IQ:}\ \mu=100,\ \sigma=15$')
     # plt.axis([40, 160, 0, 0.03])
     plt.grid(True)
-
-
-    print("wr_by_partysize in progress")
-
-
-def wr_role(filtered_parsed_match_data):
-    """ Winrate as a function of map side """
-    plt.figure()
-    print("wr_by_role DNE")
-
-def wr_dmg(filtered_parsed_match_data):
-    """ Winrate as a function of damage share (to champs / total / taken) """
-    plt.figure()
-    print("wr_vs_dmg DNE")
+    print("wr_vs_dmg is broken")
 
 
 def wr_mapside(filtered_parsed_match_data):
     """ Winrate as a function of map side """
     plt.figure()
-    print("wr_vs_mapside DNE")
+    print("wr_vs_mapside is broken")
 
 
 def running_mean(l, N):
@@ -209,6 +161,49 @@ def running_mean(l, N):
         sum = sum - l[i-N] + l[i]
         result[i] = sum / N
     return result
+
+
+def make_wr_barchart(n_of_things_to_plot, bars_data, n_per_bar, x_labels, title_string, avg_win_rate):
+    """ Make a bar chart from inputted data """
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(bottom=0.25)
+
+    # prepare basics
+    locs = numpy.arange(n_of_things_to_plot)  # the x locations for the groups
+    width = 0.5  # the width of the bars
+    startx = -width - 0.25  # where the x axis starts
+    endx = n_of_things_to_plot - 1 + width + 0.25  # where the x axis ends
+
+    # create objects to plot
+    bars1 = ax.bar(locs, bars_data, width, color='r')
+    wrA, = plt.plot([startx, endx], [avg_win_rate, avg_win_rate], label="Avg. WR", linestyle="--", color="b")
+    wr50, = plt.plot([startx, endx], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
+
+    # add some text for labels, title and axes ticks
+    ax.set_ylabel('Winrate')
+    ax.set_title(title_string)
+    ax.set_xticks(locs)
+    ax.set_xticklabels(x_labels, rotation=45, ha="right")
+    plt.xlim([startx, endx])
+    plt.ylim([0, 1.2])
+
+    l2 = plt.legend(handles=[wrA], loc=2)
+    plt.gca().add_artist(l2)
+    l3 = plt.legend(handles=[wr50], loc=1)
+    plt.gca().add_artist(l3)
+
+    def label_bars(bars):
+        """ Attach a text label above each bar displaying its height """
+        rr = 0
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.1,
+                    'n = %d' % n_per_bar[rr],
+                    ha='center', va='top')
+            rr += 1
+
+    label_bars(bars1)
+
 
 """ ORIGINAL MATLAB CODE (REMOVING AS I GO ALONG ONCE REWRITTEN IN PYTHON)
 if ChooseSeason<=length(SeasonOpts) % if you chose a season
