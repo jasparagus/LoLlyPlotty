@@ -33,6 +33,7 @@ def config(enteredkey, region, summname, status_label):
     """ Take inputted info and use it to write a config file. """
     APIKey = enteredkey
     APIKey = APIKey.replace(" ", "")  # strip any accidental spaces
+    APIKey = APIKey.replace('\n', '')
     Region = region
     SummonerName = summname
     SummonerName = SummonerName.replace(" ", "").lower()  # strip unacceptable spaces and caps from SummonerName
