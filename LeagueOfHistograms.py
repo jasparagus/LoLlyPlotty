@@ -128,8 +128,8 @@ def get_matches():
 
 
 def do_plots():
-    global config_info, champLookup, match_data, parsed_match_data, \
-        filter_label, ssn_filter, champ_filter, match_filter, status_label
+    global config_info, champLookup, match_data, parsed_match_data
+    # filter_label, ssn_filter, champ_filter, match_filter, status_label
     update_config()
 
     champLookup = GetChamp.get_champ_dd()
@@ -249,15 +249,15 @@ f_QueueType = tkinter.IntVar(value=0)
 f_Role = tkinter.IntVar(value=0)
 
 # PANEL 2 filter variables
-global filter_label
+# global filter_label
 filter_label = tkinter.StringVar(root)
-global ssn_filter
+# global ssn_filter
 ssn_filter = tkinter.StringVar(root, value="Select a Season")
 ssn_list = [""]
-global champ_filter
+# global champ_filter
 champ_filter = tkinter.StringVar(root, value="Select a Champion")
 champ_filter_list = [""]
-global match_filter
+# global match_filter
 match_filter = tkinter.IntVar(root)
 q_filter = tkinter.StringVar(root, value="Select a Queue")
 q_filter_list = [""]

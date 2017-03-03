@@ -116,16 +116,16 @@ def parse_match_data(config_info, match_data, champLookup):
                 others_gold.append(matches_to_analyze[str(mm)]["participants"][pp]["stats"]["goldEarned"])
         # Team 1
         if summ_num[mm] <=4:
-            teammates[mm] = other_players[0:4]
-            enemies[mm] = other_players[4:9]
+            teammates[str(mm)] = other_players[0:4]
+            enemies[str(mm)] = other_players[4:9]
             damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[0:4])))
             damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[0:4])))
             damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[0:4])))
             gold_frac.append(gold[mm]/(1+sum(others_gold[0:4])))
         # Team 2
         elif summ_num[mm] >= 5:
-            teammates[mm] = other_players[5:9]
-            enemies[mm] = other_players[0:5]
+            teammates[str(mm)] = other_players[5:9]
+            enemies[str(mm)] = other_players[0:5]
             damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[5:9])))
             damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[5:9])))
             damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
@@ -218,13 +218,16 @@ def filter_champ(match_data, parsed_match_data, champ_filter):
 
 
 def filter_match(match_data, match_filter):
-    """ Filter for recent matches """
+    """ Filter for recent matches, where match_filter is a number of matches to keep """
     n_mat = len(match_data)
     filtered_match_data = {}
-    nn = 0
-    for mm in range(n_mat-match_filter, n_mat):
-        filtered_match_data[str(nn)] = match_data[str(mm)]
-        nn += 1
+    if match_filter < n_mat:
+        nn = 0
+        for mm in range(n_mat-match_filter, n_mat):
+            filtered_match_data[str(nn)] = match_data[str(mm)]
+            nn += 1
+    else:
+        filtered_match_data = match_data
     return filtered_match_data
 
 
