@@ -8,8 +8,8 @@ Work in progress.
 import json
 import tkinter
 import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+matplotlib.use("TkAgg")
 
 
 # IMPORT CUSTOM MODULES
@@ -60,6 +60,15 @@ def initialize():
 
     try:
         summname.set(config_info["Settings"]["SummonerName"])
+    except:
+        pass
+
+    # update options in region filtering menu
+    try:
+        o_region["menu"].delete(0, "end")
+        reg_list = config_info["RegionList"]
+        for choice in reg_list:
+            o_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
     except:
         pass
 
@@ -126,6 +135,18 @@ def get_matches():
     initialize()
     status_label.set("Data Downloaded, Parsed, and Saved")
 
+    """
+    New structure for this to move "getting match" info to main GUI (each step sets get_matches button true):
+    1.) Try to get a champlookup from file, if fails, make it
+    2.) If champlookup isn't empty, get matchlist (status update: got matchlist)
+    3.) If matchlist isn't empty, check for missing matches (status update: checking for missing matches)
+    4.) If there are missing matches, pull the next one and save it to file (status update: Got match ##/###)
+    5.) If there are no missing matches, don't make the get_matches button true again
+
+    Steps 3 and 4 will need to be performed by new functions made from
+    pieces of GetRankedMatchData.update_match_data
+    """
+
 
 def do_plots():
     global config_info, champLookup, match_data, parsed_match_data
@@ -179,13 +200,13 @@ def do_plots():
         filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
 
     # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
-    plt.close("all")
+    # plt.close("all")
 
     if cb_wr_time.get() == 1:
-        LoHPlots.wr_time(filtered_parsed_match_data)
+        LoHPlots.wr_time(filtered_parsed_match_data, 7)
 
     if cb_wr_champ.get() == 1:
-        LoHPlots.wr_champ(filtered_parsed_match_data)
+        LoHPlots.wr_champ(filtered_parsed_match_data, 2)
 
     if cb_wr_teammate.get() == 1:
         LoHPlots.wr_teammate(filtered_parsed_match_data, 3)
@@ -219,7 +240,7 @@ w = 25  # width of descriptor boxes
 # PANEL 1 variables
 apikey = tkinter.StringVar()
 summname = tkinter.StringVar()
-reg_list = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
+reg_list = [""]
 reg = tkinter.StringVar(value="na")
 
 # PANEL 1 labels and other widgets
@@ -304,13 +325,14 @@ cb_wr_role = tkinter.IntVar(value=0)
 cb_wr_dmg = tkinter.IntVar(value=0)
 cb_wr_mapside = tkinter.IntVar(value=0)
 
-tkinter.Checkbutton(root, text="Winrate Over Time (Rolling Average)", variable=cb_wr_time).grid(row=9, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate Over Time (Moving Average)",
+                    variable=cb_wr_time).grid(row=9, column=c2, sticky="w")
 tkinter.Checkbutton(root, text="Winrate by Champion", variable=cb_wr_champ).grid(row=10, column=c2, sticky="w")
 tkinter.Checkbutton(root, text="Winrate by Teammate", variable=cb_wr_teammate).grid(row=11, column=c2, sticky="w")
 tkinter.Checkbutton(root, text="Winrate by Party Size", variable=cb_wr_partysize).grid(row=12, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Role", variable=cb_wr_partysize).grid(row=13, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Damage", variable=cb_wr_partysize).grid(row=14, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_partysize).grid(row=15, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Role", variable=cb_wr_role).grid(row=13, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Damage", variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=15, column=c2, sticky="w")
 
 tkinter.Button(root, text="Generate Selected Plots", width=30, command=do_plots).grid(row=997, column=c2, columnspan=2)
 
