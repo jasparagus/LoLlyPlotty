@@ -6,15 +6,34 @@ import matplotlib.pyplot as plt
 
 
 #FOR TESTING STUFF OUT
-import json
-import numpy
-import matplotlib.pyplot as plt
-config_file = open("Configuration.LoHConfig", "r")
-config_info = json.loads(config_file.read())
-filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
-filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
+# import json
+# import numpy
+# import matplotlib.pyplot as plt
+# config_file = open("Configuration.LoHConfig", "r")
+# config_info = json.loads(config_file.read())
+# filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
+# filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 
 
+def make_wr_dictionary(key_ls, win_ls, store_dict):
+    """
+    Find winrate, wins, losses for a given variable (key_ls) from list of total
+    wins/losses (win_ls)
+    stored as: {"variable": [matches, wins, winrate]}
+    NOTE: DICTIONARY MUST EXIST BEFORE YOU CALL THIS FUNCTION
+    """
+    ls_length = len(key_ls)
+    for i in range(ls_length):
+        if key_ls[i] not in store_dict:
+            # Check if key already exists store_dict
+            store_dict[key_ls[i]] = [0, 0, 0]
+        # update matches
+        store_dict[key_ls[i]][0] += 1
+        # update wins (note: these are bools)
+        store_dict[key_ls[i]][1] += win_ls[i]
+    # Update win rate
+    for k in store_dict:
+        store_dict[k][2] = store_dict[k][1] / store_dict[k][0]
 
 def wr_time(filtered_parsed_match_data, rollsize):
     roll = 6
@@ -121,24 +140,18 @@ def wr_role(filtered_parsed_match_data):
     """ Winrate as a function of role """
     # list of roles
     role_ls = filtered_parsed_match_data["role"]
+
     # list of wins/losses
+    # TODO - win_ls SHOULD BE DEFINED ELSEWHERE. ALL winrate functions use this...
     win_ls = filtered_parsed_match_data["win_lose"]
-    ls_length = len(role_ls)
-    # dictionary maps role to list of wins/losses
+
+    # dictionary {"role" [matches, wins, winrate]}
     w_l_dict = {}
-    # index [0] of each dictionary key will be total MATCHES as that role
-    # index [1] of each dictionary key will be total WINS
-    for i in range(ls_length):
-        if role_ls[i] not in w_l_dict:
-            w_l_dict[role_ls[i]] = [0, 0, win_ls[i]]
-        else:
-            w_l_dict[role_ls[i]].append(win_ls[i])
-        # update total
-        w_l_dict[role_ls[i]][0] += 1
-        # update wins
-        w_l_dict[role_ls[i]][1] += win_ls[i]
+    # Fill in the dictionary
+    make_wr_dictionary(role_ls, win_ls, w_l_dict)
     print(w_l_dict)
-    print(role_ls, win_ls)
+    # print(role_ls, win_ls)
+
     # n_of_things_to_plot =
     # bars_data =
     # n_per_bar =
