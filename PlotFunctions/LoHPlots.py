@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 
 
 #FOR TESTING STUFF OUT
-import json
-import numpy
-import matplotlib.pyplot as plt
-config_file = open("Configuration.LoHConfig", "r")
-config_info = json.loads(config_file.read())
-filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
-filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
+# import json
+# import numpy
+# import matplotlib.pyplot as plt
+# config_file = open("Configuration.LoHConfig", "r")
+# config_info = json.loads(config_file.read())
+# filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
+# filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 
 
 def make_wr_dictionary(key_ls, win_ls, store_dict):
