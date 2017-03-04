@@ -5,7 +5,7 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 
-""" FOR TESTING STUFF OUT
+#FOR TESTING STUFF OUT
 import json
 import numpy
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ config_file = open("Configuration.LoHConfig", "r")
 config_info = json.loads(config_file.read())
 filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
 filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
-"""
+
 
 
 def wr_time(filtered_parsed_match_data, rollsize):
@@ -118,7 +118,27 @@ def wr_partysize(filtered_parsed_match_data, N):
 
 
 def wr_role(filtered_parsed_match_data):
-    """ Winrate as a function of map side """
+    """ Winrate as a function of role """
+    # list of roles
+    role_ls = filtered_parsed_match_data["role"]
+    # list of wins/losses
+    win_ls = filtered_parsed_match_data["win_lose"]
+    ls_length = len(role_ls)
+    # dictionary maps role to list of wins/losses
+    w_l_dict = {}
+    # index [0] of each dictionary key will be total MATCHES as that role
+    # index [1] of each dictionary key will be total WINS
+    for i in range(ls_length):
+        if role_ls[i] not in w_l_dict:
+            w_l_dict[role_ls[i]] = [0, 0, win_ls[i]]
+        else:
+            w_l_dict[role_ls[i]].append(win_ls[i])
+        # update total
+        w_l_dict[role_ls[i]][0] += 1
+        # update wins
+        w_l_dict[role_ls[i]][1] += win_ls[i]
+    print(w_l_dict)
+    print(role_ls, win_ls)
     # n_of_things_to_plot =
     # bars_data =
     # n_per_bar =
@@ -127,7 +147,7 @@ def wr_role(filtered_parsed_match_data):
     # avg_win_rate = 0
     #
     # make_wr_barchart(n_of_things_to_plot, bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
-    print("wr_by_role not built")
+    # print("wr_by_role not built")
 
 
 def wr_dmg(filtered_parsed_match_data):
