@@ -1,7 +1,5 @@
 from APIFunctions import GetChamp
 
-SUMMONERSRIFT = 11
-
 
 def parse_match_data(config_info, match_data, champLookup):
     """ Converts raw match data into a set of (mostly) lists for analysis """
@@ -67,7 +65,14 @@ def parse_match_data(config_info, match_data, champLookup):
                     match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageTaken"])
                 gold.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["goldEarned"])
                 win_lose.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["winner"])
-                role.append(match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"])
+
+                role_string = (
+                    match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"]
+                    + "\n "
+                    + match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["role"]
+                )
+                role.append(role_string)
+
                 """ teamId: 100 is blue side; 200 is red side """
                 map_side.append(match_data[str(mm)]["participants"][summ_num[mm]]["teamId"])
                 kills.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["kills"])
@@ -121,7 +126,6 @@ def parse_match_data(config_info, match_data, champLookup):
             damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[5:9])))
             damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
             gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
-        # Get champ - this next part is ungodly slow because of the static API calls. Needs to be fixed.
         champ.append(
             GetChamp.champ_name(champLookup, match_data[str(mm)]["participants"][summ_num[mm]]["championId"])
         )
@@ -182,6 +186,21 @@ parsed_match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_
 champLookup = get_champ_dd()
 """
 
+"""
+LIST OF CURRENT FILTERS
+- remakes (removes remakes, determined by match length)
+- season (desired season only, such as PRESEASON 2016)
+- champ (desired champion only)
+- match (number of most recent matches)
+- qtype (chooses specific queue type only, such as Ranked Flex or Ranked Solo/Duo)
+- role (desired role only, such as JUNGLE)
+- map (desired map ID)
+
+ADDITIONAL POSSIBLE FILTERS
+- inverses of some of the other filters (e.g. role, as in "exclude support" instead of support only))
+
+"""
+
 
 def filter_remakes(match_data, parsed_match_data):
     """ Filter out remakes (games with length < 6 minutes) """
@@ -189,9 +208,7 @@ def filter_remakes(match_data, parsed_match_data):
     filtered_match_data = {}
     nn = 0
     for mm in range(n_mat):
-        print(mm)
         if parsed_match_data["match_lengths"][mm] > 6:
-            print(nn)
             filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
@@ -259,16 +276,15 @@ def filter_role(match_data, parsed_match_data, role_filter):
     return filtered_match_data
 
 
+def filter_map(match_data, map_id):
+    """ filter out matches by map (e.g. summoner's rift) """
+    # New summoner's rift is mapId = 11
+    n_mat = len(match_data)
+    filtered_match_data = {}
+    nn = 0
+    for mm in range(n_mat):
+        if match_data[str(mm)]["mapId"] == map_id:
+            filtered_match_data[str(nn)] = match_data[str(mm)]
+            nn += 1
+    return filtered_match_data
 
-"""
-DEPRECATED BITS
-
-    # filter out matches by map (e.g. summoner's rift) - this is a problem (modification in progress)
-    mmm = 0
-    for mm in range(n_matches):
-        print(match_data[str(mm)]["mapId"])
-        if match_data[str(mm)]["mapId"] == SUMMONERSRIFT:
-            matches_to_analyze[str(mmm)] = match_data[str(mm)]
-            mmm += 1
-
-"""
