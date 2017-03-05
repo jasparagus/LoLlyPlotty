@@ -5,7 +5,10 @@ import time  # import time to allow for use of time.sleep(secs). Prevents excess
 
 
 def update_match_data(config_info, matchlist, n_matches):
-    """ Pulls down list of matches, checks against saved data, grabs missing data, saves everything. """
+    """
+    Pulls down list of matches, checks against saved data, grabs missing data, saves everything.
+    Currently being deprecated in favor of 2 separate functions
+    """
     match_data_loaded = {}
     match_data = {}
     new_matches = []
@@ -58,7 +61,10 @@ def update_match_data(config_info, matchlist, n_matches):
 
 
 def get_matchlist(config_info):
-    """ Pulls down list of matches and returns them as matchlist """
+    """
+    Pulls down list of matches and returns them as matchlist
+    IN PROCESS OF BEING DEPRECATED
+    """
     matchlist = {}
     n_matches = 0
     matchlist_call = (
@@ -85,3 +91,86 @@ def get_matchlist(config_info):
             pass
 
     return matchlist, n_matches
+
+
+def get_match_list(config_info):
+    """
+    Pulls down list of matches.
+    Returns a list of match IDs as strings(match_list)
+    """
+    match_list = []
+
+    match_list_call = (
+        "https://na.api.pvp.net/api/lol/" + config_info["Settings"]["Region"]
+        + "/v2.2/matchlist/by-summoner/" + config_info["Settings"]["SID"] + "?"
+        + "rankedQueues="
+    )
+
+    # Prepare a list of ranked queues from which to ask for matches
+    for queue in config_info["RankedQueues"]:
+        match_list_call = match_list_call + queue + ","
+
+    match_list_call = match_list_call[:-1] + "&" + "api_key=" + config_info["Settings"]["APIKey"]
+
+    # Ask for the matchlist up to 5 times, retunring an empty match_list when failed
+    for attempt in range(5):
+        # print("Getting list of all ranked matches (newest first), attempt #" + str(attempt+1) + "/5")
+        time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+        try:
+            match_list_reply = json.loads(urllib.request.urlopen(match_list_call).read())
+            n_matches = len(match_list_reply["matches"])
+            for match in range(n_matches):
+                match_list.append(str(match_list_reply["matches"][match]["matchId"]))
+            match_list = match_list[::-1]
+            break
+        except:
+            match_list = []
+
+    return match_list
+
+
+def get_match(config_info, match_list, match_data, match_id):
+    """
+    Checks matchlist for match "match_id"
+    Gets the match if it's new
+    match, puts in the corresponding key of "match_data", and saves the whole thing
+    """
+    try:
+        # Find the match "index" for the new match
+        match_idx = match_list.index(str(match_id))
+
+        # Prepare the API call
+        match_call = (
+            "https://na.api.pvp.net/api/lol/" + config_info["Settings"]["Region"]
+            + "/v2.2/match/" + str(match_id) + "?"
+            + "api_key=" + config_info["Settings"]["APIKey"]
+        )
+
+        # Do the api call
+        for attempt in range(5):
+            try:
+                time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+                match_data[str(match_idx)] = json.loads(urllib.request.urlopen(match_call).read())
+                with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as file:
+                    json.dump(match_data, file)
+                break
+            except:
+                match_data[str(match_idx)] = {}
+        print(
+            "Got match " + str(match_id)
+            + "(" + str(match_idx+1) + " of " + str(len(match_list)) + ")"
+        )
+    except:
+        pass
+    return match_data
+
+
+"""
+import urllib.request  # import ability to make URL requests
+import urllib.error  # import error handler for URL requests
+import json  # import ability to parse JSON objects
+import time  # import time to allow for use of time.sleep(secs). Prevents excessive api calls
+config_info = json.loads(open("Configuration.LoHConfig", "r").read())
+match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r").read())
+
+"""

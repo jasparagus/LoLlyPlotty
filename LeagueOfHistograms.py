@@ -11,7 +11,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
 
-
 # IMPORT CUSTOM MODULES
 from APIFunctions import ConfigureLoH
 from APIFunctions import GetChamp
@@ -21,44 +20,38 @@ from PlotFunctions import Parse
 
 
 # Declare globals
-global config_info, match_data, champLookup, parsed_match_data, filtered_parsed_match_data
-
+global config_info, match_list, match_data, champ_dict, parsed_match_data, filtered_parsed_match_data
+# Initialize their values
+config_info = {}
+match_list = []
+match_data = {}
+parsed_match_data = {}
+champ_dict = {}
 
 def initialize():
     global config_info, match_data, parsed_match_data
 
     try:
-        config_file = open("Configuration.LoHConfig", "r")
-        config_info = json.loads(config_file.read())
-        config_file.close()
+        with open("Configuration.LoHConfig", "r") as file:
+            config_info = json.loads(file.read())
     except:
         config_info = {}
 
     try:
-        match_data_file = open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r")
-        match_data = json.loads(match_data_file.read())
-        match_data_file.close()
+        with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r") as file:
+            match_data = json.loads(file.read())
     except:
         match_data = {}
 
     try:
-        parsed_match_data_file = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
-        parsed_match_data = json.loads(parsed_match_data_file.read())
-        parsed_match_data_file.close()
+        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r") as file:
+            parsed_match_data = json.loads(file.read())
     except:
         parsed_match_data = {}
 
     try:
         reg.set(config_info["Settings"]["Region"])
-    except:
-        pass
-
-    try:
         apikey.set(config_info["Settings"]["APIKey"])
-    except:
-        pass
-
-    try:
         summname.set(config_info["Settings"]["SummonerName"])
     except:
         pass
@@ -106,54 +99,80 @@ def initialize():
     except:
         pass
 
-    status_label.set("Initialized")
+    try:
+        status_label.set("Ready to analyze " + str(len(match_data)) + " matches")
+    except:
+        status_label.set("Initialized with no match data")
 
 
 def update_config():
     global config_info, status_label
     config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
     initialize()
-    status_label.set("Configuration Updated")
 
 
-def get_matches():
-    global config_info, match_data, champLookup, parsed_match_data, status_label
+def get_matches(step=0):
+    """
+    Checks for variables that need populating and populates them if needed.
+    Once populated, moves to the next step, etc., until all new matches are loaded.
+    """
+    global config_info, match_list, match_data, champ_dict, parsed_match_data, status_label
     # Update the configuration in case it's new
     update_config()
 
-    # Prepare a champion lookup dictionary
-    champLookup = GetChamp.get_champ_dd()
+    # Try to get match list if you don't already have it (step 0)
+    if len(match_list) == 0:
+        # root.update_idletasks()
+        match_list = GetRankedMatchData.get_match_list(config_info)
+        b_get_match.config(relief="sunken", text="Getting Data, Please Wait")
+        status_label.set("Got matchlist")
+        root.update_idletasks()
+        root.after(10, get_matches, 1)
 
-    # First, pull down the match list and get the match data from missing matches
-    matchlist, n_matches = GetRankedMatchData.get_matchlist(config_info)
-    match_data = GetRankedMatchData.update_match_data(config_info, matchlist, n_matches)
+    # Once you have the match list, get your matches (step 1)
+    if step == 1:
+        if len(match_list) > len(match_data):
+            match_id = match_list[len(match_data)]
+            match_data = GetRankedMatchData.get_match(config_info, match_list, match_data, match_id)
+            status_label.set(
+                "Got match " + str(match_id)
+                + " (" + str(len(match_data)) + " of " + str(len(match_list)) + ")"
+            )
+            root.update_idletasks()
+            root.after(10, get_matches, 1)
+            status_label.set(
+                "Got match " + str(match_id)
+                + " (" + str(len(match_data)) + " of " + str(len(match_list)) + ")"
+            )
+        elif len(match_list) == len(match_data):
+            root.update_idletasks()
+            root.after(10, get_matches, 2)
+            status_label.set("All matches downloaded")
+        else:
+            root.update_idletasks()
+            status_label.set("Problem getting matches. Try clearing application data.")
 
-    # Second, parse all of the data and return needed variables (as applicable).
-    parsed_match_data = Parse.parse_match_data(config_info, match_data, champLookup)
-    with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
-        json.dump(parsed_match_data, file)
-    initialize()
-    status_label.set("Data Downloaded, Parsed, and Saved")
+    # Once you have all matches, make a champion lookup dictionary and parse the data (step 2)
+    if step == 2:
+        if champ_dict == {}:
+            champ_dict = GetChamp.get_champ_dict()
 
-    """
-    New structure for this to move "getting match" info to main GUI (each step sets get_matches button true):
-    1.) Try to get a champlookup from file, if fails, make it
-    2.) If champlookup isn't empty, get matchlist (status update: got matchlist)
-    3.) If matchlist isn't empty, check for missing matches (status update: checking for missing matches)
-    4.) If there are missing matches, pull the next one and save it to file (status update: Got match ##/###)
-    5.) If there are no missing matches, don't make the get_matches button true again
-
-    Steps 3 and 4 will need to be performed by new functions made from
-    pieces of GetRankedMatchData.update_match_data
-    """
+        parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
+        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
+            json.dump(parsed_match_data, file)
+        initialize()
+        root.update_idletasks()
+        b_get_match.config(relief="raised", text="Get Match Data")
+        status_label.set("Match data up to date and ready to analyze")
+        root.update_idletasks()
 
 
 def do_plots():
-    global config_info, champLookup, match_data, parsed_match_data
+    global config_info, champ_dict, match_data, parsed_match_data
     # filter_label, ssn_filter, champ_filter, match_filter, status_label
     update_config()
 
-    champLookup = GetChamp.get_champ_dd()
+    champ_dict = GetChamp.get_champ_dict()
 
     # Prepare to update the label for what's been filtered
     enabled_filters_text = "Filtered By: "
@@ -161,7 +180,7 @@ def do_plots():
 
     # prepare a variable to hold the filtered match data and quickly filter out remakes
     filtered_match_data = Parse.filter_remakes(match_data, parsed_match_data)
-    filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+    filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     # apply filters if their boxes were checked
     if f_season.get() == 1:
@@ -169,35 +188,35 @@ def do_plots():
         filter_label.set(enabled_filters_text)
         filtered_match_data = Parse.filter_season(
             filtered_match_data, filtered_parsed_match_data, ssn_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     if f_champ.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + champ_filter.get() + ") "
         filter_label.set(enabled_filters_text)
         filtered_match_data = Parse.filter_champ(
             filtered_match_data, filtered_parsed_match_data, champ_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     if f_match.get() == 1:
         enabled_filters_text = enabled_filters_text + "(Last " + str(match_filter.get()) + " Matches) "
         filter_label.set(enabled_filters_text)
         filtered_match_data = Parse.filter_match(
             filtered_match_data, match_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     if f_QueueType.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + str(q_filter.get()) + ")"
         filter_label.set(enabled_filters_text)
         filtered_match_data = Parse.filter_qtype(
             filtered_match_data, filtered_parsed_match_data, q_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     if f_Role.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + str(role_filter.get()) + ") "
         filter_label.set(enabled_filters_text)
         filtered_match_data = Parse.filter_role(
             filtered_match_data, filtered_parsed_match_data, role_filter.get())
-        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champLookup)
+        filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
     # plt.close("all")
@@ -231,6 +250,7 @@ def do_plots():
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.title("League of Histograms")
+root.iconbitmap('icon.ico')
 c1 = 1  # column 1 startpoint
 c2 = 4  # column 2 startpoint
 spw = 4  # spacer width
@@ -252,7 +272,8 @@ tkinter.Entry(root, width=45, justify="center", textvariable=summname).grid(row=
 tkinter.Label(root, text="Select Region:", anchor="e").grid(row=4, column=c1, sticky="e", rowspan=2)
 o_region = tkinter.OptionMenu(root, reg, *reg_list)
 o_region.grid(row=4, column=c1+1, sticky="w", rowspan=2)
-tkinter.Button(root, text="Get Match Data", width=20, command=get_matches).grid(row=6, column=c1, columnspan=2)
+b_get_match = tkinter.Button(root, text="Get Match Data", width=20, command=get_matches)
+b_get_match.grid(row=6, column=c1, columnspan=2)
 
 
 # SPACER BETWEEN PANEL 1 AND 2 -
@@ -341,6 +362,7 @@ tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnsp
 
 tkinter.Label(root, width=spw).grid(row=999, column=c2+2)
 
+
+# Now that everythiing is drawn, initialize the program and enter the main program loop.
 initialize()
-root.mainloop() # start the application loop
-print("Exiting program gracefully")
+root.mainloop()
