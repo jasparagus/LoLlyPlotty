@@ -6,7 +6,7 @@ import json
 import time
 
 
-def get_sid(APIKey, Region, SummonerName, status_label):
+def get_sid(APIKey, Region, SummonerName):
     """ Get summoner ID from summoner name. Summoner name must be lower-case letters only """
     SID = ""
     SIDCall = (
@@ -14,9 +14,8 @@ def get_sid(APIKey, Region, SummonerName, status_label):
         + "/v1.4/summoner/by-name/" + SummonerName + "?"
         + "api_key=" + APIKey
     )
-    TimesTried = 0
+
     for attempt in range(10):
-        status_label.set("Getting Summoner ID. Attempt #" + str(attempt+1) + "/10")
         try:
             # wait a sec - don't exceed API rate limit
             time.sleep(2)
@@ -25,14 +24,14 @@ def get_sid(APIKey, Region, SummonerName, status_label):
             ProfReplyJSONData = json.loads(ProfReplyData)
             SID = ProfReplyJSONData[SummonerName]["id"]
             SID = str(SID)
-            status_label.set("SID Retrieved (" + SID + ")")
             break
         except:
-            status_label.set("Error with request. Likely culprits: invalid summoner name, API key, or region.")
+            pass
+
     return SID
 
 
-def config(enteredkey, region, summname, status_label):
+def config(enteredkey, region, summname):
     """ Take inputted info and use it to write a config file. """
     APIKey = enteredkey
     APIKey = APIKey.replace(" ", "")  # strip accidental spaces from API key
@@ -42,7 +41,7 @@ def config(enteredkey, region, summname, status_label):
     SummonerName = SummonerName.replace(" ", "").lower()  # strip spaces and caps from SummonerName (not allowed)
     SummonerName = SummonerName.replace('\n', '')  # strip accidental newline characters
 
-    SID = get_sid(APIKey, Region, SummonerName, status_label)  # grab summoner ID using an API call
+    SID = get_sid(APIKey, Region, SummonerName)  # grab summoner ID using an API call
 
     try:
         with open("Configuration.LoHConfig", "r") as file:
