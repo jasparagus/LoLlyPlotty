@@ -23,7 +23,7 @@ def get_champ(config_info, champ_id):
             attempt = 999
         except:
             attempt += 1
-            time.sleep(1)
+            time.sleep(1.4)
     return champ_name
 
 
@@ -33,6 +33,7 @@ def get_champ_dict():
     champ_version = dd_version["n"]["champion"]
     champ_call = "http://ddragon.leagueoflegends.com/cdn/" + champ_version + "/data/en_US/champion.json"
     champ_data = json.loads(urllib.request.urlopen(champ_call).read())
+    time.sleep(1.4)
     with open("Champion.json", "w") as file:
         json.dump(champ_data, file)
 

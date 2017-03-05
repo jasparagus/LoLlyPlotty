@@ -15,10 +15,10 @@ def get_sid(APIKey, Region, SummonerName):
         + "api_key=" + APIKey
     )
 
-    for attempt in range(10):
+    for attempt in range(5):
         try:
             # wait a sec - don't exceed API rate limit
-            time.sleep(2)
+            time.sleep(1.4)
             ProfReply = urllib.request.urlopen(SIDCall)
             ProfReplyData = ProfReply.read()
             ProfReplyJSONData = json.loads(ProfReplyData)
