@@ -48,7 +48,7 @@ def update_match_data(config_info, matchlist, n_matches):
                     print("Getting match " + mid
                           + "(" + str(mm+1) + " of " + str(n_nm) + ")"
                           + ", attempt #" + str(attempt + 1) + "/5")
-                    time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+                    time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
                     match_data[str(n_loaded+mm)] = json.loads(urllib.request.urlopen(match_call).read())
                     with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as file:
                         json.dump(match_data, file)
@@ -79,7 +79,7 @@ def get_matchlist(config_info):
 
     for attempt in range(5):
         print("Getting list of all ranked matches (newest first), attempt #" + str(attempt+1) + "/5")
-        time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+        time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
         try:
             matchlist = json.loads(urllib.request.urlopen(matchlist_call).read())
             with open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "w") as file:
@@ -115,7 +115,7 @@ def get_match_list(config_info):
     # Ask for the matchlist up to 5 times, retunring an empty match_list when failed
     for attempt in range(5):
         # print("Getting list of all ranked matches (newest first), attempt #" + str(attempt+1) + "/5")
-        time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+        time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
         try:
             match_list_reply = json.loads(urllib.request.urlopen(match_list_call).read())
             n_matches = len(match_list_reply["matches"])
@@ -149,7 +149,7 @@ def get_match(config_info, match_list, match_data, match_id):
         # Do the api call
         for attempt in range(5):
             try:
-                time.sleep(2)  # wait a sec to avoid excessive API calls with repeated retries
+                time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
                 match_data[str(match_idx)] = json.loads(urllib.request.urlopen(match_call).read())
                 with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as file:
                     json.dump(match_data, file)

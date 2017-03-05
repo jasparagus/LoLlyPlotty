@@ -5,6 +5,7 @@ Work in progress.
 """
 
 # IMPORT STANDARD MODULES
+import _thread
 import json
 import tkinter
 import matplotlib
@@ -111,23 +112,27 @@ def update_config():
     initialize()
 
 
+def get_matches_on_new_thread(step):
+    _thread.start_new_thread(get_matches, (step,))
+
+
 def get_matches(step=0):
     """
     Checks for variables that need populating and populates them if needed.
     Once populated, moves to the next step, etc., until all new matches are loaded.
     """
     global config_info, match_list, match_data, champ_dict, parsed_match_data, status_label
-    # Update the configuration in case it's new
-    update_config()
 
     # Try to get match list if you don't already have it (step 0)
     if step == 0:
+        update_config()
         # root.update_idletasks()
         match_list = GetRankedMatchData.get_match_list(config_info)
         b_get_match.config(relief="sunken", text="Getting Data, Please Wait")
         status_label.set("Got matchlist")
         root.update_idletasks()
-        root.after(10, get_matches, 1)
+        step += 1
+        root.after(10, get_matches_on_new_thread, step)
 
     # Once you have the match list, get your matches (step 1)
     if step == 1:
@@ -139,14 +144,16 @@ def get_matches(step=0):
                 + " (" + str(len(match_data)) + " of " + str(len(match_list)) + ")"
             )
             root.update_idletasks()
-            root.after(10, get_matches, 1)
+            step = 1  # repeat step 1 until all matches are gotten
+            root.after(10, get_matches_on_new_thread, step)
             status_label.set(
                 "Got match " + str(match_id)
                 + " (" + str(len(match_data)) + " of " + str(len(match_list)) + ")"
             )
         elif len(match_list) == len(match_data):
             root.update_idletasks()
-            root.after(10, get_matches, 2)
+            step = 2  # move to step 2
+            root.after(10, get_matches_on_new_thread, step)
             status_label.set("All matches downloaded")
         else:
             root.update_idletasks()
@@ -248,6 +255,16 @@ def do_plots():
 
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
+
+
+def start_gui():
+    _thread.start_new_thread(draw_gui, (99,))
+
+
+def draw_gui():
+    return
+
+
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.title("League of Histograms")
 root.iconbitmap('icon.ico')
@@ -363,6 +380,7 @@ tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnsp
 tkinter.Label(root, width=spw).grid(row=999, column=c2+2)
 
 
-# Now that everythiing is drawn, initialize the program and enter the main program loop.
+# Now that everythiing is ready, initialize the program and enter the main loop of tkinter.
 initialize()
+draw_gui()
 root.mainloop()
