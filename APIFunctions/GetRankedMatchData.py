@@ -156,10 +156,10 @@ def get_match(config_info, match_list, match_data, match_id):
                 break
             except:
                 match_data[str(match_idx)] = {}
-        print(
-            "Got match " + str(match_id)
-            + "(" + str(match_idx+1) + " of " + str(len(match_list)) + ")"
-        )
+        # print(
+        #     "Got match " + str(match_id)
+        #     + "(" + str(match_idx+1) + " of " + str(len(match_list)) + ")"
+        # )
     except:
         pass
     return match_data

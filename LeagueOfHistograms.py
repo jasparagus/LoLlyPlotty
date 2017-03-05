@@ -107,7 +107,7 @@ def initialize():
 
 def update_config():
     global config_info, status_label
-    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get(), status_label)
+    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
     initialize()
 
 
@@ -121,7 +121,7 @@ def get_matches(step=0):
     update_config()
 
     # Try to get match list if you don't already have it (step 0)
-    if len(match_list) == 0:
+    if step == 0:
         # root.update_idletasks()
         match_list = GetRankedMatchData.get_match_list(config_info)
         b_get_match.config(relief="sunken", text="Getting Data, Please Wait")
