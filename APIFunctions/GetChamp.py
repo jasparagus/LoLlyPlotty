@@ -27,7 +27,7 @@ def get_champ(config_info, champ_id):
     return champ_name
 
 
-def get_champ_dd():
+def get_champ_dict():
     """ Creates a champion lookup table using Riot's Data Dragon. """
     dd_version = json.loads(urllib.request.urlopen("http://ddragon.leagueoflegends.com/realms/na.json").read())
     champ_version = dd_version["n"]["champion"]
@@ -38,19 +38,19 @@ def get_champ_dd():
 
     champ_data = champ_data["data"]
     champ_IDs = champ_data.keys()
-    champLookup = {}
+    champ_dict = {}
 
     # For every champ ID (unformatted champion name) get the pretty name and ID (with spaces, etc.)
     for name in champ_IDs:
-        champLookup[champ_data[name]["key"]] = champ_data[name]["name"]
+        champ_dict[champ_data[name]["key"]] = champ_data[name]["name"]
 
-    return champLookup
+    return champ_dict
 
 
-def champ_name(champLookup, cId):
+def champ_name(champ_dict, cId):
     """ Returns a champion name from its champion ID. """
     try:
-        cName = champLookup[str(cId)]
+        cName = champ_dict[str(cId)]
     except:
         cName = "MissingNo"
     return cName
