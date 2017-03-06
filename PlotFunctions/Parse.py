@@ -65,12 +65,23 @@ def parse_match_data(config_info, match_data, champLookup):
                     match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["totalDamageTaken"])
                 gold.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["goldEarned"])
                 win_lose.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["winner"])
-
-                role_string = (
-                    match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"]
-                    + "\n "
-                    + match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["role"]
-                )
+                """ Some quick parsing of the lanes and roles to make it look nicer"""
+                Lane=match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"]
+                if (Lane == "MIDDLE"):
+                    Lane = "MID"
+                if (Lane == "BOTTOM"):
+                    Lane = "BOT"
+                if (Lane == "JUNGLE"):
+                    Lane = "JNG"
+                TestRole=match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["role"]
+                if (TestRole == "DUO_CARRY"):
+                    TestRole = "CARRY"
+                if (TestRole == "DUO_SUPPORT"):
+                    TestRole = "SUPPORT"
+                role_string = (Lane + "\n" + TestRole)
+                if (TestRole == "NONE"):
+                    TestRole = ""
+                    role_string = (Lane)
                 role.append(role_string)
 
                 """ teamId: 100 is blue side; 200 is red side """
