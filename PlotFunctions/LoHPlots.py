@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 
 
-"""
-FOR TESTING STUFF OUT IN CONSOLE
+
+# FOR TESTING STUFF OUT IN CONSOLE
 import json
 import numpy
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ config_file = open("Configuration.LoHConfig", "r")
 config_info = json.loads(config_file.read())
 filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
 filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
-"""
+
 
 
 def make_wr_dictionary(key_ls, win_ls, store_dict):
@@ -182,7 +182,8 @@ def wr_partysize(filtered_parsed_match_data, n_played_with):
 
     # Get a list of every teammate
     for game in range(n_games):
-        all_teammates = all_teammates + filtered_parsed_match_data["teammates"][str(game)]
+        all_teammates += filtered_parsed_match_data["teammates"][str(game)]
+    # Get rid of duplicates
     teammates_unique = sorted(list(set(all_teammates)))
 
     # Filter out the teammates with whom you played too few games
