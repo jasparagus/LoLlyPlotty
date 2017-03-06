@@ -123,6 +123,9 @@ def get_matches(step=0):
     """
     global config_info, match_list, match_data, champ_dict, parsed_match_data, status_label
 
+    size_match_data = len(match_data)
+    size_match_list = len(match_list)
+
     # Try to get match list if you don't already have it (step 0)
     if step == 0:
         update_config()
@@ -136,21 +139,21 @@ def get_matches(step=0):
 
     # Once you have the match list, get your matches (step 1)
     if step == 1:
-        if len(match_list) > len(match_data):
-            match_id = match_list[len(match_data)]
+        if size_match_list > size_match_data:
+            match_id = match_list[size_match_data]
             match_data = GetRankedMatchData.get_match(config_info, match_list, match_data, match_id)
             status_label.set(
                 "Got match " + str(match_id)
-                + " (" + str(len(match_data)) + " of " + str(len(match_list)) + ")"
+                + " (" + str(size_match_data) + " of " + str(size_match_list) + ")"
             )
             root.update_idletasks()
             step = 1  # repeat step 1 until all matches are gotten
             root.after(10, get_matches_on_new_thread, step)
             status_label.set(
                 "Got match " + str(match_id)
-                + " (" + str(len(match_data)) + " of " + str(len(match_list)) + ")"
+                + " (" + str(size_match_data) + " of " + str(size_match_list) + ")"
             )
-        elif len(match_list) == len(match_data):
+        elif size_match_list == size_match_data:
             root.update_idletasks()
             step = 2  # move to step 2
             root.after(10, get_matches_on_new_thread, step)
