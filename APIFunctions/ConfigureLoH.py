@@ -43,11 +43,13 @@ def config(enteredkey, region, summname):
 
     SID = get_sid(APIKey, Region, SummonerName)  # grab summoner ID using an API call
 
+    # Try to get a region list and queue type list from the config file
     try:
         with open("Configuration.LoHConfig", "r") as file:
             config_info = json.loads(file.read())
         RegionList = config_info["RegionList"]
     except:
+        # If it's not in the file, use some default values
         RegionList = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
 
     try:
@@ -55,6 +57,7 @@ def config(enteredkey, region, summname):
             config_info = json.loads(file.read())
         RankedQueues = config_info["RankedQueues"]
     except:
+        # If it's not in the file, use some default values
         RankedQueues = ([
             "RANKED_FLEX_SR",
             "RANKED_SOLO_5x5",

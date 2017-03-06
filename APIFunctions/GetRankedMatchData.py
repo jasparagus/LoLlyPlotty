@@ -164,14 +164,3 @@ def get_match(config_info, match_list, match_data, match_id):
     except:
         pass
     return match_data
-
-
-"""
-import urllib.request  # import ability to make URL requests
-import urllib.error  # import error handler for URL requests
-import json  # import ability to parse JSON objects
-import time  # import time to allow for use of time.sleep(secs). Prevents excessive api calls
-config_info = json.loads(open("Configuration.LoHConfig", "r").read())
-match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r").read())
-
-"""
