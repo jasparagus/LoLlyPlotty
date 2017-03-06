@@ -5,7 +5,7 @@ Work in progress.
 """
 
 # IMPORT STANDARD MODULES
-import _thread
+import threading
 import json
 import tkinter
 import matplotlib
@@ -106,81 +106,90 @@ def initialize():
         status_label.set("Initialized with no match data")
 
 
-def update_config():
-    global config_info, status_label
-    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
-    initialize()
-
-
-def get_matches_on_new_thread(step):
-    _thread.start_new_thread(get_matches, (step,))
-
-
 def get_matches(step=0):
     """
-    Checks for variables that need populating and populates them if needed.
-    Once populated, moves to the next step, etc., until all new matches are loaded.
+    Starts a new thread (different from the main thread) and runs the get match command on it.
+    This prevents the main GUI thread from "freezing". Starts a new thread at each step.
+    """
+    if step == 0:
+        thread0 = threading.Thread(target=get_matches0)
+        thread0.start()
+    if step == 1:
+        thread1 = threading.Thread(target=get_matches1)
+        thread1.start()
+    elif step == 2:
+        thread2 = threading.Thread(target=get_matches2)
+        thread2.start()
+
+
+def get_matches0():
+    """
+    STEP 0 - Try to get match list since it may be empty at this point
+    """
+    global config_info, match_list, match_data, champ_dict, parsed_match_data, status_label
+
+    b_get_match.config(relief="sunken", text="Getting Data, Please Wait")
+    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
+    initialize()
+    match_list = GetRankedMatchData.get_match_list(config_info)
+    status_label.set("Got matchlist")
+    root.update_idletasks()
+    root.after(10, get_matches, 1)
+
+
+def get_matches1():
+    """
+    STEP 1 - Using the match list, get your matches
     """
     global config_info, match_list, match_data, champ_dict, parsed_match_data, status_label
 
     size_match_data = len(match_data)
     size_match_list = len(match_list)
 
-    # Try to get match list if you don't already have it (step 0)
-    if step == 0:
-        update_config()
-        # root.update_idletasks()
-        match_list = GetRankedMatchData.get_match_list(config_info)
-        b_get_match.config(relief="sunken", text="Getting Data, Please Wait")
-        status_label.set("Got matchlist")
+    if size_match_list > size_match_data:
+        match_id = match_list[size_match_data]
+        match_data = GetRankedMatchData.get_match(config_info, match_list, match_data, match_id)
         root.update_idletasks()
-        step += 1
-        root.after(10, get_matches_on_new_thread, step)
-
-    # Once you have the match list, get your matches (step 1)
-    if step == 1:
-        if size_match_list > size_match_data:
-            match_id = match_list[size_match_data]
-            match_data = GetRankedMatchData.get_match(config_info, match_list, match_data, match_id)
-            status_label.set(
-                "Got match " + str(match_id)
-                + " (" + str(size_match_data) + " of " + str(size_match_list) + ")"
-            )
-            root.update_idletasks()
-            step = 1  # repeat step 1 until all matches are gotten
-            root.after(10, get_matches_on_new_thread, step)
-            status_label.set(
-                "Got match " + str(match_id)
-                + " (" + str(size_match_data) + " of " + str(size_match_list) + ")"
-            )
-        elif size_match_list == size_match_data:
-            root.update_idletasks()
-            step = 2  # move to step 2
-            root.after(10, get_matches_on_new_thread, step)
-            status_label.set("All matches downloaded")
-        else:
-            root.update_idletasks()
-            status_label.set("Problem getting matches. Try clearing application data.")
-
-    # Once you have all matches, make a champion lookup dictionary and parse the data (step 2)
-    if step == 2:
-        if champ_dict == {}:
-            champ_dict = GetChamp.get_champ_dict()
-
-        parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
-        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
-            json.dump(parsed_match_data, file)
-        initialize()
+        root.after(10, get_matches, 1)
+        status_label.set(
+            "Got match " + str(match_id)
+            + " (" + str(size_match_data) + " of " + str(size_match_list) + ")"
+        )
+    elif size_match_list == size_match_data:
         root.update_idletasks()
-        b_get_match.config(relief="raised", text="Get Match Data")
-        status_label.set("Match data up to date and ready to analyze")
+        root.after(10, get_matches, 2)
+        status_label.set("All matches downloaded")
+    else:
         root.update_idletasks()
+        status_label.set("Problem getting matches - try clearing app data")
+
+
+def get_matches2():
+    """
+    STEP 2 - With all matches downloaded, make a champion lookup dictionary and parse the data
+    """
+    global config_info, match_list, match_data, champ_dict, parsed_match_data, status_label
+
+    size_match_data = len(match_data)
+
+    if champ_dict == {}:
+        champ_dict = GetChamp.get_champ_dict()
+
+    parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
+    with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
+        json.dump(parsed_match_data, file)
+    initialize()  # This is necessary to update the number of matches and dropdown lists
+    root.update_idletasks()
+    b_get_match.config(relief="raised", text="Get Match Data")
+    status_label.set("All (" + str(size_match_data) + ") matches downloaded; ready to analyze")
+    root.update_idletasks()
 
 
 def do_plots():
     global config_info, champ_dict, match_data, parsed_match_data
     # filter_label, ssn_filter, champ_filter, match_filter, status_label
-    update_config()
+    config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
+    initialize()
 
     champ_dict = GetChamp.get_champ_dict()
 
@@ -229,32 +238,37 @@ def do_plots():
         filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
-    # plt.close("all")
+    # plt.close("all")  # On second thought, it's fine to have extra plots, but keeping this for posterity.
 
-    if cb_wr_time.get() == 1:
-        LoHPlots.wr_time(filtered_parsed_match_data, 7)
+    if len(filtered_parsed_match_data["win_lose"]) > 2:
+        if cb_wr_time.get() == 1:
+            LoHPlots.wr_time(filtered_parsed_match_data, 7)
 
-    if cb_wr_champ.get() == 1:
-        LoHPlots.wr_champ(filtered_parsed_match_data, 2)
+        if cb_wr_champ.get() == 1:
+            LoHPlots.wr_champ(filtered_parsed_match_data, 2)
 
-    if cb_wr_teammate.get() == 1:
-        LoHPlots.wr_teammate(filtered_parsed_match_data, 3)
+        if cb_wr_teammate.get() == 1:
+            LoHPlots.wr_teammate(filtered_parsed_match_data, 3)
 
-    if cb_wr_partysize.get() == 1:
-        LoHPlots.wr_partysize(filtered_parsed_match_data, 3)
+        if cb_wr_partysize.get() == 1:
+            LoHPlots.wr_partysize(filtered_parsed_match_data, 3)
 
-    if cb_wr_role.get() == 1:
-        LoHPlots.wr_role(filtered_parsed_match_data)
+        if cb_wr_role.get() == 1:
+            LoHPlots.wr_role(filtered_parsed_match_data)
 
-    if cb_wr_dmg.get() == 1:
-        LoHPlots.wr_dmg(filtered_parsed_match_data)
+        if cb_wr_dmg.get() == 1:
+            LoHPlots.wr_dmg(filtered_parsed_match_data)
 
-    if cb_wr_mapside.get() == 1:
-        LoHPlots.wr_mapside(filtered_parsed_match_data)
+        if cb_wr_mapside.get() == 1:
+            LoHPlots.wr_mapside(filtered_parsed_match_data)
 
-    plt.show()
+        plt.show()
 
-    status_label.set("Done Generating Plots (" + str(len(filtered_match_data)) + " Matches)")
+        status_label.set("Done Generating Plots (" + str(len(filtered_match_data)) + " Matches)")
+    else:
+        status_label.set("Too few matches (only found " + str(len(filtered_match_data)) + ")")
+
+
 
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
@@ -266,7 +280,6 @@ def start_gui():
 
 def draw_gui():
     return
-
 
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.title("League of Histograms")
@@ -382,8 +395,8 @@ tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnsp
 
 tkinter.Label(root, width=spw).grid(row=999, column=c2+2)
 
-
-# Now that everythiing is ready, initialize the program and enter the main loop of tkinter.
 initialize()
-draw_gui()
 root.mainloop()
+
+# Now that everything is ready, initialize the program and enter the main loop of tkinter.
+# draw_gui()
