@@ -237,7 +237,9 @@ def wr_role(filtered_parsed_match_data):
     avg_win_rate = sum(win_ls)/len(win_ls)
 
     for role in wr_role_dict.keys():
+        # winrate for each role to bars_data
         bars_data.append(wr_role_dict[role][1]/wr_role_dict[role][0])
+        # total matches for each role to n_per_bar
         n_per_bar.append(wr_role_dict[role][0])
         x_labels.append(role)
 
