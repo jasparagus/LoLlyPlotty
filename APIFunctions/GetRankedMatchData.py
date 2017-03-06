@@ -16,6 +16,7 @@ def update_match_data(config_info, matchlist, n_matches):
         try:
             with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r") as file:
                 match_data_loaded = json.loads(file.read())
+            # Find matches that already existed in file
             n_loaded = len(match_data_loaded)
             for mm in range(n_matches):
                 mid = str(matchlist["matches"][mm]["matchId"])

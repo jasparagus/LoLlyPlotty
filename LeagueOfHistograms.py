@@ -9,8 +9,8 @@ import _thread
 import json
 import tkinter
 import matplotlib
-import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
 # IMPORT CUSTOM MODULES
 from APIFunctions import ConfigureLoH
