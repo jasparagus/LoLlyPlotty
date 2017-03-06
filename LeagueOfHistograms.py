@@ -192,6 +192,7 @@ def do_plots():
     initialize()
 
     champ_dict = GetChamp.get_champ_dict()
+    parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
 
     # Prepare to update the label for what's been filtered
     enabled_filters_text = "Filtered By: "
