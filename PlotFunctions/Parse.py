@@ -72,7 +72,7 @@ def parse_match_data(config_info, match_data, champLookup):
                 if (Lane == "BOTTOM"):
                     Lane = "BOT"
                 if (Lane == "JUNGLE"):
-                    Lane = "JNG"
+                    Lane = "JUNGLE"
                 TestRole=match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["role"]
                 if (TestRole == "DUO_CARRY"):
                     TestRole = "CARRY"

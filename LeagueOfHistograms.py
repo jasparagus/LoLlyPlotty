@@ -30,7 +30,7 @@ parsed_match_data = {}
 champ_dict = {}
 
 def initialize():
-    global config_info, match_data, parsed_match_data
+    global config_info, match_data, champ_dict, parsed_match_data
 
     try:
         with open("Configuration.LoHConfig", "r") as file:
@@ -41,6 +41,10 @@ def initialize():
     try:
         with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r") as file:
             match_data = json.loads(file.read())
+        champ_dict = GetChamp.get_champ_dict()
+        parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
+        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
+            json.dump(parsed_match_data, file)
     except:
         match_data = {}
 
@@ -190,10 +194,9 @@ def do_plots():
     # filter_label, ssn_filter, champ_filter, match_filter, status_label
     config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
     initialize()
-
-    champ_dict = GetChamp.get_champ_dict()
-    parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
-
+	
+    print(len(parsed_match_data["win_lose"]))
+	
     # Prepare to update the label for what's been filtered
     enabled_filters_text = "Filtered By: "
     filter_label.set(enabled_filters_text + "All Matches")
