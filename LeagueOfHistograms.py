@@ -194,9 +194,9 @@ def do_plots():
     # filter_label, ssn_filter, champ_filter, match_filter, status_label
     config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
     initialize()
-	
+
     print(len(parsed_match_data["win_lose"]))
-	
+
     # Prepare to update the label for what's been filtered
     enabled_filters_text = "Filtered By: "
     filter_label.set(enabled_filters_text + "All Matches")

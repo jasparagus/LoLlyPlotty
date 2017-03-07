@@ -1,7 +1,7 @@
 from APIFunctions import GetChamp
 
 
-def parse_match_data(config_info, match_data, champLookup):
+def parse_match_data(config_info, match_data, champ_dict):
     """ Converts raw match data into a set of (mostly) lists for analysis """
     summoner_name = config_info["Settings"]["SummonerName"]
     n_matches = len(match_data)
@@ -138,7 +138,7 @@ def parse_match_data(config_info, match_data, champLookup):
             damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
             gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
         champ.append(
-            GetChamp.champ_name(champLookup, match_data[str(mm)]["participants"][summ_num[mm]]["championId"])
+            GetChamp.champ_name(champ_dict, match_data[str(mm)]["participants"][summ_num[mm]]["championId"])
         )
     season_unique = sorted(list(set(season)))
     queue_types = sorted(list(set(queue_type)))
@@ -194,7 +194,7 @@ import urllib.request
 config_info = json.loads(open("Configuration.LoHConfig", "r").read())
 match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r").read())
 parsed_match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r").read())
-champLookup = get_champ_dd()
+champ_dict = get_champ_dict()
 """
 
 """
