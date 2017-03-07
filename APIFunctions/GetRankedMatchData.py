@@ -2,96 +2,7 @@ import urllib.request  # import ability to make URL requests
 import urllib.error  # import error handler for URL requests
 import json  # import ability to parse JSON objects
 import time  # import time to allow for use of time.sleep(secs). Prevents excessive api calls
-
-
-def update_match_data(config_info, matchlist, n_matches):
-    """
-    Pulls down list of matches, checks against saved data, grabs missing data, saves everything.
-    Currently being deprecated in favor of 2 separate functions
-    """
-    match_data_loaded = {}
-    match_data = {}
-    new_matches = []
-    if n_matches != 0:
-        try:
-            with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r") as file:
-                match_data_loaded = json.loads(file.read())
-            # Find matches that already existed in file
-            n_loaded = len(match_data_loaded)
-            for mm in range(n_matches):
-                mid = str(matchlist["matches"][mm]["matchId"])
-                if str(n_matches-1-mm) in match_data_loaded.keys():
-                    print(mid, "found in file")
-                else:
-                    print(mid, "(match ",  mm, ") is new")
-                    new_matches.append(mid)
-            print("Found ", len(new_matches), " new matches")
-        except:
-            print("Saved match data not found, downloading all matches")
-            n_loaded = 0
-            for mm in range(n_matches):
-                mid = str(matchlist["matches"][mm]["matchId"])
-                new_matches.append(mid)
-        n_nm = len(new_matches)
-
-        # reverse the order to grab oldest missing match first, then append in chronological order
-        new_matches = new_matches[::-1]
-        match_data = match_data_loaded
-        for mm in range(n_nm):
-            mid = str(new_matches[mm])
-            match_call = (
-                "https://na.api.pvp.net/api/lol/" + config_info["Settings"]["Region"]
-                + "/v2.2/match/" + mid + "?"
-                + "api_key=" + config_info["Settings"]["APIKey"]
-            )
-            for attempt in range(5):
-                try:
-                    print("Getting match " + mid
-                          + "(" + str(mm+1) + " of " + str(n_nm) + ")"
-                          + ", attempt #" + str(attempt + 1) + "/5")
-                    time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
-                    match_data[str(n_loaded+mm)] = json.loads(urllib.request.urlopen(match_call).read())
-                    with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as file:
-                        json.dump(match_data, file)
-                    print("Got match " + mid)
-                    break
-                except:
-                    match_data[str(n_loaded+mm)] = {}
-    print("Done getting match data.")
-    return match_data
-
-
-def get_matchlist(config_info):
-    """
-    Pulls down list of matches and returns them as matchlist
-    IN PROCESS OF BEING DEPRECATED
-    """
-    matchlist = {}
-    n_matches = 0
-    matchlist_call = (
-        "https://na.api.pvp.net/api/lol/" + config_info["Settings"]["Region"]
-        + "/v2.2/matchlist/by-summoner/" + config_info["Settings"]["SID"] + "?"
-        + "rankedQueues="
-    )
-
-    for queue in config_info["RankedQueues"]:
-        matchlist_call = matchlist_call + queue + ","
-    matchlist_call = matchlist_call[:-1] + "&" + "api_key=" + config_info["Settings"]["APIKey"]
-
-    for attempt in range(5):
-        print("Getting list of all ranked matches (newest first), attempt #" + str(attempt+1) + "/5")
-        time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
-        try:
-            matchlist = json.loads(urllib.request.urlopen(matchlist_call).read())
-            with open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "w") as file:
-                json.dump(matchlist, file)
-            n_matches = len(matchlist["matches"])
-            print("Matchlist downloaded")
-            break
-        except:
-            pass
-
-    return matchlist, n_matches
+import pathlib  # allows checking for whether or not match_data JSON file exists already
 
 
 def get_match_list(config_info):
@@ -152,8 +63,19 @@ def get_match(config_info, match_list, match_data, match_id):
             try:
                 time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
                 match_data[str(match_idx)] = json.loads(urllib.request.urlopen(match_call).read())
-                with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as file:
-                    json.dump(match_data, file)
+
+                f_path = config_info["Settings"]["SummonerName"] + "_MatchData.json"
+
+                if pathlib.Path(f_path).is_file():
+                    with open(f_path, mode="r+") as file:
+                        file.seek(0, 2)
+                        position = file.tell() - 1
+                        file.seek(position)
+                        file.write(", \"" + str(match_idx) + "\": " + json.dumps(match_data[str(match_idx)]) + "}")
+                else:
+                    with open(f_path, "w") as file:
+                        json.dump(match_data, file)
+
                 break
             except:
                 match_data[str(match_idx)] = {}
@@ -164,3 +86,97 @@ def get_match(config_info, match_list, match_data, match_id):
     except:
         pass
     return match_data
+
+
+# DEPRECATED FUNCTIONS Follow
+#
+#
+# def update_match_data(config_info, matchlist, n_matches):
+#     """
+#     Pulls down list of matches, checks against saved data, grabs missing data, saves everything.
+#     Currently being deprecated in favor of 2 separate functions
+#     DEPRECATED
+#     """
+#     match_data_loaded = {}
+#     match_data = {}
+#     new_matches = []
+#     if n_matches != 0:
+#         try:
+#             with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r") as file:
+#                 match_data_loaded = json.loads(file.read())
+#             # Find matches that already existed in file
+#             n_loaded = len(match_data_loaded)
+#             for mm in range(n_matches):
+#                 mid = str(matchlist["matches"][mm]["matchId"])
+#                 if str(n_matches-1-mm) in match_data_loaded.keys():
+#                     print(mid, "found in file")
+#                 else:
+#                     print(mid, "(match ",  mm, ") is new")
+#                     new_matches.append(mid)
+#             print("Found ", len(new_matches), " new matches")
+#         except:
+#             print("Saved match data not found, downloading all matches")
+#             n_loaded = 0
+#             for mm in range(n_matches):
+#                 mid = str(matchlist["matches"][mm]["matchId"])
+#                 new_matches.append(mid)
+#         n_nm = len(new_matches)
+#
+#         # reverse the order to grab oldest missing match first, then append in chronological order
+#         new_matches = new_matches[::-1]
+#         match_data = match_data_loaded
+#         for mm in range(n_nm):
+#             mid = str(new_matches[mm])
+#             match_call = (
+#                 "https://na.api.pvp.net/api/lol/" + config_info["Settings"]["Region"]
+#                 + "/v2.2/match/" + mid + "?"
+#                 + "api_key=" + config_info["Settings"]["APIKey"]
+#             )
+#             for attempt in range(5):
+#                 try:
+#                     print("Getting match " + mid
+#                           + "(" + str(mm+1) + " of " + str(n_nm) + ")"
+#                           + ", attempt #" + str(attempt + 1) + "/5")
+#                     time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
+#                     match_data[str(n_loaded+mm)] = json.loads(urllib.request.urlopen(match_call).read())
+#                     with open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "w") as file:
+#                         json.dump(match_data, file)
+#                     print("Got match " + mid)
+#                     break
+#                 except:
+#                     match_data[str(n_loaded+mm)] = {}
+#     print("Done getting match data.")
+#     return match_data
+#
+#
+# def get_matchlist(config_info):
+#     """
+#     Pulls down list of matches and returns them as matchlist
+#     DEPRECATED 2017-03-05
+#     """
+#     matchlist = {}
+#     n_matches = 0
+#     matchlist_call = (
+#         "https://na.api.pvp.net/api/lol/" + config_info["Settings"]["Region"]
+#         + "/v2.2/matchlist/by-summoner/" + config_info["Settings"]["SID"] + "?"
+#         + "rankedQueues="
+#     )
+#
+#     for queue in config_info["RankedQueues"]:
+#         matchlist_call = matchlist_call + queue + ","
+#     matchlist_call = matchlist_call[:-1] + "&" + "api_key=" + config_info["Settings"]["APIKey"]
+#
+#     for attempt in range(5):
+#         print("Getting list of all ranked matches (newest first), attempt #" + str(attempt+1) + "/5")
+#         time.sleep(1.4)  # wait a sec to avoid excessive API calls with repeated retries
+#         try:
+#             matchlist = json.loads(urllib.request.urlopen(matchlist_call).read())
+#             with open(config_info["Settings"]["SummonerName"] + "_MatchList.json", "w") as file:
+#                 json.dump(matchlist, file)
+#             n_matches = len(matchlist["matches"])
+#             print("Matchlist downloaded")
+#             break
+#         except:
+#             pass
+#
+#     return matchlist, n_matches
