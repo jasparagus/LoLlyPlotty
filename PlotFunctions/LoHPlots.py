@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt  # This is for making plots
 # import json
 # import numpy
 # import matplotlib.pyplot as plt
-# config_file = open("Configuration.LoHConfig", "r")
+# config_file = open("Configuration.json", "r")
 # config_info = json.loads(config_file.read())
 # filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
 # filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())

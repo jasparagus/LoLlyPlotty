@@ -33,7 +33,7 @@ def initialize():
     global config_info, match_data, champ_dict, parsed_match_data
 
     try:
-        with open("Configuration.LoHConfig", "r") as file:
+        with open("Configuration.json", "r") as file:
             config_info = json.loads(file.read())
     except:
         config_info = {}
@@ -43,13 +43,13 @@ def initialize():
             match_data = json.loads(file.read())
         champ_dict = GetChamp.get_champ_dict()
         parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
-        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
+        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.json", "w") as file:
             json.dump(parsed_match_data, file)
     except:
         match_data = {}
 
     try:
-        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r") as file:
+        with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.json", "r") as file:
             parsed_match_data = json.loads(file.read())
     except:
         parsed_match_data = {}
@@ -165,7 +165,7 @@ def get_matches1():
         status_label.set("All matches downloaded")
     else:
         root.update_idletasks()
-        status_label.set("Problem getting matches - try clearing app data")
+        status_label.set("Problem getting matches - try deleting app data")
 
 
 def get_matches2():
@@ -180,7 +180,7 @@ def get_matches2():
         champ_dict = GetChamp.get_champ_dict()
 
     parsed_match_data = Parse.parse_match_data(config_info, match_data, champ_dict)
-    with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "w") as file:
+    with open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.json", "w") as file:
         json.dump(parsed_match_data, file)
     initialize()  # This is necessary to update the number of matches and dropdown lists
     root.update_idletasks()
