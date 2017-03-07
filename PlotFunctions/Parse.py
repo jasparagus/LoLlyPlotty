@@ -191,7 +191,7 @@ def parse_match_data(config_info, match_data, champ_dict):
 # For debugging
 import json
 import urllib.request
-config_info = json.loads(open("Configuration.LoHConfig", "r").read())
+config_info = json.loads(open("Configuration.json", "r").read())
 match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_MatchData.json", "r").read())
 parsed_match_data = json.loads(open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r").read())
 champ_dict = get_champ_dict()
