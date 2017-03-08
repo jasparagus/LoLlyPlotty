@@ -45,7 +45,7 @@ def config(enteredkey, region, summname):
 
     # Try to get a region list and queue type list from the config file
     try:
-        with open("Configuration.LoHConfig", "r") as file:
+        with open("Configuration.json", "r") as file:
             config_info = json.loads(file.read())
         RegionList = config_info["RegionList"]
     except:
@@ -53,7 +53,7 @@ def config(enteredkey, region, summname):
         RegionList = ["br", "eune", "euw", "jp", "kr", "lan", "las", "na", "oce", "tr", "ru", "pbe", "global"]
 
     try:
-        with open("Configuration.LoHConfig", "r") as file:
+        with open("Configuration.json", "r") as file:
             config_info = json.loads(file.read())
         RankedQueues = config_info["RankedQueues"]
     except:
@@ -76,7 +76,7 @@ def config(enteredkey, region, summname):
         "RankedQueues": RankedQueues
     }
 
-    with open("Configuration.LoHConfig", 'w') as file:
+    with open("Configuration.json", 'w') as file:
         json.dump(config_info, file)
 
     return config_info
