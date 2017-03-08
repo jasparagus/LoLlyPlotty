@@ -160,6 +160,7 @@ def parse_match_data(config_info, match_data, champ_dict):
         )
     season_unique = sorted(list(set(season)))
     queue_types = sorted(list(set(queue_type)))
+    avg_wr = sum(win_lose) / len(win_lose)
     champs_played = sorted(list(set(champ)))
     roles = sorted(list(set(role)))
 
@@ -170,6 +171,7 @@ def parse_match_data(config_info, match_data, champ_dict):
         "queue_type": queue_type,
         "queue_types": queue_types,
         "win_lose": win_lose,
+        "avg_wr": avg_wr,
         "timestamp": timestamp,
         "match_lengths": match_lengths,
         "teammates": teammates,
