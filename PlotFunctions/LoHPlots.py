@@ -45,7 +45,7 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
     n_of_things_to_plot = len(bars_data)
 
     fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.85, bottom=0.2)
+    fig.subplots_adjust(top=0.8, bottom=0.2)
 
     # prepare basics
     locs = range(n_of_things_to_plot)
@@ -55,8 +55,8 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
     # create objects to plot
     bars1 = ax.bar(locs, bars_data, width, color='r')
-    wrA, = plt.plot([startx, endx], [avg_win_rate, avg_win_rate], label="Avg. WR", linestyle="--", color="b")
-    wr50, = plt.plot([startx, endx], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
+    wr_avg, = plt.plot([startx, endx], [avg_win_rate, avg_win_rate], label="Avg. WR", linestyle="--", color="b")
+    wr_50, = plt.plot([startx, endx], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
 
     # add some text for labels, title and axes ticks
     ax.set_ylabel('Winrate')
@@ -66,7 +66,7 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
     plt.xlim([startx, endx])
     plt.ylim([0, 1.2])
 
-    l2 = plt.legend(handles=(wrA, wr50), loc=(0, 1.05), ncol=1)
+    l2 = plt.legend(handles=(wr_avg, wr_50), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(l2)
 
 
@@ -87,26 +87,30 @@ def wr_time(filtered_parsed_match_data, box, enabled_filters_text):
     """
     Plots winrate trend over time using a moving average with average with width "box"
     """
-    plt.figure()
-    ax = plt.subplot(111)
-    plt.subplots_adjust(top=0.8)
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.7, bottom=0.1)
+
+    # plt.figure()
+    # ax = plt.subplot(111)
+    # plt.subplots_adjust(top=0.7)
 
     n_matches = len(filtered_parsed_match_data["win_lose"])
     wr = sum(filtered_parsed_match_data["win_lose"])/n_matches
     p1, = plt.plot(
             moving_avg(filtered_parsed_match_data["win_lose"], box), label="Moving Avg.", linestyle="-", color="r")
-    p2, = plt.plot([0, n_matches],[wr, wr], label="Avg. WR", linestyle="--", color="b")
-    p3, = plt.plot([0, n_matches],[0.5, 0.5], label="50% WR", linestyle=":", color="k")
+    p2, = plt.plot([0, n_matches], [wr, wr], label="Avg. WR", linestyle="--", color="b")
+    p3, = plt.plot([0, n_matches], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
 
-    ax.legend(handles=(p1, p2, p3), loc=(0, 1.05), ncol=1)
+    ax.legend(handles=(p1, p2, p3), loc=(0, 1.1), ncol=1)
 
-    plt.xlabel("Match Number (Chronological)")
-    plt.ylabel("Win Rate")
-    plt.title("Winrate Over Time " + enabled_filters_text)
-    plt.axis([0, n_matches, 0, 1])
+    ax.set_xlabel("Match Number (Chronological)")
+    ax.set_ylabel("Win Rate")
+    ax.set_title("Winrate Over Time \n" + enabled_filters_text)
+    plt.xlim([0, n_matches])
+    plt.ylim([0, 1])
 
 
-def wr_champ(filtered_parsed_match_data, n_played):
+def wr_champ(filtered_parsed_match_data, n_played, enabled_filters_text):
     """
     Winrates for each champion played more than n_games
     """
@@ -129,13 +133,13 @@ def wr_champ(filtered_parsed_match_data, n_played):
     bars_data = wr_by_champ
     n_per_bar = n_by_champ
     x_labels = champs_to_keep
-    title_string = "Winrate By Champion \n" + "(Played " + str(n_played) + "+ Games)"
+    title_string = "Winrate By Champion \n" + "(Played " + str(n_played) + "+ Games)\n" + enabled_filters_text
     avg_win_rate = sum(filtered_parsed_match_data["win_lose"])/len(filtered_parsed_match_data["win_lose"])
 
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
-def wr_teammate(filtered_parsed_match_data, n_played):
+def wr_teammate(filtered_parsed_match_data, n_played, enabled_filters_text):
     """ Winrates on a per-teammate basis for teammates from a number of games >= n_games """
     n_games = len(filtered_parsed_match_data["win_lose"])
     all_teammates = []
@@ -165,7 +169,7 @@ def wr_teammate(filtered_parsed_match_data, n_played):
     bars_data = wr_by_teammate
     n_per_bar = games_with_teammate
     x_labels = teammates_unique_keep
-    title_string = "Winrate by Teammate \n" + "(Played " + str(n_played) + "+ Games Together)"
+    title_string = "Winrate by Teammate\n" + "(" + str(n_played) + "+ Games Together)\n" + enabled_filters_text
     avg_win_rate = wr
 
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
@@ -209,13 +213,13 @@ def wr_partysize(filtered_parsed_match_data, n_played_with,enabled_filters_text)
         n_per_bar.append(wr_partysize_dict[p_size][0])
         x_labels.append(str(p_size) + " Friend(s)")
 
-    title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)" + enabled_filters_text
+    title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)\n" + enabled_filters_text
     avg_win_rate = sum(filtered_parsed_match_data["win_lose"])/len(filtered_parsed_match_data["win_lose"])
 
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
-def wr_role(filtered_parsed_match_data, n_games_role):
+def wr_role(filtered_parsed_match_data, n_games_role, enabled_filters_text):
     """ Winrate as a function of role """
     # list of roles
     role_ls = filtered_parsed_match_data["role"]
@@ -233,7 +237,7 @@ def wr_role(filtered_parsed_match_data, n_games_role):
     bars_data = []
     n_per_bar = []
     x_labels = []
-    title_string = "Winrate By Role"
+    title_string = "Winrate By Role\n" + enabled_filters_text
     avg_win_rate = sum(win_ls)/len(win_ls)
 
     for role in wr_role_dict.keys():
@@ -246,7 +250,7 @@ def wr_role(filtered_parsed_match_data, n_games_role):
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
-def wr_dmg(filtered_parsed_match_data):
+def wr_dmg(filtered_parsed_match_data, enabled_filters_text):
     """ Winrate as a function of damage share (to champs / total / taken) """
 
     plt.figure()
@@ -261,10 +265,39 @@ def wr_dmg(filtered_parsed_match_data):
     print("wr_vs_dmg is broken")
 
 
-def wr_mapside(filtered_parsed_match_data):
+def wr_mapside(filtered_parsed_match_data, enabled_filters_text):
     """ Winrate as a function of map side """
-    plt.figure()
-    print("wr_vs_mapside is broken")
+    # list of map sides
+    side_ls = filtered_parsed_match_data["map_side"]
+
+    # list of wins/losses
+    win_ls = filtered_parsed_match_data["win_lose"]
+
+    # dictionary {"role" [matches, wins, winrate]}
+    wr_side_dict = {}
+    # Fill in the dictionary
+    make_wr_dictionary(side_ls, win_ls, wr_side_dict)
+    # print(w_l_dict)
+    # print(role_ls, win_ls)
+    bars_data = []
+    n_per_bar = []
+    x_labels = []
+    title_string = "Winrate By Map Side\n" + enabled_filters_text
+    avg_win_rate = sum(win_ls)/len(win_ls)
+
+    for side in wr_side_dict.keys():
+        # winrate for each role to bars_data
+        bars_data.append(wr_side_dict[side][1]/wr_side_dict[side][0])
+        # total matches for each role to n_per_bar
+        n_per_bar.append(wr_side_dict[side][0])
+        if side == 100:
+            x_labels.append("Blue")
+        elif side == 200:
+            x_labels.append("Red")
+        else:
+            x_labels.append("Unknown")
+
+    make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
 def moving_avg(ls, box):

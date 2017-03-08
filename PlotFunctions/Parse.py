@@ -66,22 +66,21 @@ def parse_match_data(config_info, match_data, champ_dict):
                 gold.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["goldEarned"])
                 win_lose.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["winner"])
                 """ Some quick parsing of the lanes and roles to make it look nicer"""
-                Lane=match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"]
-                if (Lane == "MIDDLE"):
-                    Lane = "MID"
-                if (Lane == "BOTTOM"):
-                    Lane = "BOT"
-                if (Lane == "JUNGLE"):
-                    Lane = "JUNGLE"
-                TestRole=match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["role"]
-                if (TestRole == "DUO_CARRY"):
-                    TestRole = "CARRY"
-                if (TestRole == "DUO_SUPPORT"):
-                    TestRole = "SUPPORT"
-                role_string = (Lane + "\n" + TestRole)
-                if (TestRole == "NONE"):
-                    TestRole = ""
-                    role_string = (Lane)
+                lane = match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["lane"]
+                if lane == "MIDDLE":
+                    lane = "MID"
+                if lane == "BOTTOM":
+                    lane = "BOT"
+                if lane == "JUNGLE":
+                    lane = "JUNGLE"
+                temp_role = match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["role"]
+                if temp_role == "DUO_CARRY":
+                    temp_role = "CARRY"
+                if temp_role == "DUO_SUPPORT":
+                    temp_role = "SUPPORT"
+                role_string = lane + " \n" + temp_role
+                if temp_role == "NONE":
+                    role_string = lane
                 role.append(role_string)
 
                 """ teamId: 100 is blue side; 200 is red side """
@@ -90,17 +89,36 @@ def parse_match_data(config_info, match_data, champ_dict):
                 deaths.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["deaths"])
                 assists.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["assists"])
                 cs.append(match_data[str(mm)]["participants"][summ_num[mm]]["stats"]["minionsKilled"])
-                # try:
-                #     csm_at_10.append(
-                #         match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"][
-                #             "zeroToTen"])
-                # except:
-                #     csm_at_10.append(["NaN"])
+                try:
+                    csm_at_10.append(
+                        match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]
+                        ["zeroToTen"]
+                    )
+                except:
+                    csm_at_10.append("None")
+                try:
+                    csm_at_20.append(
+                        match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]
+                        ["tenToTwenty"]
+                    )
+                except:
+                    csm_at_20.append("None")
+                try:
+                    csm_at_30.append(
+                        match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]
+                        ["twentyToThirty"]
+                    )
+                except:
+                    csm_aft_30.append("None")
+                try:
+                    csm_aft_30.append(
+                        match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]
+                        ["thirtyToEnd"]
+                    )
+                except:
+                    csm_at_10.append("None")
+
                 # match_data[str(mm)]["participants"][summ_num[mm]]["timeline"]["creepsPerMinDeltas"]["zeroToTen"]
-                # CSAt10(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.zeroToTen;
-                # CSAt20(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.tenToTwenty;
-                # CSAt30(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.twentyToThirty;
-                # CStoEnd(iii) = match_data(ii).participants(MySummNum).timeline.creepsPerMinDeltas.thirtyToEnd;
                 # CSDAt10(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.zeroToTen;
                 # CSDAt20(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.tenToTwenty;
                 # CSDAt30(iii) = match_data(ii).participants(MySummNum).timeline.csDiffPerMinDeltas.twentyToThirty;
@@ -298,4 +316,3 @@ def filter_map(match_data, map_id):
             filtered_match_data[str(nn)] = match_data[str(mm)]
             nn += 1
     return filtered_match_data
-
