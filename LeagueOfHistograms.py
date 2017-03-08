@@ -246,7 +246,7 @@ def do_plots():
 
     if len(filtered_parsed_match_data["win_lose"]) > 2:
         if cb_wr_time.get() == 1:
-            LoHPlots.wr_time(filtered_parsed_match_data, ma_box_size.get())
+            LoHPlots.wr_time(filtered_parsed_match_data, ma_box_size.get(), enabled_filters_text)
 
         if cb_wr_champ.get() == 1:
             LoHPlots.wr_champ(filtered_parsed_match_data, n_games_champ.get())
@@ -254,8 +254,8 @@ def do_plots():
         if cb_wr_teammate.get() == 1:
             LoHPlots.wr_teammate(filtered_parsed_match_data, n_games_teammate.get())
 
-        if cb_wr_party.get() == 1:
-            LoHPlots.wr_partysize(filtered_parsed_match_data, n_games_party.get())
+        if cb_wr_partysize.get() == 1:
+            LoHPlots.wr_partysize(filtered_parsed_match_data, n_games_party.get(), enabled_filters_text)
 
         if cb_wr_role.get() == 1:
             LoHPlots.wr_role(filtered_parsed_match_data, n_games_role.get())
