@@ -313,7 +313,8 @@ tkinter.Label(root, text="Select Region:", font="Helvetica 12 bold", anchor="e"
 
 o_region = tkinter.OptionMenu(root, reg, *reg_list)
 o_region.grid(row=4, column=c1+1, sticky="w", rowspan=2)
-b_get_match = tkinter.Button(root, text="Get Match Data", width=20, command=get_matches)
+
+b_get_match = tkinter.Button(root, text="Get Match Data", font="Helvetica 12 bold", width=20, command=get_matches)
 b_get_match.grid(row=6, column=c1, columnspan=2)
 
 
@@ -425,7 +426,7 @@ tkinter.Button(root, text="Generate Selected Plots", font="Helvetica 12 bold",
                width=25, command=do_plots).grid(row=997, column=c2, columnspan=2)
 
 status_label.set("App Started")
-tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, columnspan=2, sticky="ew")
+tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, sticky="ew")
 
 tkinter.Label(root, width=spw).grid(row=999, column=c2+2)
 
