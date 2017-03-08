@@ -259,7 +259,7 @@ def do_plots():
             LoHPlots.wr_role(filtered_parsed_match_data, n_games_role.get(), enabled_filters_text)
 
         if cb_wr_dmg.get() == 1:
-            LoHPlots.wr_dmg(filtered_parsed_match_data, enabled_filters_text)
+            LoHPlots.wr_dmg(filtered_parsed_match_data, n_bins.get(), enabled_filters_text)
 
         if cb_wr_mapside.get() == 1:
             LoHPlots.wr_mapside(filtered_parsed_match_data, enabled_filters_text)
@@ -392,6 +392,7 @@ n_games_party = tkinter.IntVar(value=5)
 cb_wr_role = tkinter.IntVar(value=0)
 n_games_role = tkinter.IntVar(value=5)
 cb_wr_dmg = tkinter.IntVar(value=0)
+n_bins = tkinter.IntVar(value=30)
 cb_wr_mapside = tkinter.IntVar(value=0)
 
 tkinter.Checkbutton(root, text="Winrate Over Time (Moving Average, Specify Average Width)",
@@ -414,7 +415,9 @@ tkinter.Checkbutton(root, text="Winrate by Role (Specify Minimum Games Played)",
                     variable=cb_wr_role).grid(row=13, column=c2, sticky="w")
 tkinter.Entry(root, width=6, justify="center", textvariable=n_games_role).grid(row=13, column=c2+1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Damage", variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Winrate by Damage (Enter Number of Bins)", variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
+
+tkinter.Entry(root, width=6, justify="center", textvariable=n_bins).grid(row=14, column=c2+1, sticky="w")
 
 tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=15, column=c2, sticky="w")
 

@@ -250,20 +250,53 @@ def wr_role(filtered_parsed_match_data, n_games_role, enabled_filters_text):
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
-def wr_dmg(filtered_parsed_match_data, enabled_filters_text):
-    """ Winrate as a function of damage share (to champs / total / taken) """
-
+def wr_dmg(filtered_parsed_match_data, n_bins, enabled_filters_text):
+    #Histogram of damage in won and lost games
+    n_matches = len(filtered_parsed_match_data["win_lose"])
+    damage_total_frac_win = []
+    damage_total_frac_lose = []
+    damage_to_champs_win = []
+    damage_to_champs_lose = []
+    damage_to_champs_frac_win = []
+    damage_to_champs_frac_lose = []
+    for mm in range(n_matches):
+        if filtered_parsed_match_data["win_lose"][mm]==1:
+            damage_total_frac_win.append(filtered_parsed_match_data["damage_total_frac"][mm])
+            damage_to_champs_win.append(filtered_parsed_match_data["damage_to_champs"][mm])
+            damage_to_champs_frac_win.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
+        else:
+            damage_total_frac_lose.append(filtered_parsed_match_data["damage_total_frac"][mm])
+            damage_to_champs_lose.append(filtered_parsed_match_data["damage_to_champs"][mm])
+            damage_to_champs_frac_lose.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
+    # Damage total
     plt.figure()
-    x = 10 + 1 * numpy.random.randn(10000)
-    n, bins, patches = plt.hist(x, 50, normed=0, facecolor='green', alpha=0.75)
-
-    plt.xlabel('Meh')
-    plt.ylabel('Probability')
-    plt.title(r'$\mathrm{Histogram\ of\ IQ:}\ \mu=100,\ \sigma=15$')
+    n, bins, patches = plt.hist([damage_total_frac_win,damage_total_frac_lose], n_bins, stacked=1, normed=1, color=['green','red'])
+    plt.xlabel('Percentage of Team\'s Total Damage')
+    plt.ylabel('Percentage of games')
+    plt.title("Percentage of team\'s total damage dealt by player\n" + enabled_filters_text)
+    plt.legend(['Wins','Losses'])
     # plt.axis([40, 160, 0, 0.03])
     plt.grid(True)
-    print("wr_vs_dmg is broken")
+	
+	# Damage to champs (note that with some better function writing, the reduncancies here could be reduced)
+    plt.figure()
+    n, bins, patches = plt.hist([damage_to_champs_win,damage_to_champs_lose], n_bins, stacked=1, normed=1, color=['green','red'])
+    plt.xlabel('Damage to champs')
+    plt.ylabel('Percentage of games')
+    plt.title("Histogram of damage to champs\n" + enabled_filters_text)
+    plt.legend(['Wins','Losses'])
+    # plt.axis([40, 160, 0, 0.03])
+    plt.grid(True)
 
+	# Damage to champs as a fraction of team's damage to champs (note that with some better function writing, the reduncancies here could be reduced)
+    plt.figure()
+    n, bins, patches = plt.hist([damage_to_champs_frac_win,damage_to_champs_frac_lose], n_bins, stacked=1, normed=1, color=['green','red'])
+    plt.xlabel('Percent of Team\'s damage to Champions')
+    plt.ylabel('Percentage of games')
+    plt.title("Percentage of team\'s damage to champs dealt by player\n" + enabled_filters_text)
+    plt.legend(['Wins','Losses'])
+    # plt.axis([40, 160, 0, 0.03])
+    plt.grid(True)
 
 def wr_mapside(filtered_parsed_match_data, enabled_filters_text):
     """ Winrate as a function of map side """
