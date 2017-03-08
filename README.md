@@ -42,3 +42,4 @@ urllib3
 7. GUI Update
   1. Add background colors
   2. Modify font sizes/styles to improve look
+  3. Break out into multiple panes instead of one giant thing to make the formatting nicer.
