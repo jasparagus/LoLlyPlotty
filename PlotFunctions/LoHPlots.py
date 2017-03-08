@@ -83,7 +83,7 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
     label_bars(bars1)
 
 
-def wr_time(filtered_parsed_match_data, box):
+def wr_time(filtered_parsed_match_data, box, enabled_filters_text):
     """
     Plots winrate trend over time using a moving average with average with width "box"
     """
@@ -102,7 +102,7 @@ def wr_time(filtered_parsed_match_data, box):
 
     plt.xlabel("Match Number (Chronological)")
     plt.ylabel("Win Rate")
-    plt.title("Winrate Over Time")
+    plt.title("Winrate Over Time " + enabled_filters_text)
     plt.axis([0, n_matches, 0, 1])
 
 
@@ -171,7 +171,7 @@ def wr_teammate(filtered_parsed_match_data, n_played):
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
-def wr_partysize(filtered_parsed_match_data, n_played_with):
+def wr_partysize(filtered_parsed_match_data, n_played_with,enabled_filters_text):
     """
     Winrates by number of recurring teammates (with an N game cutoff for "teammates")
     n_played_with is threshold # of games with teammate to be considered part of a a "premade"
@@ -209,7 +209,7 @@ def wr_partysize(filtered_parsed_match_data, n_played_with):
         n_per_bar.append(wr_partysize_dict[p_size][0])
         x_labels.append(str(p_size) + " Friend(s)")
 
-    title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)"
+    title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)" + enabled_filters_text
     avg_win_rate = sum(filtered_parsed_match_data["win_lose"])/len(filtered_parsed_match_data["win_lose"])
 
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
