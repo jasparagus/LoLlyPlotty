@@ -244,7 +244,7 @@ def wr_role(filtered_parsed_match_data, n_games_role, enabled_filters_text):
 
 
 def wr_dmg(filtered_parsed_match_data, n_bins, enabled_filters_text):
-    #Histogram of damage in won and lost games
+    # Histograms of damage in won and lost games
     n_matches = len(filtered_parsed_match_data["win_lose"])
     damage_total_frac_win = []
     damage_total_frac_lose = []
@@ -252,6 +252,7 @@ def wr_dmg(filtered_parsed_match_data, n_bins, enabled_filters_text):
     damage_to_champs_lose = []
     damage_to_champs_frac_win = []
     damage_to_champs_frac_lose = []
+    
     for mm in range(n_matches):
         if filtered_parsed_match_data["win_lose"][mm]==1:
             damage_total_frac_win.append(filtered_parsed_match_data["damage_total_frac"][mm])
@@ -261,32 +262,43 @@ def wr_dmg(filtered_parsed_match_data, n_bins, enabled_filters_text):
             damage_total_frac_lose.append(filtered_parsed_match_data["damage_total_frac"][mm])
             damage_to_champs_lose.append(filtered_parsed_match_data["damage_to_champs"][mm])
             damage_to_champs_frac_lose.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
-    # Damage total
-    plt.figure()
-    n, bins, patches = plt.hist([damage_total_frac_win,damage_total_frac_lose], n_bins, stacked=1, normed=1, color=['green','red'])
+    
+    # Fraction of Team's Total Damage
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.85, bottom=0.1)
+    n, bins, patches = plt.hist([damage_total_frac_win,damage_total_frac_lose],
+                                n_bins, histtype="stepfilled", normed=0, color=['green', 'red'], alpha=0.5)
     plt.xlabel('Percentage of Team\'s Total Damage')
-    plt.ylabel('Percentage of games')
-    plt.title("Percentage of team\'s total damage dealt by player\n" + enabled_filters_text)
-    plt.legend(['Wins','Losses'])
-    # plt.axis([40, 160, 0, 0.03])
-    plt.grid(True)
-	
-	# Damage to champs (note that with some better function writing, the reduncancies here could be reduced)
-    plt.figure()
-    n, bins, patches = plt.hist([damage_to_champs_win,damage_to_champs_lose], n_bins, stacked=1, normed=1, color=['green','red'])
-    plt.xlabel('Damage to champs')
-    plt.ylabel('Percentage of games')
-    plt.title("Histogram of damage to champs\n" + enabled_filters_text)
+    plt.ylabel('Number of Games')
+    plt.title("Percentage of Team\'s Total Damage Dealt by "
+              + filtered_parsed_match_data["summoner_name"]
+              + "\n" + enabled_filters_text)
     plt.legend(['Wins','Losses'])
     # plt.axis([40, 160, 0, 0.03])
     plt.grid(True)
 
-	# Damage to champs as a fraction of team's damage to champs (note that with some better function writing, the reduncancies here could be reduced)
-    plt.figure()
-    n, bins, patches = plt.hist([damage_to_champs_frac_win,damage_to_champs_frac_lose], n_bins, stacked=1, normed=1, color=['green','red'])
-    plt.xlabel('Percent of Team\'s damage to Champions')
-    plt.ylabel('Percentage of games')
-    plt.title("Percentage of team\'s damage to champs dealt by player\n" + enabled_filters_text)
+    # Absolute Damage to Champs
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.85, bottom=0.1)
+    n, bins, patches = plt.hist([damage_to_champs_win,damage_to_champs_lose],
+                                n_bins, histtype="stepfilled", normed=0, color=['green', 'red'], alpha=0.5)
+    plt.xlabel('Damage to Champs')
+    plt.ylabel('Number of Games')
+    plt.title("Histogram of damage to champs\n" + enabled_filters_text)
+    plt.legend(['Wins','Losses'])
+    # plt.axis([40, 160, 0, 0.03])
+    plt.grid(True)
+    
+    # Fraction of Team's Damage to Champs
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.85, bottom=0.1)
+    n, bins, patches = plt.hist([damage_to_champs_frac_win,damage_to_champs_frac_lose],
+                                n_bins, histtype="stepfilled", normed=0, color=['green', 'red'], alpha=0.5)
+    plt.xlabel('Percent of Team\'s Damage to Champions')
+    plt.ylabel('Number of Games')
+    plt.title("Percentage of team\'s damage to champs dealt by "
+              + filtered_parsed_match_data["summoner_name"]
+              + "\n" + enabled_filters_text)
     plt.legend(['Wins','Losses'])
     # plt.axis([40, 160, 0, 0.03])
     plt.grid(True)
