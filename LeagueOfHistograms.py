@@ -246,19 +246,19 @@ def do_plots():
 
     if len(filtered_parsed_match_data["win_lose"]) > 2:
         if cb_wr_time.get() == 1:
-            LoHPlots.wr_time(filtered_parsed_match_data, 7)
+            LoHPlots.wr_time(filtered_parsed_match_data, ma_box_size.get(), enabled_filters_text)
 
         if cb_wr_champ.get() == 1:
-            LoHPlots.wr_champ(filtered_parsed_match_data, 2)
+            LoHPlots.wr_champ(filtered_parsed_match_data, n_games_champ.get())
 
         if cb_wr_teammate.get() == 1:
-            LoHPlots.wr_teammate(filtered_parsed_match_data, 3)
+            LoHPlots.wr_teammate(filtered_parsed_match_data, n_games_teammate.get())
 
         if cb_wr_partysize.get() == 1:
-            LoHPlots.wr_partysize(filtered_parsed_match_data, 3)
+            LoHPlots.wr_partysize(filtered_parsed_match_data, n_games_party.get(), enabled_filters_text)
 
         if cb_wr_role.get() == 1:
-            LoHPlots.wr_role(filtered_parsed_match_data)
+            LoHPlots.wr_role(filtered_parsed_match_data, n_games_role.get())
 
         if cb_wr_dmg.get() == 1:
             LoHPlots.wr_dmg(filtered_parsed_match_data)
@@ -278,8 +278,8 @@ def do_plots():
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
 
 
-def start_gui():
-    _thread.start_new_thread(draw_gui, (99,))
+# def start_gui():
+#     _thread.start_new_thread(draw_gui, (99,))
 
 
 def draw_gui():
@@ -376,19 +376,29 @@ tkinter.Label(root, text="Select Plots To Generate From Filtered Data:").grid(ro
 
 # checkbox variables and their checkboxes
 cb_wr_time = tkinter.IntVar(value=0)
+ma_box_size = tkinter.IntVar(value=10)
 cb_wr_champ = tkinter.IntVar(value=0)
+n_games_champ = tkinter.IntVar(value=5)
 cb_wr_teammate = tkinter.IntVar(value=0)
-cb_wr_partysize = tkinter.IntVar(value=0)
+n_games_teammate = tkinter.IntVar(value=5)
+cb_wr_party = tkinter.IntVar(value=0)
+n_games_party = tkinter.IntVar(value=5)
 cb_wr_role = tkinter.IntVar(value=0)
+n_games_role = tkinter.IntVar(value=5)
 cb_wr_dmg = tkinter.IntVar(value=0)
 cb_wr_mapside = tkinter.IntVar(value=0)
 
 tkinter.Checkbutton(root, text="Winrate Over Time (Moving Average)",
                     variable=cb_wr_time).grid(row=9, column=c2, sticky="w")
+tkinter.Entry(root, width=8, justify="center", textvariable=ma_box_size).grid(row=9, column=c2+1)
 tkinter.Checkbutton(root, text="Winrate by Champion", variable=cb_wr_champ).grid(row=10, column=c2, sticky="w")
+tkinter.Entry(root, width=8, justify="center", textvariable=n_games_champ).grid(row=10, column=c2+1)
 tkinter.Checkbutton(root, text="Winrate by Teammate", variable=cb_wr_teammate).grid(row=11, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="Winrate by Party Size", variable=cb_wr_partysize).grid(row=12, column=c2, sticky="w")
+tkinter.Entry(root, width=8, justify="center", textvariable=n_games_teammate).grid(row=11, column=c2+1)
+tkinter.Checkbutton(root, text="Winrate by Party Size", variable=cb_wr_party).grid(row=12, column=c2, sticky="w")
+tkinter.Entry(root, width=8, justify="center", textvariable=n_games_party).grid(row=12, column=c2+1)
 tkinter.Checkbutton(root, text="Winrate by Role", variable=cb_wr_role).grid(row=13, column=c2, sticky="w")
+tkinter.Entry(root, width=8, justify="center", textvariable=n_games_role).grid(row=13, column=c2+1)
 tkinter.Checkbutton(root, text="Winrate by Damage", variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
 tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=15, column=c2, sticky="w")
 
