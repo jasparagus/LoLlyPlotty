@@ -215,7 +215,7 @@ def wr_partysize(filtered_parsed_match_data, n_played_with):
     make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
 
 
-def wr_role(filtered_parsed_match_data):
+def wr_role(filtered_parsed_match_data, n_games_role):
     """ Winrate as a function of role """
     # list of roles
     role_ls = filtered_parsed_match_data["role"]
