@@ -140,21 +140,27 @@ def parse_match_data(config_info, match_data, champ_dict):
                     match_data[str(mm)]["participants"][pp]["stats"]["totalDamageTaken"])
                 others_gold.append(match_data[str(mm)]["participants"][pp]["stats"]["goldEarned"])
         # Team 1
-        if summ_num[mm] <=4:
+        if summ_num[mm] <= 4:
             teammates[str(mm)] = other_players[0:4]
             enemies[str(mm)] = other_players[4:9]
-            damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[0:4])))
-            damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[0:4])))
-            damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[0:4])))
-            gold_frac.append(gold[mm]/(1+sum(others_gold[0:4])))
+            damage_total_frac.append(damage_total[mm]/(damage_total[mm]
+                                                       + 1 + sum(others_damage_total[0:4])))
+            damage_to_champs_frac.append(damage_to_champs[mm]/(damage_to_champs[mm]
+                                                               + 1 + sum(others_damage_to_champs[0:4])))
+            damage_taken_frac.append(damage_taken[mm]/(damage_taken[mm]
+                                                       + 1 + sum(others_damage_taken[0:4])))
+            gold_frac.append(gold[mm]/(gold[mm] + 1 + sum(others_gold[0:4])))
         # Team 2
         elif summ_num[mm] >= 5:
             teammates[str(mm)] = other_players[5:9]
             enemies[str(mm)] = other_players[0:5]
-            damage_total_frac.append(damage_total[mm]/(1+sum(others_damage_total[5:9])))
-            damage_to_champs_frac.append(damage_to_champs[mm]/(1+sum(others_damage_to_champs[5:9])))
-            damage_taken_frac.append(damage_taken[mm]/(1+sum(others_damage_taken[5:9])))
-            gold_frac.append(gold[mm]/(1+sum(others_gold[5:9])))
+            damage_total_frac.append(damage_total[mm]/(damage_total[mm]
+                                                       + 1 + sum(others_damage_total[5:9])))
+            damage_to_champs_frac.append(damage_to_champs[mm]/(damage_to_champs[mm]
+                                                               + 1 + sum(others_damage_to_champs[5:9])))
+            damage_taken_frac.append(damage_taken[mm]/(damage_taken[mm]
+                                                       + 1 + sum(others_damage_taken[5:9])))
+            gold_frac.append(gold[mm]/(gold[mm] + 1 + sum(others_gold[5:9])))
         champ.append(
             GetChamp.champ_name(champ_dict, match_data[str(mm)]["participants"][summ_num[mm]]["championId"])
         )

@@ -197,7 +197,6 @@ def do_plots():
 
     # Prepare to update the label for what's been filtered
     enabled_filters_text = "Filtered By:\n"
-    filter_label.set(enabled_filters_text + "All Matches")
 
     # prepare a variable to hold the filtered match data and quickly filter out remakes
     filtered_match_data = Parse.filter_remakes(match_data, parsed_match_data)
@@ -239,6 +238,12 @@ def do_plots():
             filtered_match_data, filtered_parsed_match_data, role_filter.get())
         filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
+    # If you got here without applying any filters
+    if enabled_filters_text == "Filtered By:\n":
+        enabled_filters_text += "All Matches"
+        filter_label.set(enabled_filters_text)
+
+
     # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
     # plt.close("all")  # On second thought, it's fine to have extra plots, but keeping this for posterity.
 
@@ -260,6 +265,9 @@ def do_plots():
 
         if cb_wr_dmg.get() == 1:
             LoHPlots.wr_dmg(filtered_parsed_match_data, n_bins.get(), enabled_filters_text)
+
+        if cb_wr_dmg_frac.get() == 1:
+            LoHPlots.wr_dmg_frac(filtered_parsed_match_data, n_bins_frac.get(), enabled_filters_text)
 
         if cb_wr_mapside.get() == 1:
             LoHPlots.wr_mapside(filtered_parsed_match_data, enabled_filters_text)
@@ -394,6 +402,8 @@ cb_wr_role = tkinter.IntVar(value=0)
 n_games_role = tkinter.IntVar(value=5)
 cb_wr_dmg = tkinter.IntVar(value=0)
 n_bins = tkinter.IntVar(value=30)
+cb_wr_dmg_frac = tkinter.IntVar(value=0)
+n_bins_frac = tkinter.IntVar(value=30)
 cb_wr_mapside = tkinter.IntVar(value=0)
 
 tkinter.Checkbutton(root, text="Winrate Over Time (Moving Average, Specify Average Width)",
@@ -416,11 +426,15 @@ tkinter.Checkbutton(root, text="Winrate by Role (Specify Minimum Games Played)",
                     variable=cb_wr_role).grid(row=13, column=c2, sticky="w")
 tkinter.Entry(root, width=6, justify="center", textvariable=n_games_role).grid(row=13, column=c2+1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Damage (Enter Number of Bins)", variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
-
+tkinter.Checkbutton(root, text="Wins by Damage (Enter Number of Bins)",
+                    variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
 tkinter.Entry(root, width=6, justify="center", textvariable=n_bins).grid(row=14, column=c2+1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=15, column=c2, sticky="w")
+tkinter.Checkbutton(root, text="Wins by Damage Fraction (Enter Number of Bins)",
+                    variable=cb_wr_dmg_frac).grid(row=15, column=c2, sticky="w")
+tkinter.Entry(root, width=6, justify="center", textvariable=n_bins_frac).grid(row=15, column=c2+1, sticky="w")
+
+tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=16, column=c2, sticky="w")
 
 tkinter.Button(root, text="Generate Selected Plots", font="Helvetica 12 bold",
                width=25, command=do_plots).grid(row=997, column=c2, columnspan=2)
