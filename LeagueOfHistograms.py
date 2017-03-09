@@ -190,12 +190,12 @@ def get_matches2():
     root.update_idletasks()
 
 
+# def do_plots_parent():
+#     thread99 = threading.Thread(target=do_plots)
+#     thread99.start()
+
+
 def do_plots_parent():
-    thread99 = threading.Thread(target=do_plots)
-    thread99.start()
-
-
-def do_plots():
     global config_info, champ_dict, match_data, parsed_match_data
     # filter_label, ssn_filter, champ_filter, match_filter, status_label
     config_info = ConfigureLoH.config(apikey.get(), reg.get(), summname.get())
