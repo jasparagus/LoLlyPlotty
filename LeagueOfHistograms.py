@@ -238,7 +238,7 @@ def do_plots_parent():
         filtered_parsed_match_data = Parse.parse_match_data(config_info, filtered_match_data, champ_dict)
 
     if f_Role.get() == 1:
-        enabled_filters_text = enabled_filters_text + "(" + str(role_filter.get()) + ") "
+        enabled_filters_text = enabled_filters_text + "(" + str(role_filter.get().replace("\n", " ")) + ") "
         filter_label.set(enabled_filters_text)
         filtered_match_data = Parse.filter_role(
             filtered_match_data, filtered_parsed_match_data, role_filter.get())
