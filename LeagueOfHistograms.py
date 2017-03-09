@@ -22,6 +22,7 @@ from PlotFunctions import Parse
 
 # Declare globals
 global config_info, match_list, match_data, champ_dict, parsed_match_data, filtered_parsed_match_data
+
 # Initialize their values
 config_info = {}
 match_list = []
@@ -189,6 +190,11 @@ def get_matches2():
     root.update_idletasks()
 
 
+def do_plots_parent():
+    thread99 = threading.Thread(target=do_plots)
+    thread99.start()
+
+
 def do_plots():
     global config_info, champ_dict, match_data, parsed_match_data
     # filter_label, ssn_filter, champ_filter, match_filter, status_label
@@ -279,17 +285,15 @@ def do_plots():
         status_label.set("Too few matches (only found " + str(len(filtered_match_data)) + ")")
 
 
-
-
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
+def start_gui():
+    thread999 = threading.Thread(target=draw_gui0)
+    thread999.start()
 
 
-# def start_gui():
-#     _thread.start_new_thread(draw_gui, (99,))
-
-
-def draw_gui():
+def draw_gui0():
     return
+
 
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.title("League of Histograms")
@@ -437,7 +441,7 @@ tkinter.Entry(root, width=6, justify="center", textvariable=n_bins_frac).grid(ro
 tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=16, column=c2, sticky="w")
 
 tkinter.Button(root, text="Generate Selected Plots", font="Helvetica 12 bold",
-               width=25, command=do_plots).grid(row=997, column=c2, columnspan=2)
+               width=25, command=do_plots_parent).grid(row=997, column=c2, columnspan=2)
 
 status_label.set("App Started")
 tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, sticky="ew")
