@@ -69,7 +69,6 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
     l2 = plt.legend(handles=(wr_avg, wr_50), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(l2)
 
-
     def label_bars(bars):
         """ Attach a text label above each bar displaying its height """
         rr = 0
@@ -81,6 +80,20 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
             rr += 1
 
     label_bars(bars1)
+
+
+def make_hist(wins_var, losses_var, n_bins, title, xlabel, ylabel):
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.8, bottom=0.1)
+    (_, _, p1) = plt.hist(wins_var, n_bins,
+                          label="Wins", histtype="bar", normed=0, color='green', alpha=0.5)
+    (_, _, p2) = plt.hist(losses_var, n_bins,
+                          label="Losses", histtype="bar", normed=0, color='red', alpha=0.5)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    ax.legend(handles=(p1[0], p2[0]), loc=(0, 1.1), ncol=1)
+    return
 
 
 def wr_time(filtered_parsed_match_data, box, enabled_filters_text):
@@ -246,62 +259,74 @@ def wr_role(filtered_parsed_match_data, n_games_role, enabled_filters_text):
 def wr_dmg(filtered_parsed_match_data, n_bins, enabled_filters_text):
     # Histograms of damage in won and lost games
     n_matches = len(filtered_parsed_match_data["win_lose"])
-    damage_total_frac_win = []
-    damage_total_frac_lose = []
+
+    damage_total_win = []
+    damage_total_lose = []
+
     damage_to_champs_win = []
     damage_to_champs_lose = []
+
+    damage_taken_win = []
+    damage_taken_lose = []
+
+    for mm in range(n_matches):
+        if filtered_parsed_match_data["win_lose"][mm] == 1:
+            damage_total_win.append(filtered_parsed_match_data["damage_total"][mm])
+            damage_to_champs_win.append(filtered_parsed_match_data["damage_to_champs"][mm])
+            damage_taken_win.append(filtered_parsed_match_data["damage_taken"][mm])
+        else:
+            damage_total_lose.append(filtered_parsed_match_data["damage_total"][mm])
+            damage_to_champs_lose.append(filtered_parsed_match_data["damage_to_champs"][mm])
+            damage_taken_lose.append(filtered_parsed_match_data["damage_taken"][mm])
+
+    title = "Damage Dealt by\n" + filtered_parsed_match_data["summoner_name"] + "\n" + enabled_filters_text
+    make_hist(damage_total_win, damage_total_lose, n_bins, title, "Damage Dealt", "Number of Games")
+
+    title = "Damage To Champs by\n" + filtered_parsed_match_data["summoner_name"] + "\n" + enabled_filters_text
+    make_hist(damage_to_champs_win, damage_to_champs_lose, n_bins, title, "Damage To Champs", "Number of Games")
+
+    title = "Damage Taken by\n" + filtered_parsed_match_data["summoner_name"] + "\n" + enabled_filters_text
+    make_hist(damage_taken_win, damage_taken_lose, n_bins, title, "Damage Taken", "Number of Games")
+
+
+def wr_dmg_frac(filtered_parsed_match_data, n_bins, enabled_filters_text):
+    # Histograms of damage fractions in won and lost games
+    n_matches = len(filtered_parsed_match_data["win_lose"])
+
+    damage_total_frac_win = []
+    damage_total_frac_lose = []
+
     damage_to_champs_frac_win = []
     damage_to_champs_frac_lose = []
-    
+
+    damage_taken_frac_win = []
+    damage_taken_frac_lose = []
+
     for mm in range(n_matches):
-        if filtered_parsed_match_data["win_lose"][mm]==1:
+        if filtered_parsed_match_data["win_lose"][mm] == 1:
             damage_total_frac_win.append(filtered_parsed_match_data["damage_total_frac"][mm])
-            damage_to_champs_win.append(filtered_parsed_match_data["damage_to_champs"][mm])
             damage_to_champs_frac_win.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
+            damage_taken_frac_win.append(filtered_parsed_match_data["damage_taken_frac"][mm])
         else:
             damage_total_frac_lose.append(filtered_parsed_match_data["damage_total_frac"][mm])
-            damage_to_champs_lose.append(filtered_parsed_match_data["damage_to_champs"][mm])
             damage_to_champs_frac_lose.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
-    
-    # Fraction of Team's Total Damage
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.85, bottom=0.1)
-    n, bins, patches = plt.hist([damage_total_frac_win,damage_total_frac_lose],
-                                n_bins, histtype="stepfilled", normed=0, color=['green', 'red'], alpha=0.5)
-    plt.xlabel('Percentage of Team\'s Total Damage')
-    plt.ylabel('Number of Games')
-    plt.title("Percentage of Team\'s Total Damage Dealt by "
-              + filtered_parsed_match_data["summoner_name"]
-              + "\n" + enabled_filters_text)
-    plt.legend(['Wins','Losses'])
-    # plt.axis([40, 160, 0, 0.03])
-    plt.grid(True)
+            damage_taken_frac_lose.append(filtered_parsed_match_data["damage_taken_frac"][mm])
 
-    # Absolute Damage to Champs
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.85, bottom=0.1)
-    n, bins, patches = plt.hist([damage_to_champs_win,damage_to_champs_lose],
-                                n_bins, histtype="stepfilled", normed=0, color=['green', 'red'], alpha=0.5)
-    plt.xlabel('Damage to Champs')
-    plt.ylabel('Number of Games')
-    plt.title("Histogram of damage to champs\n" + enabled_filters_text)
-    plt.legend(['Wins','Losses'])
-    # plt.axis([40, 160, 0, 0.03])
-    plt.grid(True)
-    
-    # Fraction of Team's Damage to Champs
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.85, bottom=0.1)
-    n, bins, patches = plt.hist([damage_to_champs_frac_win,damage_to_champs_frac_lose],
-                                n_bins, histtype="stepfilled", normed=0, color=['green', 'red'], alpha=0.5)
-    plt.xlabel('Percent of Team\'s Damage to Champions')
-    plt.ylabel('Number of Games')
-    plt.title("Percentage of team\'s damage to champs dealt by "
-              + filtered_parsed_match_data["summoner_name"]
-              + "\n" + enabled_filters_text)
-    plt.legend(['Wins','Losses'])
-    # plt.axis([40, 160, 0, 0.03])
-    plt.grid(True)
+    title = "% of Team Damage Dealt by\n" + filtered_parsed_match_data["summoner_name"] \
+            + "\n" + enabled_filters_text
+    make_hist(damage_total_frac_win, damage_total_frac_lose, n_bins,
+              title, "Damage Share", "Number of Games")
+
+    title = "% of Team Damage To Champs by\n" + filtered_parsed_match_data["summoner_name"] \
+            + "\n" + enabled_filters_text
+    make_hist(damage_to_champs_frac_win, damage_to_champs_frac_lose, n_bins,
+              title, "Damage To Champs", "Number of Games")
+
+    title = "% of Team Damage Taken by\n" + filtered_parsed_match_data["summoner_name"] \
+            + "\n" + enabled_filters_text
+    make_hist(damage_taken_frac_win, damage_taken_frac_lose, n_bins,
+              title, "Damage Taken", "Number of Games")
+
 
 def wr_mapside(filtered_parsed_match_data, enabled_filters_text):
     """ Winrate as a function of map side """
