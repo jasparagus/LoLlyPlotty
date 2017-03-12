@@ -1,5 +1,5 @@
 import numpy  # This is u
-import math  # This is for various math functions (ceiling, etc.)
+import math  # This is for various math functions (ceiling, sqrt, etc.)
 import matplotlib  # This is for editing the plot renderer
 matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering works on MacOS
 import matplotlib.pyplot as plt  # This is for making plots
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt  # This is for making plots
 # import matplotlib.pyplot as plt
 # config_file = open("Configuration.json", "r")
 # config_info = json.loads(config_file.read())
-# filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.LoHData", "r")
+# filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.json", "r")
 # filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 
 
@@ -21,24 +21,85 @@ def make_wr_dictionary(key_ls, win_ls, store_dict):
     """
     Find winrate, wins, losses for a given variable (key_ls) from list of total
     wins/losses (win_ls)
-    stored as: {"variable": [matches, wins, winrate]}
+    stored as: {"variable": [matches, wins, winrate, 95% confidence interval]}
     NOTE: DICTIONARY MUST EXIST BEFORE YOU CALL THIS FUNCTION
     """
     ls_length = len(key_ls)
     for i in range(ls_length):
         if key_ls[i] not in store_dict:
             # Check if key already exists store_dict
-            store_dict[key_ls[i]] = [0, 0, 0]
+            store_dict[key_ls[i]] = [0, 0, 0, 0]
         # update matches
         store_dict[key_ls[i]][0] += 1
         # update wins (note: these are bools)
         store_dict[key_ls[i]][1] += win_ls[i]
-    # Update win rate
+    # 1st, update win rate
+    # 2nd, calculate the uncertainty (95% confidence interval) via err = 1.96 * sqrt( 1/n * mean * (1 - mean) )
     for k in store_dict:
         store_dict[k][2] = store_dict[k][1] / store_dict[k][0]
+        store_dict[k][3] = 1.96 * math.sqrt(1/store_dict[k][0] * store_dict[k][2] * (1 - store_dict[k][2]))
 
 
-def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate):
+def make_plottable_dictionary(var_ls, win_ls, threshold, z_score=1.645):
+    """
+    Makes a dictionary that is ready to be fed to wake_wr_barchart for plotting
+    :param var_ls: a list of the variable to cross-reference with win_ls
+    :param win_ls: a list of wins and losses whose indices match those of key_ls
+    :param threshold: a cutoff for number of matches to exclude (e.g. exclude data with n<3 matches
+    :param z_score: constant for various confidence intervals. 80% [1.28], 90% [1.645], 95% [1.96], 99% [2.58]
+    :return: plot_dict: a dictionary of:
+            List of Variable strings (e.g. champion names)
+            Number of matches (e.g. number of matches played on each champion in var_ls)
+            Number of wins (e.g. number of wins on each champion in var_ls)
+            Winrate by variable (e.g. winrate for each champion in var_ls)
+            Uncertainty by variable (e.g. 90% confidence interval for winrates of each champ in var_ls)
+    """
+    ls_length = len(var_ls)
+    plot_dict = {"var_ls": [], "n_by_var": [], "win_by_var": [], "wr_by_var": [], "error_by_var": []}
+
+    # Sort by var_ls using a Schwartzian transform (thanks, Ignacio Vazquez-Abrams from stackoverflow)
+    var_ls, win_ls = zip(*sorted(zip(var_ls, win_ls)))
+
+    # Start tracking the number of variables you've found
+    # For every match...
+    for ii in range(ls_length):
+        # Check to see if the given variable has been added to the variable list yet
+        if var_ls[ii] not in plot_dict["var_ls"]:
+            # If not: record it, add a 1 to the list of matches, and record a win or a loss
+            plot_dict["var_ls"].append(var_ls[ii])
+            plot_dict["n_by_var"].append(1)
+            if win_ls[ii] == 1:
+                plot_dict["win_by_var"].append(1)
+            elif win_ls[ii] == 0:
+                plot_dict["win_by_var"].append(0)
+        else:
+            # If so, find out what index it gets
+            idx = plot_dict["var_ls"].index(var_ls[ii])
+            plot_dict["n_by_var"][idx] += 1
+            if win_ls[ii] == 1:
+                plot_dict["win_by_var"][idx] += 1
+
+    # Calculate winrate (wins/n) and 95% confidence (err = 1.96 * sqrt( 1/n * mean * (1 - mean))   )
+    var_length = len(plot_dict["var_ls"])
+    n_deleted = 0
+    for ii in range(var_length):
+        if plot_dict["n_by_var"][ii-n_deleted] >= threshold:
+            plot_dict["wr_by_var"].append(plot_dict["win_by_var"][ii-n_deleted] / plot_dict["n_by_var"][ii-n_deleted])
+            plot_dict["error_by_var"].append(
+                z_score*math.sqrt(
+                    1/(plot_dict["n_by_var"][ii-n_deleted])
+                    * plot_dict["wr_by_var"][ii-n_deleted] * (1-plot_dict["wr_by_var"][ii-n_deleted]))
+            )
+        else:
+            del plot_dict["var_ls"][ii-n_deleted]
+            del plot_dict["n_by_var"][ii-n_deleted]
+            del plot_dict["win_by_var"][ii-n_deleted]
+            n_deleted += 1
+
+    return plot_dict
+
+
+def make_wr_barchart(bars_data, n_per_bar, error_bars, x_labels, title_string, avg_win_rate):
     """
     Make a bar chart from data. Inputs: list of data to be plotted in bar form (a list of numbers
     """
@@ -54,7 +115,10 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
     endx = n_of_things_to_plot - 1 + width + 0.25  # where the x axis ends
 
     # create objects to plot
-    bars1 = ax.bar(locs, bars_data, width, color='r')
+    if error_bars == 0:
+        bars1 = ax.bar(locs, bars_data, width, color='r')
+    else:
+        bars1 = ax.bar(locs, bars_data, width, color='r', yerr=error_bars)
     wr_avg, = plt.plot([startx, endx], [avg_win_rate, avg_win_rate], label="Avg. WR", linestyle="--", color="b")
     wr_50, = plt.plot([startx, endx], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
 
@@ -66,8 +130,8 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
     plt.xlim([startx, endx])
     plt.ylim([0, 1.2])
 
-    l2 = plt.legend(handles=(wr_avg, wr_50), loc=(0, 1.1), ncol=1)
-    plt.gca().add_artist(l2)
+    leg = plt.legend(handles=(wr_avg, wr_50), loc=(0, 1.1), ncol=1)
+    plt.gca().add_artist(leg)
 
     def label_bars(bars):
         """ Attach a text label above each bar displaying its height """
@@ -75,7 +139,7 @@ def make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
         for bar in bars:
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width() / 2., height + 0.1,
-                    'n = %d' % n_per_bar[rr],
+                    'n=%d' % n_per_bar[rr],
                     ha='center', va='top')
             rr += 1
 
@@ -123,29 +187,18 @@ def wr_champ(filtered_parsed_match_data, n_played, enabled_filters_text):
     """
     Winrates for each champion played more than n_games
     """
-    n_champs = len(filtered_parsed_match_data["champs_played"])
-    n_games = len(filtered_parsed_match_data["win_lose"])
-    wr_by_champ = []
-    n_by_champ = []
-    champs_to_keep = []
+    wr_champ_dict = make_plottable_dictionary(
+        filtered_parsed_match_data["champ"],
+        filtered_parsed_match_data["win_lose"],
+        n_played
+    )
 
-    for cc in range(n_champs):
-        wins = []
-        for gg in range(n_games):
-            if filtered_parsed_match_data["champs_played"][cc] == filtered_parsed_match_data["champ"][gg]:
-                wins.append(filtered_parsed_match_data["win_lose"][gg])
-        if len(wins) >= n_played:
-            wr_by_champ.append(sum(wins)/len(wins))
-            n_by_champ.append(len(wins))
-            champs_to_keep.append(filtered_parsed_match_data["champs_played"][cc])
-
-    bars_data = wr_by_champ
-    n_per_bar = n_by_champ
-    x_labels = champs_to_keep
     title_string = "Winrate By Champion \n" + "(Played " + str(n_played) + "+ Games)\n" + enabled_filters_text
-    avg_win_rate = filtered_parsed_match_data["avg_wr"]
 
-    make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    make_wr_barchart(
+        wr_champ_dict["wr_by_var"], wr_champ_dict["n_by_var"], wr_champ_dict["error_by_var"], wr_champ_dict["var_ls"],
+        title_string, filtered_parsed_match_data["avg_wr"]
+    )
 
 
 def wr_teammate(filtered_parsed_match_data, n_played, enabled_filters_text):
@@ -162,8 +215,10 @@ def wr_teammate(filtered_parsed_match_data, n_played, enabled_filters_text):
     wr_by_teammate = []
     games_with_teammate = []
     teammates_unique_keep = []
+    error = []
 
     # For each unique teammate, look at every game and see if they were there and (if so) if it was a W/L
+    n_deleted = 0
     for tt in range(n_teammates):
         wins = []
         for gg in range(n_games):
@@ -173,6 +228,13 @@ def wr_teammate(filtered_parsed_match_data, n_played, enabled_filters_text):
             wr_by_teammate.append(sum(wins)/len(wins))
             games_with_teammate.append(len(wins))
             teammates_unique_keep.append(teammates_unique[tt])
+            error.append(
+                1.96*math.sqrt(
+                    1/(games_with_teammate[tt-n_deleted])
+                    * wr_by_teammate[tt-n_deleted] * (1-wr_by_teammate[tt-n_deleted]))
+            )
+        else:
+            n_deleted += 1
 
     bars_data = wr_by_teammate
     n_per_bar = games_with_teammate
@@ -180,10 +242,10 @@ def wr_teammate(filtered_parsed_match_data, n_played, enabled_filters_text):
     title_string = "Winrate by Teammate\n" + "(" + str(n_played) + "+ Games Together)\n" + enabled_filters_text
     avg_win_rate = filtered_parsed_match_data["avg_wr"]
 
-    make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    make_wr_barchart(bars_data, n_per_bar, error, x_labels, title_string, avg_win_rate)
 
 
-def wr_partysize(filtered_parsed_match_data, n_played_with,enabled_filters_text):
+def wr_partysize(filtered_parsed_match_data, n_played_with, enabled_filters_text):
     """
     Winrates by number of recurring teammates (with an N game cutoff for "teammates")
     n_played_with is threshold # of games with teammate to be considered part of a a "premade"
@@ -210,50 +272,34 @@ def wr_partysize(filtered_parsed_match_data, n_played_with,enabled_filters_text)
             len(set(teammates) & set(filtered_parsed_match_data["teammates"][str(game)]))
         )
 
-    wr_partysize_dict = {}
-    make_wr_dictionary(party_size, filtered_parsed_match_data["win_lose"], wr_partysize_dict)
-
-    bars_data = []
-    n_per_bar = []
-    x_labels = []
-    for p_size in sorted(list(wr_partysize_dict.keys())):
-        bars_data.append(wr_partysize_dict[p_size][1] / wr_partysize_dict[p_size][0])
-        n_per_bar.append(wr_partysize_dict[p_size][0])
-        x_labels.append(str(p_size) + " Friend(s)")
+    wr_partysize_dict = make_plottable_dictionary(
+        party_size,
+        filtered_parsed_match_data["win_lose"],
+        1
+    )
 
     title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)\n" + enabled_filters_text
-    avg_win_rate = filtered_parsed_match_data["avg_wr"]
 
-    make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    make_wr_barchart(
+        wr_partysize_dict["wr_by_var"], wr_partysize_dict["n_by_var"], wr_partysize_dict["error_by_var"],
+        wr_partysize_dict["var_ls"], title_string, filtered_parsed_match_data["avg_wr"]
+    )
 
 
 def wr_role(filtered_parsed_match_data, n_games_role, enabled_filters_text):
     """ Winrate as a function of role """
-    # list of roles
-    role_ls = filtered_parsed_match_data["role"]
+    wr_role_dict = make_plottable_dictionary(
+        filtered_parsed_match_data["role"],
+        filtered_parsed_match_data["win_lose"],
+        n_games_role
+    )
 
-    # list of wins/losses
-    # TODO - win_ls SHOULD BE DEFINED ELSEWHERE. ALL winrate functions use this...
-    win_ls = filtered_parsed_match_data["win_lose"]
-
-    # dictionary {"role" [matches, wins, winrate]}
-    wr_role_dict = {}
-    # Fill in the dictionary
-    make_wr_dictionary(role_ls, win_ls, wr_role_dict)
-    bars_data = []
-    n_per_bar = []
-    x_labels = []
     title_string = "Winrate By Role\n" + enabled_filters_text
-    avg_win_rate = filtered_parsed_match_data["avg_wr"]
 
-    for role in wr_role_dict.keys():
-        # winrate for each role to bars_data
-        bars_data.append(wr_role_dict[role][1]/wr_role_dict[role][0])
-        # total matches for each role to n_per_bar
-        n_per_bar.append(wr_role_dict[role][0])
-        x_labels.append(role)
-
-    make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    make_wr_barchart(
+        wr_role_dict["wr_by_var"], wr_role_dict["n_by_var"], wr_role_dict["error_by_var"], wr_role_dict["var_ls"],
+        title_string, filtered_parsed_match_data["avg_wr"]
+    )
 
 
 def wr_dmg(filtered_parsed_match_data, n_bins, enabled_filters_text):
@@ -330,27 +376,15 @@ def wr_dmg_frac(filtered_parsed_match_data, n_bins, enabled_filters_text):
 
 def wr_mapside(filtered_parsed_match_data, enabled_filters_text):
     """ Winrate as a function of map side """
-    # list of map sides
-    side_ls = filtered_parsed_match_data["map_side"]
+    wr_side_dict = make_plottable_dictionary(
+        filtered_parsed_match_data["map_side"],
+        filtered_parsed_match_data["win_lose"],
+        1
+    )
 
-    # list of wins/losses
-    win_ls = filtered_parsed_match_data["win_lose"]
-
-    # dictionary {"role" [matches, wins, winrate]}
-    wr_side_dict = {}
-    # Fill in the dictionary
-    make_wr_dictionary(side_ls, win_ls, wr_side_dict)
-    bars_data = []
-    n_per_bar = []
+    print(wr_side_dict)
     x_labels = []
-    title_string = "Winrate By Map Side\n" + enabled_filters_text
-    avg_win_rate = filtered_parsed_match_data["avg_wr"]
-
-    for side in wr_side_dict.keys():
-        # winrate for each side to bars_data
-        bars_data.append(wr_side_dict[side][1]/wr_side_dict[side][0])
-        # total matches for each side to n_per_bar
-        n_per_bar.append(wr_side_dict[side][0])
+    for side in wr_side_dict["var_ls"]:
         if side == 100:
             x_labels.append("Blue")
         elif side == 200:
@@ -358,7 +392,12 @@ def wr_mapside(filtered_parsed_match_data, enabled_filters_text):
         else:
             x_labels.append("Unknown")
 
-    make_wr_barchart(bars_data, n_per_bar, x_labels, title_string, avg_win_rate)
+    title_string = "Winrate By Map Side\n" + enabled_filters_text
+
+    make_wr_barchart(
+        wr_side_dict["wr_by_var"], wr_side_dict["n_by_var"], wr_side_dict["error_by_var"], x_labels,
+        title_string, filtered_parsed_match_data["avg_wr"]
+    )
 
 
 def moving_avg(ls, box):
