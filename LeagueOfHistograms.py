@@ -298,100 +298,97 @@ def draw_gui0():
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.title("League of Histograms")
 root.iconbitmap('icon.ico')
-c1 = 1  # column 1 startpoint
-c2 = 4  # column 2 startpoint
-spw = 4  # spacer width
+root.resizable(width=False, height=False)
+pad = 10  # padding before frame borders
+bwid = 10  # border width for frames
+spacing = 15  # padding between frames
+style = "groove"
+
 w = 25  # width of descriptor boxes
 
-# PANEL 1 - CONFIGURATION OPTIONS AND API CALL BUTTONS - COLUMNS c1 THROUGH c1+1
-# PANEL 1 variables
+# Variables
 apikey = tkinter.StringVar()
 summname = tkinter.StringVar()
 reg_list = [""]
 reg = tkinter.StringVar(value="na")
 
-# PANEL 1 labels and other widgets
-tkinter.Label(root, width=spw).grid(row=0, column=0)
-tkinter.Label(root, text="Enter API Key:", height=2, anchor="s", font="Helvetica 12 bold"
-              ).grid(row=0, column=c1, columnspan=2)
-tkinter.Entry(root, width=45, justify="center", textvariable=apikey).grid(row=1, column=c1, columnspan=2)
-
-tkinter.Label(root, text="Enter Summoner Name:", font="Helvetica 12 bold", height=2, anchor="s"
-              ).grid(row=2, column=c1, columnspan=2)
-tkinter.Entry(root, width=45, justify="center", textvariable=summname).grid(row=3, column=c1, columnspan=2)
-
-tkinter.Label(root, text="Select Region:", font="Helvetica 12 bold", anchor="e"
-              ).grid(row=4, column=c1, sticky="e", rowspan=2)
-
-o_region = tkinter.OptionMenu(root, reg, *reg_list)
-o_region.grid(row=4, column=c1+1, sticky="w", rowspan=2)
-
-b_get_match = tkinter.Button(root, text="Get Match Data", font="Helvetica 12 bold", width=20, command=get_matches)
-b_get_match.grid(row=6, column=c1, columnspan=2)
-
-
-# SPACER BETWEEN PANEL 1 AND 2 -
-tkinter.Label(root, width=spw).grid(row=0, column=c2-(c1+1)+1)
-
-
-# PANEL 2 - FILTERING OPTIONS AND PLOT COMMAND - COLUMNS c2 THROUGH c2+1
-tkinter.Label(root, text="Select Desired Filter(s):", font="Helvetica 12 bold"
-              ).grid(row=0, column=c2, columnspan=2, sticky="ew")
-
-# PANEL 2 filter checkbox variables (enabled/disabled)
 f_season = tkinter.IntVar(value=0)
 f_champ = tkinter.IntVar(value=0)
 f_match = tkinter.IntVar(value=0)
 f_QueueType = tkinter.IntVar(value=0)
 f_Role = tkinter.IntVar(value=0)
 
-# PANEL 2 filter variables
-# global filter_label
-filter_label = tkinter.StringVar(root)
-# global ssn_filter
-ssn_filter = tkinter.StringVar(root, value="Select a Season")
+filter_label = tkinter.StringVar()
+ssn_filter = tkinter.StringVar(value="Select a Season")
 ssn_list = [""]
-# global champ_filter
-champ_filter = tkinter.StringVar(root, value="Select a Champion")
+champ_filter = tkinter.StringVar(value="Select a Champion")
 champ_filter_list = [""]
-# global match_filter
-match_filter = tkinter.IntVar(root)
-q_filter = tkinter.StringVar(root, value="Select a Queue")
+match_filter = tkinter.IntVar(value=20)
+q_filter = tkinter.StringVar(value="Select a Queue")
 q_filter_list = [""]
-role_filter = tkinter.StringVar(root, value="Select a Role")
+role_filter = tkinter.StringVar(value="Select a Role")
 role_filter_list = [""]
-status_label = tkinter.StringVar(root)
+status_label = tkinter.StringVar(value="App Started")
 
-# PANEL 2 checkboxes for filter enabling
-tkinter.Checkbutton(root, text="By Season: ", variable=f_season).grid(row=1, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="By Champion: ", variable=f_champ).grid(row=2, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="By # Recent Matches: ", variable=f_match).grid(row=3, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="By Queue Type: ", variable=f_QueueType).grid(row=4, column=c2, sticky="w")
-tkinter.Checkbutton(root, text="By Role: ", variable=f_Role).grid(row=5, column=c2, sticky="w")
+
+# FRAME 1 - CONFIGURATION OPTIONS AND API CALL BUTTONS - COLUMNS c1 THROUGH c1+1
+config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+config_frame.grid(row=0, column=0)
+
+tkinter.Label(config_frame, text="API Key:", font="Helvetica 12 bold", height=1, anchor="s").grid()
+tkinter.Entry(config_frame, width=45, justify="center", textvariable=apikey).grid()
+
+tkinter.Label(config_frame, text="Summoner Name:", font="Helvetica 12 bold", height=2, anchor="s").grid()
+tkinter.Entry(config_frame, width=45, justify="center", textvariable=summname).grid()
+
+tkinter.Label(config_frame, text="Region:", font="Helvetica 12 bold", height=2, anchor="s").grid()
+o_region = tkinter.OptionMenu(config_frame, reg, *reg_list)
+o_region.grid()
+
+b_get_match = tkinter.Button(config_frame, text="Get Match Data", font="Helvetica 14 bold", width=20,
+                             background="green", command=get_matches)
+b_get_match.grid()
+
+
+# PANEL 2 - FILTERING OPTIONS AND PLOT COMMAND
+filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+filter_frame.grid(row=0, column=1)
+
+tkinter.Label(filter_frame, text="Select Desired Filter(s):", font="Helvetica 12 bold",
+              width=40, anchor="s").grid(columnspan=2)
+
+tkinter.Checkbutton(filter_frame, text="By Season: ", variable=f_season).grid(row=1, column=0, sticky="w")
+tkinter.Checkbutton(filter_frame, text="By Champion: ", variable=f_champ).grid(row=2, column=0, sticky="w")
+tkinter.Checkbutton(filter_frame, text="By # Recent Matches: ", variable=f_match).grid(row=3, column=0, sticky="w")
+tkinter.Checkbutton(filter_frame, text="By Queue Type: ", variable=f_QueueType).grid(row=4, column=0, sticky="w")
+tkinter.Checkbutton(filter_frame, text="By Role: ", variable=f_Role).grid(row=5, column=0, sticky="w")
 
 # PANEL 2 widgets for filter choices
-o_season = tkinter.OptionMenu(root, ssn_filter, *ssn_list)
-o_season.grid(row=1, column=c2+1, sticky="w")
+o_season = tkinter.OptionMenu(filter_frame, ssn_filter, *ssn_list)
+o_season.grid(row=1, column=1, sticky="ew")
 
-o_champ = tkinter.OptionMenu(root, champ_filter, *champ_filter_list)
-o_champ.grid(row=2, column=c2+1, sticky="w")
+o_champ = tkinter.OptionMenu(filter_frame, champ_filter, *champ_filter_list)
+o_champ.grid(row=2, column=1, sticky="ew")
 
-match_filter.set(20)
-tkinter.Entry(root, width=10, justify="center", textvariable=match_filter).grid(row=3, column=c2+1, sticky="w")
+tkinter.Entry(filter_frame, width=40, justify="center", textvariable=match_filter).grid(row=3, column=1, sticky="ew")
 
-o_qtype = tkinter.OptionMenu(root, q_filter, *q_filter_list)
-o_qtype.grid(row=4, column=c2+1, sticky="w")
+o_qtype = tkinter.OptionMenu(filter_frame, q_filter, *q_filter_list)
+o_qtype.grid(row=4, column=1, sticky="ew")
 
-o_role = tkinter.OptionMenu(root, role_filter, *role_filter_list)
-o_role.grid(row=5, column=c2+1, sticky="w")
+o_role = tkinter.OptionMenu(filter_frame, role_filter, *role_filter_list)
+o_role.grid(row=5, column=1, sticky="ew")
 
-filter_label.set("Filtered By: All Matches")
-tkinter.Label(root, textvariable=filter_label).grid(row=6, column=c2, columnspan=2)
-tkinter.Label(root, text="     ").grid(row=7, column=c2, columnspan=2, sticky="ew")
+filter_label.set("Filtered By:\nAll Matches")
+tkinter.Label(filter_frame, textvariable=filter_label, font="Helvetica 10", foreground="blue",
+              height=3, anchor="s").grid(columnspan=2)
+
 
 # PLOTTING OPTIONS SUB-PANEL
-tkinter.Label(root, text="Select Plots To Make\nFrom Filtered Data:", font="Helvetica 12 bold"
-              ).grid(row=8, column=c2, columnspan=2)
+plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+plot_frame.grid(row=0, column=2)
+
+tkinter.Label(plot_frame, text="Select Plots To Make\nFrom Filtered Data:", font="Helvetica 12 bold"
+              ).grid(columnspan=2)
 
 # checkbox variables and their checkboxes
 cb_wr_time = tkinter.IntVar(value=0)
@@ -410,43 +407,42 @@ cb_wr_dmg_frac = tkinter.IntVar(value=0)
 n_bins_frac = tkinter.IntVar(value=30)
 cb_wr_mapside = tkinter.IntVar(value=0)
 
-tkinter.Checkbutton(root, text="Winrate Over Time (Moving Average, Specify Average Width)",
-                    variable=cb_wr_time).grid(row=9, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=ma_box_size).grid(row=9, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Winrate Over Time (Moving Average, Specify Average Width)",
+                    variable=cb_wr_time).grid(row=9, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=ma_box_size).grid(row=9, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Champion (Specify Minimum Games Played)",
-                    variable=cb_wr_champ).grid(row=10, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=n_games_champ).grid(row=10, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Winrate by Champion (Specify Minimum Games Played)",
+                    variable=cb_wr_champ).grid(row=10, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_champ).grid(row=10, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Teammate (Specify Minimum Games Played)",
-                    variable=cb_wr_teammate).grid(row=11, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=n_games_teammate).grid(row=11, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Winrate by Teammate (Specify Minimum Games Played)",
+                    variable=cb_wr_teammate).grid(row=11, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_teammate).grid(row=11, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Party Size (Enter Minimum Games \nPlayed to be Considered a \"Teammate\")",
-                    variable=cb_wr_party).grid(row=12, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=n_games_party).grid(row=12, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame,
+                    text="Winrate by Party Size (Enter Minimum Games \nPlayed to be Considered a \"Teammate\")",
+                    variable=cb_wr_party).grid(row=12, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_party).grid(row=12, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Role (Specify Minimum Games Played)",
-                    variable=cb_wr_role).grid(row=13, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=n_games_role).grid(row=13, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Winrate by Role (Specify Minimum Games Played)",
+                    variable=cb_wr_role).grid(row=13, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_role).grid(row=13, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Wins by Damage (Enter Number of Bins)",
-                    variable=cb_wr_dmg).grid(row=14, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=n_bins).grid(row=14, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Wins by Damage (Enter Number of Bins)",
+                    variable=cb_wr_dmg).grid(row=14, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_bins).grid(row=14, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Wins by Damage Fraction (Enter Number of Bins)",
-                    variable=cb_wr_dmg_frac).grid(row=15, column=c2, sticky="w")
-tkinter.Entry(root, width=6, justify="center", textvariable=n_bins_frac).grid(row=15, column=c2+1, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Wins by Damage Fraction (Enter Number of Bins)",
+                    variable=cb_wr_dmg_frac).grid(row=15, column=0, sticky="w")
+tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_bins_frac).grid(row=15, column=1, sticky="w")
 
-tkinter.Checkbutton(root, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=16, column=c2, sticky="w")
+tkinter.Checkbutton(plot_frame, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=16, column=0, sticky="w")
 
-tkinter.Button(root, text="Generate Selected Plots", font="Helvetica 12 bold",
-               width=25, command=do_plots_parent).grid(row=997, column=c2, columnspan=2)
+tkinter.Button(plot_frame, text="Generate Selected Plots", font="Helvetica 14 bold", background="red",
+               width=25, command=do_plots_parent).grid(column=0, columnspan=2)
 
-status_label.set("App Started")
-tkinter.Label(root, textvariable=status_label).grid(row=998, column=c1, sticky="ew")
-
-tkinter.Label(root, width=spw).grid(row=999, column=c2+2)
+tkinter.Label(root, textvariable=status_label, height=2, font="Helvetica 10 bold", foreground="blue"
+              ).grid(row=1, column=0, columnspan=3, sticky="s")
 
 initialize()
 root.mainloop()
