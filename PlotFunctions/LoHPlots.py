@@ -37,12 +37,12 @@ def make_wr_dictionary(key_ls, win_ls, store_dict):
     # 2nd, calculate the uncertainty (95% confidence interval) via err = 1.96 * sqrt( 1/n * mean * (1 - mean) )
     for k in store_dict:
         store_dict[k][2] = store_dict[k][1] / store_dict[k][0]
-        store_dict[k][3] = 1.96 * math.sqrt(1/store_dict[k][0] * store_dict[k][2] * (1 - store_dict[k][2]))
+        store_dict[k][3] = 1.96 * math.sqrt(1 / store_dict[k][0] * store_dict[k][2] * (1 - store_dict[k][2]))
 
 
 def make_plottable_dictionary(var_ls, win_ls, threshold, z_score=1.645):
     """
-    Makes a dictionary that is ready to be fed to wake_wr_barchart for plotting
+    Makes a dictionary that is ready to be fed to make_wr_barchart for plotting
     :param var_ls: a list of the variable to cross-reference with win_ls
     :param win_ls: a list of wins and losses whose indices match those of key_ls
     :param threshold: a cutoff for number of matches to exclude (e.g. exclude data with n<3 matches
@@ -83,17 +83,17 @@ def make_plottable_dictionary(var_ls, win_ls, threshold, z_score=1.645):
     var_length = len(plot_dict["var_ls"])
     n_deleted = 0
     for ii in range(var_length):
-        if plot_dict["n_by_var"][ii-n_deleted] >= threshold:
-            plot_dict["wr_by_var"].append(plot_dict["win_by_var"][ii-n_deleted] / plot_dict["n_by_var"][ii-n_deleted])
+        if plot_dict["n_by_var"][ii - n_deleted] >= threshold:
+            plot_dict["wr_by_var"].append(plot_dict["win_by_var"][ii - n_deleted] / plot_dict["n_by_var"][ii - n_deleted])
             plot_dict["error_by_var"].append(
-                z_score*math.sqrt(
-                    1/(plot_dict["n_by_var"][ii-n_deleted])
-                    * plot_dict["wr_by_var"][ii-n_deleted] * (1-plot_dict["wr_by_var"][ii-n_deleted]))
+                z_score * math.sqrt(
+                    1 / (plot_dict["n_by_var"][ii - n_deleted])
+                    * plot_dict["wr_by_var"][ii - n_deleted] * (1 - plot_dict["wr_by_var"][ii - n_deleted]))
             )
         else:
-            del plot_dict["var_ls"][ii-n_deleted]
-            del plot_dict["n_by_var"][ii-n_deleted]
-            del plot_dict["win_by_var"][ii-n_deleted]
+            del plot_dict["var_ls"][ii - n_deleted]
+            del plot_dict["n_by_var"][ii - n_deleted]
+            del plot_dict["win_by_var"][ii - n_deleted]
             n_deleted += 1
 
     return plot_dict
@@ -349,10 +349,12 @@ def wr_dmg_frac(filtered_parsed_match_data, n_bins, enabled_filters_text):
     damage_taken_frac_lose = []
 
     for mm in range(n_matches):
+        # If it's a win
         if filtered_parsed_match_data["win_lose"][mm] == 1:
             damage_total_frac_win.append(filtered_parsed_match_data["damage_total_frac"][mm])
             damage_to_champs_frac_win.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
             damage_taken_frac_win.append(filtered_parsed_match_data["damage_taken_frac"][mm])
+        # If it's a loss
         else:
             damage_total_frac_lose.append(filtered_parsed_match_data["damage_total_frac"][mm])
             damage_to_champs_frac_lose.append(filtered_parsed_match_data["damage_to_champs_frac"][mm])
@@ -415,19 +417,19 @@ def moving_avg(ls, box):
 
     length = len(ls)
 
-    b_fwd = math.ceil((box-1)/2)  # points to grab after -3 in test
-    b_rev = math.floor((box-1)/2)  # points to grab before -2 in test
+    b_fwd = math.ceil((box - 1) / 2)  # points to grab after -3 in test
+    b_rev = math.floor((box - 1) / 2)  # points to grab before -2 in test
 
     # prepare a list to hold the moving average
     mov_avg = [0 for ii in ls]
     # populate the points before the box size (not enough points to left of box)
     for ii in range(0, b_rev):
-        mov_avg[ii] = sum(ls[0:ii+b_fwd+1]) / len(ls[0:ii+b_fwd+1])
+        mov_avg[ii] = sum(ls[0:ii + b_fwd + 1]) / len(ls[0:ii + b_fwd + 1])
     # populate the points in the region where the box fits around the current point
-    for ii in range(b_rev, length-b_fwd):
-        mov_avg[ii] = sum(ls[ii-b_rev:ii+b_fwd+1]) / box
+    for ii in range(b_rev, length - b_fwd):
+        mov_avg[ii] = sum(ls[ii - b_rev:ii + b_fwd + 1]) / box
     # populate the points in the region approaching the end (not enough points to right of box)
-    for ii in range(length-b_fwd, length):
-        mov_avg[ii] = sum(ls[(ii-b_rev):]) / len(ls[(ii-b_rev):])
+    for ii in range(length - b_fwd, length):
+        mov_avg[ii] = sum(ls[(ii - b_rev):]) / len(ls[(ii - b_rev):])
 
     return mov_avg
