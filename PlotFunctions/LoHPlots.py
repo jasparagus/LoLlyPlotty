@@ -384,7 +384,6 @@ def wr_mapside(filtered_parsed_match_data, enabled_filters_text):
         1
     )
 
-    print(wr_side_dict)
     x_labels = []
     for side in wr_side_dict["var_ls"]:
         if side == 100:
