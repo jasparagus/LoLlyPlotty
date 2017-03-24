@@ -43,3 +43,5 @@ urllib3
   1. Add background colors
   2. Modify font sizes/styles to improve look
   3. Break out into multiple panes instead of one giant thing to make the formatting nicer.
+8. Add mean/median/mode to histograms
+9. Encorporate KDA somehow (probably through a histogram)
