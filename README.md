@@ -23,9 +23,9 @@ urllib3
 
 ## To-Do:
 1. Damage Share Histograms
-  1. X-axis: percentage share of champion damage dealt, structure damage dealt, damage tanked in blocks of ~10%
-  2. Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
-  3. Y-axis, plot 2:  Winrate per category
+  -X-axis: percentage share of champion damage dealt, structure damage dealt, damage tanked in blocks of ~10%
+  -Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
+  -Y-axis, plot 2:  Winrate per category
 
 2. Gold and XP leads histograms
   
@@ -35,13 +35,17 @@ urllib3
 
 5. Require/Exclude mode for all filters
 
-6. Replace season, champion, queue type, and role with multiselection listboxes
-  1. Update filter to loop over selected options
-  2. 
+6. Update Filtering
+  -Replace season, champion, queue type, and role with multiselection listboxes
+  -Create enable/disable toggle for all options to be looped over
+  -Update filter to loop over selected rather than a long list of if/then statements
+  
   
 7. GUI Update
-  1. Add background colors
-  2. Modify font sizes/styles to improve look
-  3. Break out into multiple panes instead of one giant thing to make the formatting nicer.
+  -Fix colors in general (expecially background)
+  -Add graphics
+  -Add explanation of 90% CI
+
 8. Add mean/median/mode to histograms
 9. Encorporate KDA somehow (probably through a histogram)
+10. Add kill participation graph(s) (e.g. % KP by champion/role/win or histogram of wins)
