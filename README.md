@@ -22,26 +22,39 @@ urllib3
 
 
 ## To-Do:
-1. Damage Share Histograms
+0. Fix default region settings
+  
+1. Rewrite plot generation code so different plots are accessed through individual buttons instead of all at once
+
+2. Damage Share Histograms
   1. X-axis: percentage share of champion damage dealt, structure damage dealt, damage tanked in blocks of ~10%
   2. Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
   3. Y-axis, plot 2:  Winrate per category
 
-2. Gold and XP leads histograms
+3. Gold and XP leads histograms
   
-3. Starting item winrates (useful when filtering by a specific champion)
+4. Starting item winrates (useful when filtering by a specific champion)
 
-4. Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
+5. Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
 
-5. Require/Exclude mode for all filters
+6. Require/Exclude mode for all filters
 
-6. Replace season, champion, queue type, and role with multiselection listboxes
+7. Replace season, champion, queue type, and role with multiselection listboxes
   1. Update filter to loop over selected options
   2. 
   
-7. GUI Update
+8. GUI Update
   1. Add background colors
   2. Modify font sizes/styles to improve look
   3. Break out into multiple panes instead of one giant thing to make the formatting nicer.
-8. Add mean/median/mode to histograms
-9. Encorporate KDA somehow (probably through a histogram)
+  
+9. Add mean/median/mode to histograms
+
+10. Incorporate KDA somehow (probably through a histogram)
+
+11. Read in a dictionary for the appropriate game constants and populate dropdowns
+  1. read queues, etc. as dictionaries
+  2. add them to the appropriate filtering dropdowns
+  3. Replace the dropdowns with multiselect boxes
+  
+12. Handle config call about regions (use .gameconstants file)

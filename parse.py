@@ -1,6 +1,3 @@
-from APIFunctions import GetChamp
-
-
 def parse_match_data(config_info, match_data, champ_dict):
     """ Converts raw match data into a set of (mostly) lists for analysis """
     summoner_name = config_info["Settings"]["SummonerName"]
