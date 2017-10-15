@@ -300,22 +300,15 @@ def read_game_constants():
     """
 
     game_constants = {}
+    game_constants_files = [str(p) for p in pathlib.Path(".").iterdir() if "gameconstants" in str(p)]
 
-    constants = [
-        "gamemodes.gameconstants",
-        "maps.gameconstants",
-        "queues.gameconstants",
-        "seasons.gameconstants",
-        "regions.gameconstants",
-    ]
-
-    for const in constants:
+    for ii in game_constants_files:
         try:
-            with open(const) as file:
+            with open(ii) as file:
                 rows = (line.split("\t") for line in file)
-                game_constants[const] = {row[0]: row[1].replace("\n", "") for row in rows}
+                game_constants[ii] = {row[0]: row[1].replace("\n", "") for row in rows}
         except:
-            print("Unable to load/open file: " + const)
-            game_constants[const] = {}
+            print("Unable to load/open file: " + ii)
+            game_constants[ii] = {}
             pass
     return game_constants

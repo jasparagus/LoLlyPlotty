@@ -57,59 +57,50 @@ def refresh(firstrun=False):
     except:
         parsed_match_data = {}
 
-    # update options in region filtering menu
+    # Update region filtering options
     try:
         o_region["menu"].delete(0, "end")
         region_list = list(config_info["GameConstants"]["regions.gameconstants"].copy().keys())
         for choice in region_list:
             o_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
     except:
-        status_label.set("Unable to find regions.gameconstants file")
+        status_string.set("Unable to find regions.gameconstants file")
         root.update_idletasks()
         pass
 
-    # update options in season filtering menu
+    # Update champion filtering options
     try:
-        ssn_filter.set(list(config_info["GameConstants"]["seasons.gameconstants"].copy().values()))
+        ChampionFilter.filter_options.set(list(config_info["ChampionDictionary"].copy().values()))
     except:
-        ssn_filter.set(["Error Finding Seasons"])
-        status_label.set("Unable to find seasons.gameconstants file")
+        ChampionFilter.filter_options.set(["Error Finding Champions"])
+        status_string.set("Unable to load champion list from servers or from config file")
         root.update_idletasks()
         pass
 
+    # Update season filtering options
     try:
-        print("setting ChampFilter's filter options")
         SeasonFilter.filter_options.set(list(config_info["GameConstants"]["seasons.gameconstants"].copy().values()))
     except:
-        pass
-
-    # update options in champ filtering menu
-    try:
-        champ_filter.set(list(config_info["ChampionDictionary"].copy().values()))
-        ChampionFilter.filter_options.set(list(config_info["ChampionDictionary"].copy().values()))
-        # o_champ["menu"].delete(0, "end")
-        # champ_filter_list = sorted(list(config_info["ChampionDictionary"].copy().values()))
-        # for choice in champ_filter_list:
-        #     o_champ["menu"].add_command(label=choice, command=tkinter._setit(champ_filter, choice))
-    except:
-        status_label.set("Unable to load champion list from servers or find from config file")
+        SeasonFilter.filter_options.set(["Error Finding Seasons"])
+        status_string.set("Unable to find seasons.gameconstants file")
         root.update_idletasks()
         pass
 
+    # Update queue filtering options
     try:
-        o_qtype["menu"].delete(0, "end")
-        q_filter_list = parsed_match_data["queue_types"]
-        for choice in q_filter_list:
-            o_qtype["menu"].add_command(label=choice, command=tkinter._setit(q_filter, choice))
+        QueueFilter.filter_options.set(list(config_info["GameConstants"]["queues.gameconstants"].copy().values()))
     except:
+        QueueFilter.filter_options.set(["Unable to find seasons.gameconstants file"])
+        status_string.set("Unable to load queues.gameconstants file")
         pass
 
+    # Update role filtering options
     try:
-        o_role["menu"].delete(0, "end")
-        role_filter_list = parsed_match_data["roles"]
-        for choice in role_filter_list:
-            o_role["menu"].add_command(label=choice, command=tkinter._setit(role_filter, choice))
+        print(config_info["GameConstants"]["roles.gameconstants"])
+        RoleFilter.filter_options.set(list(config_info["GameConstants"]["roles.gameconstants"].copy().values()))
     except:
+        RoleFilter.filter_options.set(["Unable to find roles.gameconstants file"])
+        status_string.set("Unable to load roles.gameconstants file")
         pass
 
     return config_info, match_data, parsed_match_data
@@ -128,7 +119,7 @@ def get_data():
     """
     STEP 0 - Check over the offline match list and compare it with the online match list.
     """
-    status_label.set("Downloading list of matches from Riot's servers...")
+    status_string.set("Downloading list of matches from Riot's servers...")
     b_get_data.config(relief="sunken", text="Updating Games")  # update the button's appearance
     root.update_idletasks()
 
@@ -136,22 +127,22 @@ def get_data():
     config_info, match_data, parsed_match_data = refresh()
 
     if config_info["AccountID"] == "" or config_info["SummonerID"] == "":
-        status_label.set("Double-check summoner name and selected region")
+        status_string.set("Double-check summoner name and selected region")
         b_get_data.config(relief="raised", text="Get Game Data")
         root.update_idletasks()
         return
 
     full_matchlist, len_full_matchlist = api_fns.get_full_matchlist(config_info)
-    status_label.set("Found " + str(len_full_matchlist) + " matches")
+    status_string.set("Found " + str(len_full_matchlist) + " matches")
     root.update_idletasks()
 
     # Check that every match (determined by index) in matchlist is also in match_data; retrieve missing matches
     for ii in range(len_full_matchlist):
-        status_label.set("Checking local database for match #" + str(ii+1) + " of " + str(len_full_matchlist))
+        status_string.set("Checking local database for match #" + str(ii+1) + " of " + str(len_full_matchlist))
         root.update_idletasks()
         if str(ii + 1) not in match_data:
             # download missing match
-            status_label.set(
+            status_string.set(
                 "Downloading new match (MatchID =" +
                 full_matchlist[ii + 1] +
                 ", #" + str(ii + 1) +
@@ -165,7 +156,7 @@ def get_data():
     # Refresh the GUI one last time from the saved files
     config_info, match_data, parsed_match_data = refresh()
     b_get_data.config(relief="raised", text="Get Game Data")
-    status_label.set(
+    status_string.set(
         str(len(match_data)) +
         "/" + str(len_full_matchlist) +
         " matches downloaded and ready to analyze"
@@ -173,57 +164,17 @@ def get_data():
     root.update_idletasks()
 
     # Parse the data you just got (don't forget to tell the user!)
-    parsed_match_data = parse.parse_match_data(config_info, match_data)
+    # parsed_match_data = parse.parse_match_data(config_info, match_data)
     # with open(config_info["SummonerName"] + "_ParsedMatchData.json", "w") as file:
     #     json.dump(parsed_match_data, file)
 
 
-# Note: GET_FILTERS_FROM_TEXTBOXES_FROM_BUTTONS
-def button_season():
-    ssn_out_str = ""
-
-    season_text.config(state=tkinter.NORMAL)
-    season_text.delete(1.0, tkinter.END)
-    outs = lb_season.curselection()
-
-    for ii in outs:
-        ssn_out_str += lb_season.get(ii) + "\n"
-
-    # Empty any old entries, then insert the new ones
-    season_text.insert(tkinter.END, ssn_out_str)
-    season_text.config(state=tkinter.DISABLED)
-    print(season_text.get(1.0, tkinter.END))
-
-    return
-
-
-def clear_season():
-    season_text.config(state=tkinter.NORMAL)
-    season_text.delete(1.0, tkinter.END)
-    season_text.config(state=tkinter.DISABLED)
-    lb_season.selection_clear(0, tkinter.END)
-    return
-
-
-def button_champion():
-    # REFRESH
-
-    outs = lb_season.curselection()
-    champ_out_str = ""
-    for ii in outs:
-        champ_out_str += lb_champion.get(ii) + "\n"
-    # ssn_out.set(ssn_out_str)
-
-    # APPLY CHAMPION FILTER TO PARSED MATCHES
-    parsed_data = {}
-    return parsed_data
-
-
+    # Note: GET_FILTERS_FROM_TEXTBOXES_FROM_BUTTONS
 
 def do_plots_parent():
     # this could stand to be built on a new thread.... make this a container function to create a plot on a new thread
 
-    # filter_label, ssn_filter, champ_filter, match_filter, status_label
+    # ssn_filter, champ_filter, match_filter, status_string
     refresh()
 
     GET_FILTERS_FROM_TEXTBOXES_FROM_BUTTONS
@@ -238,35 +189,30 @@ def do_plots_parent():
     # apply filters if their boxes were checked
     if f_season.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + ssn_filter.get() + ") "
-        filter_label.set(enabled_filters_text)
         filtered_match_data = parse.filter_season(
             filtered_match_data, filtered_parsed_match_data, ssn_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_champ.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + champ_filter.get() + ") "
-        filter_label.set(enabled_filters_text)
         filtered_match_data = parse.filter_champ(
             filtered_match_data, filtered_parsed_match_data, champ_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_match.get() == 1:
         enabled_filters_text = enabled_filters_text + "(Last " + str(match_filter.get()) + " Matches) "
-        filter_label.set(enabled_filters_text)
         filtered_match_data = parse.filter_match(
             filtered_match_data, match_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_QueueType.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + str(q_filter.get()) + ")"
-        filter_label.set(enabled_filters_text)
         filtered_match_data = parse.filter_qtype(
             filtered_match_data, filtered_parsed_match_data, q_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_Role.get() == 1:
         enabled_filters_text = enabled_filters_text + "(" + str(role_filter.get().replace("\n", " ")) + ") "
-        filter_label.set(enabled_filters_text)
         filtered_match_data = parse.filter_role(
             filtered_match_data, filtered_parsed_match_data, role_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
@@ -274,7 +220,6 @@ def do_plots_parent():
     # If you got here without applying any filters
     if enabled_filters_text == "Filtered By:\n":
         enabled_filters_text += "All Matches"
-        filter_label.set(enabled_filters_text)
 
     # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
     # plt.close("all")  # On second thought, it's fine to have extra plots, but keeping this for posterity.
@@ -306,9 +251,9 @@ def do_plots_parent():
 
         plt.show()
 
-        status_label.set("Done Generating Plots (" + str(len(filtered_match_data)) + " Matches)")
+        status_string.set("Done Generating Plots (" + str(len(filtered_match_data)) + " Matches)")
     else:
-        status_label.set("Too few matches (only found " + str(len(filtered_match_data)) + ")")
+        status_string.set("Too few matches (only found " + str(len(filtered_match_data)) + ")")
 
 
 # PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
@@ -333,41 +278,23 @@ style = "groove"
 
 w = 25  # width of descriptor boxes
 
-# Variables
-summname = tkinter.StringVar()
-region_list = [""]
-reg = tkinter.StringVar(value="Choose")
-
-filter_label = tkinter.StringVar()
-champ_filter = tkinter.StringVar(value="")
-match_filter = tkinter.IntVar(value=20)
-q_filter = tkinter.StringVar(value="Select a Queue")
-q_filter_list = [""]
-role_filter = tkinter.StringVar(value="Select a Role")
-role_filter_list = [""]
-status_label = tkinter.StringVar(value="App Started")
-
-
-# FRAME 1 - CONFIGURATION OPTIONS - COLUMNS c1 THROUGH c1+1
+# FRAME 1 - CONFIGURATION OPTIONS
 config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 config_frame.grid(row=0, column=0)
 
+summname = tkinter.StringVar()
 tkinter.Label(config_frame, text="Summoner Name:", font="Helvetica 12 bold", height=2, anchor="s").grid()
 tkinter.Entry(config_frame, width=45, justify="center", textvariable=summname).grid()
 
+reg = tkinter.StringVar(value="Choose")
 tkinter.Label(config_frame, text="Region:", font="Helvetica 12 bold", height=2, anchor="s").grid()
+region_list = [""]
 o_region = tkinter.OptionMenu(config_frame, reg, *region_list)
 o_region.grid()
 
-b_get_data = tkinter.Button(config_frame, text="Get Game Data", font="Helvetica 14 bold")
-b_get_data.config(width=20, command=update_match_data, bd=5)
+b_get_data = tkinter.Button(config_frame, text="Get Game Data")
+b_get_data.config(font="Helvetica 14 bold", width=20, command=update_match_data, bd=5)
 b_get_data.grid()
-
-
-# FRAME 2 - FILTERING OPTIONS
-filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-filter_frame.grid(row=0, column=1)
-tkinter.Label(filter_frame, text="Select Desired Filter(s)", font="Helvetica 12 bold", width=30, anchor="s").grid(columnspan=2)
 
 
 class MakeFilter:
@@ -376,12 +303,13 @@ class MakeFilter:
     and_how = "using classes, obviously"
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
-    def __init__(self, title_string, curr_frame, subrow, subcolumn):
+    def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height):
         # I don't know if these are necessary, except perhaps to access them from outside the class
         self.title_string = title_string
         self.curr_frame = curr_frame
         self.subrow = subrow
         self.subcolumn = subcolumn
+        self.box_height = box_height
 
         # Build the subframe to hold the filter panes
         self.sub_frame = tkinter.Frame(self.curr_frame)
@@ -397,7 +325,7 @@ class MakeFilter:
 
         # Add left pane contents
         self.lb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_options, selectmode=tkinter.MULTIPLE)
-        self.lb.config(bd=2, width=20, height=10, relief=tkinter.RIDGE, activestyle="none")
+        self.lb.config(bd=2, width=20, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
         self.lb.grid(row=1, column=0, rowspan=2, sticky="nsew")
 
         # Label the right pane
@@ -407,7 +335,7 @@ class MakeFilter:
 
         # Add right pane contents
         self.filter_choices = tkinter.Text(self.sub_frame)
-        self.filter_choices.config(font="Helvetica 10", bd=2, width=20, height=10, relief=tkinter.FLAT)
+        self.filter_choices.config(font="Helvetica 10", bd=2, width=20, height=self.box_height, relief=tkinter.FLAT)
         self.filter_choices.config(state=tkinter.DISABLED)  # disable the box to prevent manual entry
         self.filter_choices.grid(row=1, column=2, rowspan=2, sticky="nsew")
 
@@ -431,7 +359,7 @@ class MakeFilter:
         # Empty the choices box, insert choices from menu
         self.filter_choices.insert(tkinter.END, output_string)
         self.filter_choices.config(state=tkinter.DISABLED)
-        print(self.filter_choices.get(1.0, tkinter.END))
+        # print(self.filter_choices.get(1.0, tkinter.END))
 
         return
 
@@ -444,49 +372,29 @@ class MakeFilter:
 
         return
 
+# Make the middle frame to contain the filtering options
+filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+filter_frame.grid(row=0, column=1)
 
-SeasonFilter = MakeFilter("Season", filter_frame, 1, 0)
-ChampionFilter = MakeFilter("Champion", filter_frame, 2, 0)
+filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
+filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
+filter_frame_label.grid(columnspan=1)
 
-# FRAME 2A - SEASON FILTERING ALL OF THIS IS EXTRANEOUS NOW
-season_frame = tkinter.Frame(filter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-season_frame.grid(row=1, column=0)
-
-ssn_filter = tkinter.StringVar(value="")
-tkinter.Label(season_frame, text="Select Season(s) Below:", font="Helvetica 10",
-              width=20, anchor="s").grid(row=0, column=0)
-lb_season = tkinter.Listbox(season_frame, listvariable=ssn_filter, selectmode=tkinter.MULTIPLE)
-lb_season.config(bd=2, height=10, width=20, relief=tkinter.RIDGE, activestyle="none")
-lb_season.grid(row=1, column=0, rowspan=2, sticky="nsew")
-
-b_season = tkinter.Button(season_frame, text="\u2192", font="Helvetica 14 bold")
-b_season.config(width=6, height=1, command=button_season, bd=3)
-b_season.grid(row=1, column=1, sticky="sew")
-
-tkinter.Label(season_frame, text="Selected Season(s):", font="Helvetica 10",
-              width=20, anchor="s").grid(row=0, column=2)
-season_text = tkinter.Text(season_frame, font="Helvetica 10")
-season_text.configure(state=tkinter.DISABLED, width=20, height=9, bd=2, relief=tkinter.FLAT)
-season_text.grid(row=1, column=2, rowspan=2, sticky="nsew")
-
-b_clear_season = tkinter.Button(season_frame, text="Clear", command=clear_season)
-b_clear_season.config(font="Helvetica 10 bold", width=6, height=2)
-b_clear_season.grid(row=2, column=1, sticky="new")
-
-
+# Add the filters to the middle frame
+ChampionFilter = MakeFilter("Champion(s)", filter_frame, 1, 0, 8)
+RoleFilter = MakeFilter("Role(s)", filter_frame, 3, 0, 6)
+SeasonFilter = MakeFilter("Season(s)", filter_frame, 2, 0, 6)
+QueueFilter = MakeFilter("Queue(s)", filter_frame, 4, 0, 6)
 
 # Role filtering and other stuff yet to be rebuilt
-tkinter.Entry(filter_frame, width=40, justify="center", textvariable=match_filter).grid(row=4, column=1, sticky="ew")
+match_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
+match_filter_subframe.grid(row=5, column=0, sticky="ew")
+number_of_matches = tkinter.IntVar(value=20)
+tkinter.Label(match_filter_subframe, text="Include last ").grid(row=0, column=0)
+number_of_matches_entry = tkinter.Entry(match_filter_subframe, width=8, justify="center", textvariable=number_of_matches)
+number_of_matches_entry.grid(row=0, column=1, sticky="ew")
+tkinter.Label(match_filter_subframe, text=" matches that meet criteria (0 = include all)").grid(row=0, column=2)
 
-o_qtype = tkinter.OptionMenu(filter_frame, q_filter, *q_filter_list)
-o_qtype.grid(row=5, column=1, sticky="ew")
-
-o_role = tkinter.OptionMenu(filter_frame, role_filter, *role_filter_list)
-o_role.grid(row=6, column=1, sticky="ew")
-
-filter_label.set("Filtered By:\nAll Matches")
-tkinter.Label(filter_frame, textvariable=filter_label, font="Helvetica 10", foreground="blue",
-              height=3, anchor="s").grid(columnspan=2)
 
 # PLOTTING OPTIONS SUB-PANEL
 plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
@@ -546,11 +454,14 @@ b_plot = tkinter.Button(plot_frame, text="Generate Selected Plots", font="Helvet
 b_plot.config(width=25, command=do_plots_parent, bd=5)
 b_plot.grid(column=0, columnspan=2)
 
-tkinter.Label(root, textvariable=status_label, height=2, font="Helvetica 14 bold", foreground="blue"
-              ).grid(row=1, column=0, columnspan=3, sticky="s")
+# Build a status label at the bottom of the UI to keep the user informed of what's happening
+status_string = tkinter.StringVar(value="App Started")
+status_label = tkinter.Label(root, textvariable=status_string)
+status_label.config(height=2, font="Helvetica 14 bold", foreground="blue", bg="white")
+status_label.grid(row=1, column=0, columnspan=3, sticky="s")
 
-refresh(firstrun=True)  # run "refresh" with firstrun=True
+# Refresh everything, setting it for first-run
+refresh(firstrun=True)
+
+# Start the mainloop of the GUI
 root.mainloop()
-
-# Now that everything is ready, initialize the program and enter the main loop of tkinter.
-# draw_gui()
