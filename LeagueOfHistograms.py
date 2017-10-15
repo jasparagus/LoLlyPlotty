@@ -96,7 +96,6 @@ def refresh(firstrun=False):
 
     # Update role filtering options
     try:
-        print(config_info["GameConstants"]["roles.gameconstants"])
         RoleFilter.filter_options.set(list(config_info["GameConstants"]["roles.gameconstants"].copy().values()))
     except:
         RoleFilter.filter_options.set(["Unable to find roles.gameconstants file"])
@@ -301,6 +300,7 @@ class MakeFilter:
     # Shared class variables go here
     but_why = "to make a filter that can be used"
     and_how = "using classes, obviously"
+    pad_amt = 6
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height):
@@ -313,7 +313,7 @@ class MakeFilter:
 
         # Build the subframe to hold the filter panes
         self.sub_frame = tkinter.Frame(self.curr_frame)
-        self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
+        self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=self.pad_amt, pady=self.pad_amt)
         self.sub_frame.grid(row=self.subrow, column=self.subcolumn)
 
         self.filter_options = tkinter.StringVar(value="") # a string of choices to populate things
@@ -326,7 +326,7 @@ class MakeFilter:
         # Add left pane contents
         self.lb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_options, selectmode=tkinter.MULTIPLE)
         self.lb.config(bd=2, width=20, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
-        self.lb.grid(row=1, column=0, rowspan=2, sticky="nsew")
+        self.lb.grid(row=1, column=0, rowspan=2, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)
 
         # Label the right pane
         self.pane_label_right = tkinter.Label(self.sub_frame, text="Selected " + self.title_string + ":")
@@ -337,7 +337,7 @@ class MakeFilter:
         self.filter_choices = tkinter.Text(self.sub_frame)
         self.filter_choices.config(font="Helvetica 10", bd=2, width=20, height=self.box_height, relief=tkinter.FLAT)
         self.filter_choices.config(state=tkinter.DISABLED)  # disable the box to prevent manual entry
-        self.filter_choices.grid(row=1, column=2, rowspan=2, sticky="nsew")
+        self.filter_choices.grid(row=1, column=2, rowspan=2, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)
 
         # Add arrow button to middle pane
         self.add_button = tkinter.Button(self.sub_frame, text="\u2192", command=self.update_choices)
@@ -386,7 +386,7 @@ RoleFilter = MakeFilter("Role(s)", filter_frame, 3, 0, 6)
 SeasonFilter = MakeFilter("Season(s)", filter_frame, 2, 0, 6)
 QueueFilter = MakeFilter("Queue(s)", filter_frame, 4, 0, 6)
 
-# Role filtering and other stuff yet to be rebuilt
+# Number of matches filter
 match_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
 match_filter_subframe.grid(row=5, column=0, sticky="ew")
 number_of_matches = tkinter.IntVar(value=20)
@@ -395,7 +395,6 @@ number_of_matches_entry = tkinter.Entry(match_filter_subframe, width=8, justify=
 number_of_matches_entry.grid(row=0, column=1, sticky="ew")
 tkinter.Label(match_filter_subframe, text=" matches that meet criteria (0 = include all)").grid(row=0, column=2)
 
-
 # PLOTTING OPTIONS SUB-PANEL
 plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 plot_frame.grid(row=0, column=2)
@@ -403,51 +402,96 @@ plot_frame.grid(row=0, column=2)
 tkinter.Label(plot_frame, text="Plots", font="Helvetica 12 bold").grid(columnspan=2)
 
 # checkbox variables and their checkboxes
+
+class PlotBox:
+    but_why = "to make a button and variable or two for creating plots"
+    and_how = "tkinter and plot_fns module"
+
+    def __init__(self, button_string, button_function, curr_frame, subrow, subcolumn, default_value=0):
+        # I don't know if these are necessary, except perhaps to access them from outside the class
+        self.button_string = button_string
+        self.button_function = button_function
+        self.curr_frame = curr_frame
+        self.subrow = subrow
+        self.subcolumn = subcolumn
+        self.default_value = default_value
+
+        # prepare a sub-frame to hold the button and (if applicable) option box
+        self.sub_frame = tkinter.Frame(self.curr_frame)
+        self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
+        self.sub_frame.grid(row=self.subrow, column=self.subcolumn)
+
+        # make the button
+        self.button = tkinter.Button(self.sub_frame, text=self.button_string, font="Helvetica 12")
+        self.button.config(width=25, command=self.button_function_callback, bd=3)
+        if self.default_value:
+            self.button.grid(row=0, column=0, sticky="nsew")
+        else:
+            self.button.grid(row=0, column=0, columnspan=2)
+
+        # Prepare necessary integer variable and box if necessary
+        if self.default_value:
+            self.variable = tkinter.IntVar(value=self.default_value)
+            self.variable_box = tkinter.Entry(self.sub_frame, textvariable=self.variable)
+            self.variable_box.config()
+            self.variable_box.grid(row=0, column=1, sticky="nsew")
+
+
+    def button_function_callback(self):
+        print("This is a wrapper function for the accompanying plot function" + self.button_string)
+        # run the function with or without any associated argument information, as applicable
+        if self.default_value:
+            print("Trying to pass " + str(self.variable.get()) + " as argument")
+            self.button_function(self.variable.get())
+        else:
+            self.button_function()
+        return
+
+
 cb_wr_time = tkinter.IntVar(value=0)
 ma_box_size = tkinter.IntVar(value=10)
-cb_wr_champ = tkinter.IntVar(value=0)
-n_games_champ = tkinter.IntVar(value=5)
-cb_wr_teammate = tkinter.IntVar(value=0)
-n_games_teammate = tkinter.IntVar(value=5)
-cb_wr_party = tkinter.IntVar(value=0)
-n_games_party = tkinter.IntVar(value=5)
-cb_wr_role = tkinter.IntVar(value=0)
-n_games_role = tkinter.IntVar(value=5)
-cb_wr_dmg = tkinter.IntVar(value=0)
-n_bins = tkinter.IntVar(value=30)
-cb_wr_dmg_frac = tkinter.IntVar(value=0)
-n_bins_frac = tkinter.IntVar(value=30)
-cb_wr_mapside = tkinter.IntVar(value=0)
-
 tkinter.Checkbutton(plot_frame, text="Winrate Over Time (Moving Average, Specify Average Width)",
                     variable=cb_wr_time).grid(row=9, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=ma_box_size).grid(row=9, column=1, sticky="w")
 
+cb_wr_champ = tkinter.IntVar(value=0)
+n_games_champ = tkinter.IntVar(value=5)
 tkinter.Checkbutton(plot_frame, text="Winrate by Champion (Specify Minimum Games Played)",
                     variable=cb_wr_champ).grid(row=10, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_champ).grid(row=10, column=1, sticky="w")
 
+cb_wr_teammate = tkinter.IntVar(value=0)
+n_games_teammate = tkinter.IntVar(value=5)
 tkinter.Checkbutton(plot_frame, text="Winrate by Teammate (Specify Minimum Games Played)",
                     variable=cb_wr_teammate).grid(row=11, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_teammate).grid(row=11, column=1, sticky="w")
 
+cb_wr_party = tkinter.IntVar(value=0)
+n_games_party = tkinter.IntVar(value=5)
 tkinter.Checkbutton(plot_frame,
                     text="Winrate by Party Size (Enter Minimum Games \nPlayed to be Considered a \"Teammate\")",
                     variable=cb_wr_party).grid(row=12, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_party).grid(row=12, column=1, sticky="w")
 
+cb_wr_role = tkinter.IntVar(value=0)
+n_games_role = tkinter.IntVar(value=5)
 tkinter.Checkbutton(plot_frame, text="Winrate by Role (Specify Minimum Games Played)",
                     variable=cb_wr_role).grid(row=13, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_role).grid(row=13, column=1, sticky="w")
 
+cb_wr_dmg = tkinter.IntVar(value=0)
+n_bins = tkinter.IntVar(value=30)
 tkinter.Checkbutton(plot_frame, text="Wins by Damage (Enter Number of Bins)",
                     variable=cb_wr_dmg).grid(row=14, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_bins).grid(row=14, column=1, sticky="w")
 
+cb_wr_dmg_frac = tkinter.IntVar(value=0)
+n_bins_frac = tkinter.IntVar(value=30)
 tkinter.Checkbutton(plot_frame, text="Wins by Damage Fraction (Enter Number of Bins)",
                     variable=cb_wr_dmg_frac).grid(row=15, column=0, sticky="w")
 tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_bins_frac).grid(row=15, column=1, sticky="w")
 
+cb_wr_mapside = tkinter.IntVar(value=0)
 tkinter.Checkbutton(plot_frame, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=16, column=0, sticky="w")
 
 b_plot = tkinter.Button(plot_frame, text="Generate Selected Plots", font="Helvetica 14 bold")
@@ -459,6 +503,24 @@ status_string = tkinter.StringVar(value="App Started")
 status_label = tkinter.Label(root, textvariable=status_string)
 status_label.config(height=2, font="Helvetica 14 bold", foreground="blue", bg="white")
 status_label.grid(row=1, column=0, columnspan=3, sticky="s")
+
+
+
+
+
+def testfn(my_arg=0):
+    if my_arg:
+        print(str(my_arg))
+    else:
+        print("no_arg")
+    print("test fn ran OK")
+    return
+
+test = PlotBox("Winrate Over Time\n(Specify Moving Average Width)", testfn, root, 30, 30, default_value=5)
+
+
+
+
 
 # Refresh everything, setting it for first-run
 refresh(firstrun=True)
