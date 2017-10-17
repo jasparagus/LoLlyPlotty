@@ -7,11 +7,9 @@ Work in progress.
 # IMPORT STANDARD MODULES
 import threading
 import json
-import time
 import tkinter
 import matplotlib
 matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
 
 # IMPORT CUSTOM MODULES
 import api_fns
@@ -23,7 +21,7 @@ import plot_fns
 def refresh(firstrun=False):
     """
     :param firstrun: True (app freshly started) or False (app not started fresh)
-    :return: config_info, match_data, parsed_match_data
+    :return: config_info, match_data, parsed_data
     """
     if firstrun == True:
         try:
@@ -48,21 +46,22 @@ def refresh(firstrun=False):
     try:
         with open(config_info["SummonerName"] + "_MatchData.json", "r") as file:
             match_data = json.loads(file.read())
+        api_fns.verify_matches(match_data)
     except:
         match_data = {}
 
+    # Try to parse the match data, if it was loaded up
     try:
-        with open(config_info["SummonerName"] + "_ParsedMatchData.json", "r") as file:
-            parsed_match_data = json.loads(file.read())
+        parsed_data = parse.parse_data(config_info, match_data)
     except:
-        parsed_match_data = {}
+        parsed_data = {}
 
     # Update region filtering options
     try:
-        o_region["menu"].delete(0, "end")
+        dropdown_region["menu"].delete(0, "end")
         region_list = list(config_info["GameConstants"]["regions.gameconstants"].copy().keys())
         for choice in region_list:
-            o_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
+            dropdown_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
     except:
         status_string.set("Unable to find regions.gameconstants file")
         root.update_idletasks()
@@ -88,7 +87,9 @@ def refresh(firstrun=False):
 
     # Update queue filtering options
     try:
-        QueueFilter.filter_options.set(list(config_info["GameConstants"]["queues.gameconstants"].copy().values()))
+        l = list(config_info["GameConstants"]["queues.gameconstants"].copy().values())
+        l.sort()
+        QueueFilter.filter_options.set(l)
     except:
         QueueFilter.filter_options.set(["Unable to find seasons.gameconstants file"])
         status_string.set("Unable to load queues.gameconstants file")
@@ -102,7 +103,7 @@ def refresh(firstrun=False):
         status_string.set("Unable to load roles.gameconstants file")
         pass
 
-    return config_info, match_data, parsed_match_data
+    return config_info, match_data, parsed_data
 
 
 def update_match_data():
@@ -123,10 +124,10 @@ def get_data():
     root.update_idletasks()
 
     # Refresh the app information
-    config_info, match_data, parsed_match_data = refresh()
+    config_info, match_data, _ = refresh()
 
     if config_info["AccountID"] == "" or config_info["SummonerID"] == "":
-        status_string.set("Double-check summoner name and selected region")
+        status_string.set("Double-check summoner name, selected region, and API key")
         b_get_data.config(relief="raised", text="Get Game Data")
         root.update_idletasks()
         return
@@ -153,7 +154,7 @@ def get_data():
             api_fns.append_match(config_info, match, ii + 1)
 
     # Refresh the GUI one last time from the saved files
-    config_info, match_data, parsed_match_data = refresh()
+    config_info, match_data, parsed_data = refresh()
     b_get_data.config(relief="raised", text="Get Game Data")
     status_string.set(
         str(len(match_data)) +
@@ -162,13 +163,6 @@ def get_data():
     )
     root.update_idletasks()
 
-    # Parse the data you just got (don't forget to tell the user!)
-    # parsed_match_data = parse.parse_match_data(config_info, match_data)
-    # with open(config_info["SummonerName"] + "_ParsedMatchData.json", "w") as file:
-    #     json.dump(parsed_match_data, file)
-
-
-    # Note: GET_FILTERS_FROM_TEXTBOXES_FROM_BUTTONS
 
 def do_plots_parent():
     # this could stand to be built on a new thread.... make this a container function to create a plot on a new thread
@@ -179,7 +173,6 @@ def do_plots_parent():
     GET_FILTERS_FROM_TEXTBOXES_FROM_BUTTONS
 
     # Prepare to update the label for what's been filtered
-    enabled_filters_text = "Filtered By:\n"
 
     # prepare a variable to hold the filtered match data and quickly filter out remakes
     filtered_match_data = parse.filter_remakes(match_data, parsed_match_data)
@@ -187,120 +180,50 @@ def do_plots_parent():
 
     # apply filters if their boxes were checked
     if f_season.get() == 1:
-        enabled_filters_text = enabled_filters_text + "(" + ssn_filter.get() + ") "
         filtered_match_data = parse.filter_season(
             filtered_match_data, filtered_parsed_match_data, ssn_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_champ.get() == 1:
-        enabled_filters_text = enabled_filters_text + "(" + champ_filter.get() + ") "
         filtered_match_data = parse.filter_champ(
             filtered_match_data, filtered_parsed_match_data, champ_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_match.get() == 1:
-        enabled_filters_text = enabled_filters_text + "(Last " + str(match_filter.get()) + " Matches) "
         filtered_match_data = parse.filter_match(
             filtered_match_data, match_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_QueueType.get() == 1:
-        enabled_filters_text = enabled_filters_text + "(" + str(q_filter.get()) + ")"
         filtered_match_data = parse.filter_qtype(
             filtered_match_data, filtered_parsed_match_data, q_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
     if f_Role.get() == 1:
-        enabled_filters_text = enabled_filters_text + "(" + str(role_filter.get().replace("\n", " ")) + ") "
         filtered_match_data = parse.filter_role(
             filtered_match_data, filtered_parsed_match_data, role_filter.get())
         filtered_parsed_match_data = parse.parse_match_data(config_info, filtered_match_data)
 
-    # If you got here without applying any filters
-    if enabled_filters_text == "Filtered By:\n":
-        enabled_filters_text += "All Matches"
-
     # Close any leftover plots (otherwise they draw on top of each other or you just get too many)
     # plt.close("all")  # On second thought, it's fine to have extra plots, but keeping this for posterity.
-
-    if len(filtered_parsed_match_data["win_lose"]) > 2:
-        if cb_wr_time.get() == 1:
-            plot_fns.wr_time(filtered_parsed_match_data, ma_box_size.get(), enabled_filters_text)
-
-        if cb_wr_champ.get() == 1:
-            plot_fns.wr_champ(filtered_parsed_match_data, n_games_champ.get(), enabled_filters_text)
-
-        if cb_wr_teammate.get() == 1:
-            plot_fns.wr_teammate(filtered_parsed_match_data, n_games_teammate.get(), enabled_filters_text)
-
-        if cb_wr_party.get() == 1:
-            plot_fns.wr_partysize(filtered_parsed_match_data, n_games_party.get(), enabled_filters_text)
-
-        if cb_wr_role.get() == 1:
-            plot_fns.wr_role(filtered_parsed_match_data, n_games_role.get(), enabled_filters_text)
-
-        if cb_wr_dmg.get() == 1:
-            plot_fns.wr_dmg(filtered_parsed_match_data, n_bins.get(), enabled_filters_text)
-
-        if cb_wr_dmg_frac.get() == 1:
-            plot_fns.wr_dmg_frac(filtered_parsed_match_data, n_bins_frac.get(), enabled_filters_text)
-
-        if cb_wr_mapside.get() == 1:
-            plot_fns.wr_mapside(filtered_parsed_match_data, enabled_filters_text)
-
-        plt.show()
 
         status_string.set("Done Generating Plots (" + str(len(filtered_match_data)) + " Matches)")
     else:
         status_string.set("Too few matches (only found " + str(len(filtered_match_data)) + ")")
 
 
-# PREPARE A BOX TO HOLD OPTIONS & POPULATE IT WITH DEFAULTS FROM CONFIG FILE.
-# def start_gui():
-#     thread999 = threading.Thread(target=draw_gui0)
-#     thread999.start()
-#
-#
-# def draw_gui0():
-#     return
-
-
-root = tkinter.Tk()  # prepare a widget to hold the UI
-root.configure(background="white")
-root.title("League of Histograms")
-root.iconbitmap('icon.ico')
-root.resizable(width=False, height=False)
-pad = 10  # padding before frame borders
-bwid = 10  # border width for frames
-spacing = 15  # padding between frames
-style = "groove"
-
-w = 25  # width of descriptor boxes
-
-# FRAME 1 - CONFIGURATION OPTIONS
-config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-config_frame.grid(row=0, column=0)
-
-summname = tkinter.StringVar()
-tkinter.Label(config_frame, text="Summoner Name:", font="Helvetica 12 bold", height=2, anchor="s").grid()
-tkinter.Entry(config_frame, width=45, justify="center", textvariable=summname).grid()
-
-reg = tkinter.StringVar(value="Choose")
-tkinter.Label(config_frame, text="Region:", font="Helvetica 12 bold", height=2, anchor="s").grid()
-region_list = [""]
-o_region = tkinter.OptionMenu(config_frame, reg, *region_list)
-o_region.grid()
-
-b_get_data = tkinter.Button(config_frame, text="Get Game Data")
-b_get_data.config(font="Helvetica 14 bold", width=20, command=update_match_data, bd=5)
-b_get_data.grid()
+def testfn(my_arg=0):
+    if my_arg:
+        print(str(my_arg))
+    else:
+        print("no_arg")
+    print("test fn ran OK")
+    return
 
 
 class MakeFilter:
-    # Shared class variables go here
-    but_why = "to make a filter that can be used"
-    and_how = "using classes, obviously"
-    pad_amt = 6
+    # Shared class variables
+    pad_amt = 5
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height):
@@ -316,7 +239,7 @@ class MakeFilter:
         self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=self.pad_amt, pady=self.pad_amt)
         self.sub_frame.grid(row=self.subrow, column=self.subcolumn)
 
-        self.filter_options = tkinter.StringVar(value="") # a string of choices to populate things
+        self.filter_options = tkinter.StringVar(value="")  # a string of choices to populate things
 
         # Label the left pane
         self.pane_label_left = tkinter.Label(self.sub_frame, text="Select " + self.title_string + ":")
@@ -363,49 +286,22 @@ class MakeFilter:
 
         return
 
+
     def clear_choices(self):
+        # clear out selections on the left pane
         self.lb.selection_clear(0, tkinter.END)
 
+        # clear the choices from the right pane
         self.filter_choices.config(state=tkinter.NORMAL)
         self.filter_choices.delete(1.0, tkinter.END)
         self.filter_choices.config(state=tkinter.DISABLED)
 
         return
 
-# Make the middle frame to contain the filtering options
-filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-filter_frame.grid(row=0, column=1)
 
-filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
-filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
-filter_frame_label.grid(columnspan=1)
-
-# Add the filters to the middle frame
-ChampionFilter = MakeFilter("Champion(s)", filter_frame, 1, 0, 8)
-RoleFilter = MakeFilter("Role(s)", filter_frame, 3, 0, 6)
-SeasonFilter = MakeFilter("Season(s)", filter_frame, 2, 0, 6)
-QueueFilter = MakeFilter("Queue(s)", filter_frame, 4, 0, 6)
-
-# Number of matches filter
-match_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
-match_filter_subframe.grid(row=5, column=0, sticky="ew")
-number_of_matches = tkinter.IntVar(value=20)
-tkinter.Label(match_filter_subframe, text="Include last ").grid(row=0, column=0)
-number_of_matches_entry = tkinter.Entry(match_filter_subframe, width=8, justify="center", textvariable=number_of_matches)
-number_of_matches_entry.grid(row=0, column=1, sticky="ew")
-tkinter.Label(match_filter_subframe, text=" matches that meet criteria (0 = include all)").grid(row=0, column=2)
-
-# PLOTTING OPTIONS SUB-PANEL
-plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-plot_frame.grid(row=0, column=2)
-
-tkinter.Label(plot_frame, text="Plots", font="Helvetica 12 bold").grid(columnspan=2)
-
-# checkbox variables and their checkboxes
-
-class PlotBox:
-    but_why = "to make a button and variable or two for creating plots"
-    and_how = "tkinter and plot_fns module"
+class PlotGen:
+    # shared class variables
+    pad_amt = 5
 
     def __init__(self, button_string, button_function, curr_frame, subrow, subcolumn, default_value=0):
         # I don't know if these are necessary, except perhaps to access them from outside the class
@@ -418,109 +314,135 @@ class PlotBox:
 
         # prepare a sub-frame to hold the button and (if applicable) option box
         self.sub_frame = tkinter.Frame(self.curr_frame)
-        self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
-        self.sub_frame.grid(row=self.subrow, column=self.subcolumn)
+        self.sub_frame.config(borderwidth=2, relief=tkinter.FLAT, padx=self.pad_amt, pady=self.pad_amt)
+        self.sub_frame.grid(row=self.subrow, column=self.subcolumn, sticky="nsew")
 
         # make the button
-        self.button = tkinter.Button(self.sub_frame, text=self.button_string, font="Helvetica 12")
-        self.button.config(width=25, command=self.button_function_callback, bd=3)
+        self.button = tkinter.Button(self.sub_frame, text=self.button_string, font="Helvetica 10")
+        self.button.config(command=self.button_function_callback, bd=3, width=40)
+
         if self.default_value:
-            self.button.grid(row=0, column=0, sticky="nsew")
+            self.button.grid(row=0, column=0, columnspan=1, sticky="nsew")
         else:
-            self.button.grid(row=0, column=0, columnspan=2)
+            self.button.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
         # Prepare necessary integer variable and box if necessary
         if self.default_value:
             self.variable = tkinter.IntVar(value=self.default_value)
             self.variable_box = tkinter.Entry(self.sub_frame, textvariable=self.variable)
-            self.variable_box.config()
+            self.variable_box.config(font="Helvetica 10", width=5, relief=tkinter.GROOVE)
             self.variable_box.grid(row=0, column=1, sticky="nsew")
 
 
     def button_function_callback(self):
-        print("This is a wrapper function for the accompanying plot function" + self.button_string)
+        print("This is a wrapper function for the accompanying plot function " + self.button_string)
         # run the function with or without any associated argument information, as applicable
         if self.default_value:
-            print("Trying to pass " + str(self.variable.get()) + " as argument")
-            self.button_function(self.variable.get())
+            self.thread = threading.Thread(target=self.button_function(self.variable.get()))
+            self.thread.start()
         else:
-            self.button_function()
+            self.thread = threading.Thread(target=self.button_function())
+            self.thread.start()
         return
 
+root = tkinter.Tk()  # prepare a widget to hold the UI
+root.configure(background="white")
+root.title("League of Histograms")
+root.iconbitmap('icon.ico')
+root.resizable(width=False, height=False)
+pad = 10  # padding before frame borders
+bwid = 3  # border width for frames
+style = tkinter.GROOVE
 
-cb_wr_time = tkinter.IntVar(value=0)
-ma_box_size = tkinter.IntVar(value=10)
-tkinter.Checkbutton(plot_frame, text="Winrate Over Time (Moving Average, Specify Average Width)",
-                    variable=cb_wr_time).grid(row=9, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=ma_box_size).grid(row=9, column=1, sticky="w")
+# FRAME 1 - CONFIGURATION OPTIONS
+config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+config_frame.grid(row=0, column=0)
 
-cb_wr_champ = tkinter.IntVar(value=0)
-n_games_champ = tkinter.IntVar(value=5)
-tkinter.Checkbutton(plot_frame, text="Winrate by Champion (Specify Minimum Games Played)",
-                    variable=cb_wr_champ).grid(row=10, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_champ).grid(row=10, column=1, sticky="w")
+summname = tkinter.StringVar()
+tkinter.Label(config_frame, text="Summoner Name:", font="Helvetica 12 bold", height=2, anchor="s").grid()
+tkinter.Entry(config_frame, width=45, justify="center", textvariable=summname).grid()
 
-cb_wr_teammate = tkinter.IntVar(value=0)
-n_games_teammate = tkinter.IntVar(value=5)
-tkinter.Checkbutton(plot_frame, text="Winrate by Teammate (Specify Minimum Games Played)",
-                    variable=cb_wr_teammate).grid(row=11, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_teammate).grid(row=11, column=1, sticky="w")
+reg = tkinter.StringVar(value="Choose")
+tkinter.Label(config_frame, text="Region:", font="Helvetica 12 bold", height=2, anchor="s").grid()
+region_list = [""]
+dropdown_region = tkinter.OptionMenu(config_frame, reg, *region_list)
+dropdown_region.grid()
 
-cb_wr_party = tkinter.IntVar(value=0)
-n_games_party = tkinter.IntVar(value=5)
-tkinter.Checkbutton(plot_frame,
-                    text="Winrate by Party Size (Enter Minimum Games \nPlayed to be Considered a \"Teammate\")",
-                    variable=cb_wr_party).grid(row=12, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_party).grid(row=12, column=1, sticky="w")
+b_get_data = tkinter.Button(config_frame, text="Get Game Data")
+b_get_data.config(font="Helvetica 14 bold", width=20, command=update_match_data, bd=5)
+b_get_data.grid()
 
-cb_wr_role = tkinter.IntVar(value=0)
-n_games_role = tkinter.IntVar(value=5)
-tkinter.Checkbutton(plot_frame, text="Winrate by Role (Specify Minimum Games Played)",
-                    variable=cb_wr_role).grid(row=13, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_games_role).grid(row=13, column=1, sticky="w")
+# Make the middle frame to contain the filtering options
+filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+filter_frame.grid(row=0, column=1)
+filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
+filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
+filter_frame_label.grid(columnspan=1)
 
-cb_wr_dmg = tkinter.IntVar(value=0)
-n_bins = tkinter.IntVar(value=30)
-tkinter.Checkbutton(plot_frame, text="Wins by Damage (Enter Number of Bins)",
-                    variable=cb_wr_dmg).grid(row=14, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_bins).grid(row=14, column=1, sticky="w")
+# Add the filters to the middle frame
+ChampionFilter = MakeFilter("Champion(s)", filter_frame, 1, 0, 8)
+RoleFilter = MakeFilter("Role(s)", filter_frame, 3, 0, 6)
+SeasonFilter = MakeFilter("Season(s)", filter_frame, 2, 0, 6)
+QueueFilter = MakeFilter("Queue(s)", filter_frame, 4, 0, 10)
 
-cb_wr_dmg_frac = tkinter.IntVar(value=0)
-n_bins_frac = tkinter.IntVar(value=30)
-tkinter.Checkbutton(plot_frame, text="Wins by Damage Fraction (Enter Number of Bins)",
-                    variable=cb_wr_dmg_frac).grid(row=15, column=0, sticky="w")
-tkinter.Entry(plot_frame, width=6, justify="center", textvariable=n_bins_frac).grid(row=15, column=1, sticky="w")
+# Number of matches filter
+match_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
+match_filter_subframe.grid(row=5, column=0, sticky="ew")
+number_of_matches = tkinter.IntVar(value=20)
+tkinter.Label(match_filter_subframe, text="Include last ").grid(row=0, column=0)
+number_of_matches_entry = tkinter.Entry(match_filter_subframe, width=8, justify="center",
+                                        textvariable=number_of_matches)
+number_of_matches_entry.grid(row=0, column=1, sticky="ew")
+tkinter.Label(match_filter_subframe, text=" matches that meet criteria (0 = include all)").grid(row=0, column=2)
 
-cb_wr_mapside = tkinter.IntVar(value=0)
-tkinter.Checkbutton(plot_frame, text="Winrate by Map Side", variable=cb_wr_mapside).grid(row=16, column=0, sticky="w")
+# Create the rightmost frame to contain the plot buttons
+plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+plot_frame.grid(row=0, column=2)
+plot_frame_label = tkinter.Label(filter_frame, text="Generate Plots")
+plot_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
+plot_frame_label.grid(columnspan=1)
 
-b_plot = tkinter.Button(plot_frame, text="Generate Selected Plots", font="Helvetica 14 bold")
-b_plot.config(width=25, command=do_plots_parent, bd=5)
-b_plot.grid(column=0, columnspan=2)
+WinrateTime = PlotGen("Winrate Over Time\n(Moving Average; Specify Average Width)",
+                      testfn, plot_frame, 1, 0, default_value=10)
+WinrateChamp = PlotGen("Winrate by Champion\n(Specify Minimum Games Played)",
+                       testfn, plot_frame, 2, 0, default_value=5)
+WinrateTeammate = PlotGen("Winrate by Teammate\n(Specify Minimum Games Played Together)",
+                          testfn, plot_frame, 3, 0, default_value=10)
+WinratePartySize = PlotGen("Winrate by Party Size\n(Enter # Games Together to be Considered \"Teammates\")",
+                           testfn, plot_frame, 4, 0, default_value=5)
+WinrateRole = PlotGen("Winrate by Role\n(Specify Minimum Games Played)",
+                      testfn, plot_frame, 5, 0, default_value=5)
+WinrateDamage = PlotGen("Winrate by Damage\n(Specify Number of Bins)",
+                        testfn, plot_frame, 6, 0, default_value=5)
+WinrateDamageFrac = PlotGen("Winrate by Damage Fraction\n(Specify Number of Bins)",
+                            testfn, plot_frame, 7, 0, default_value=5)
+WinrateMapside = PlotGen("Winrate by Map Side",
+                         testfn, plot_frame, 8, 0, default_value=0)
 
-# Build a status label at the bottom of the UI to keep the user informed of what's happening
+# if len(filtered_parsed_match_data["win_lose"]) > 2:
+#     if cb_wr_time.get() == 1:
+#         plot_fns.wr_time(filtered_parsed_match_data, ma_box_size.get())
+#     if cb_wr_champ.get() == 1:
+#         plot_fns.wr_champ(filtered_parsed_match_data, n_games_champ.get())
+#     if cb_wr_teammate.get() == 1:
+#         plot_fns.wr_teammate(filtered_parsed_match_data, n_games_teammate.get())
+#     if cb_wr_party.get() == 1:
+#         plot_fns.wr_partysize(filtered_parsed_match_data, n_games_party.get())
+#     if cb_wr_role.get() == 1:
+#         plot_fns.wr_role(filtered_parsed_match_data, n_games_role.get())
+#     if cb_wr_dmg.get() == 1:
+#         plot_fns.wr_dmg(filtered_parsed_match_data, n_bins.get())
+#     if cb_wr_dmg_frac.get() == 1:
+#         plot_fns.wr_dmg_frac(filtered_parsed_match_data, n_bins_frac.get())
+#     if cb_wr_mapside.get() == 1:
+#         plot_fns.wr_mapside(filtered_parsed_match_data)
+#     plt.show()
+
+# Build a status label at the bottom of the UI to keep the user informed
 status_string = tkinter.StringVar(value="App Started")
 status_label = tkinter.Label(root, textvariable=status_string)
 status_label.config(height=2, font="Helvetica 14 bold", foreground="blue", bg="white")
-status_label.grid(row=1, column=0, columnspan=3, sticky="s")
-
-
-
-
-
-def testfn(my_arg=0):
-    if my_arg:
-        print(str(my_arg))
-    else:
-        print("no_arg")
-    print("test fn ran OK")
-    return
-
-test = PlotBox("Winrate Over Time\n(Specify Moving Average Width)", testfn, root, 30, 30, default_value=5)
-
-
-
-
+status_label.grid(row=99, column=0, columnspan=9, sticky="s")
 
 # Refresh everything, setting it for first-run
 refresh(firstrun=True)

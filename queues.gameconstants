@@ -1,58 +1,58 @@
-0	Custom games		
-2	Summoner's Rift	5v5 Blind Pick games	Deprecated in patch 7.19 in favor of queueId 430
-4	Summoner's Rift	5v5 Ranked Solo games	Deprecated in favor of queueId 420
-6	Summoner's Rift	5v5 Ranked Premade games	Game mode deprecated
-7	Summoner's Rift	Co-op vs AI games	Deprecated in favor of queueId 32 and 33
-8	Twisted Treeline	3v3 Normal games	Deprecated in patch 7.19 in favor of queueId 460
-9	Twisted Treeline	3v3 Ranked Flex games	Deprecated in patch 7.19 in favor of queueId 470
-14	Summoner's Rift	5v5 Draft Pick games	Deprecated in favor of queueId 400
-16	Crystal Scar	5v5 Dominion Blind Pick games	Game mode deprecated
-17	Crystal Scar	5v5 Dominion Draft Pick games	Game mode deprecated
-25	Crystal Scar	Dominion Co-op vs AI games	Game mode deprecated
-31	Summoner's Rift	Co-op vs AI Intro Bot games	Deprecated in patch 7.19 in favor of queueId 830
-32	Summoner's Rift	Co-op vs AI Beginner Bot games	Deprecated in patch 7.19 in favor of queueId 840
-33	Summoner's Rift	Co-op vs AI Intermediate Bot games	Deprecated in patch 7.19 in favor of queueId 850
-41	Twisted Treeline	3v3 Ranked Team games	Game mode deprecated
-42	Summoner's Rift	5v5 Ranked Team games	Game mode deprecated
-52	Twisted Treeline	Co-op vs AI games	Deprecated in patch 7.19 in favor of queueId 800
-61	Summoner's Rift	5v5 Team Builder games	Game mode deprecated
-65	Howling Abyss	5v5 ARAM games	Deprecated in patch 7.19 in favor of queueId 450
-70	Summoner's Rift	One for All games	
-72	Howling Abyss	1v1 Snowdown Showdown games	
-73	Howling Abyss	2v2 Snowdown Showdown games	
-75	Summoner's Rift	6v6 Hexakill games	
-76	Summoner's Rift	Ultra Rapid Fire games	
-78	Summoner's Rift	Mirrored One for All	
-83	Summoner's Rift	Co-op vs AI Ultra Rapid Fire games	
-91	Summoner's Rift	Doom Bots Rank 1 games	
-92	Summoner's Rift	Doom Bots Rank 2 games	
-93	Summoner's Rift	Doom Bots Rank 5 games	
-96	Crystal Scar	Ascension games	
-98	Twisted Treeline	6v6 Hexakill games	
-100	Butcher's Bridge	5v5 ARAM games	
-300	Howling Abyss	King Poro games	
-310	Summoner's Rift	Nemesis games	
-313	Summoner's Rift	Black Market Brawlers games	
-315	Summoner's Rift	Nexus Siege games	Deprecated in patch 7.19 in favor of queueId 940
-317	Crystal Scar	Definitely Not Dominion games	
-318	Summoner's Rift	All Random URF games	
-325	Summoner's Rift	All Random games	
-400	Summoner's Rift	5v5 Draft Pick games	
-410	Summoner's Rift	5v5 Ranked Dynamic games	Game mode deprecated in patch 6.22
-420	Summoner's Rift	5v5 Ranked Solo games	
-430	Summoner's Rift	5v5 Blind Pick games	
-440	Summoner's Rift	5v5 Ranked Flex games	
-450	Howling Abyss	5v5 ARAM games	
-460	Twisted Treeline	3v3 Blind Pick games	
-470	Twisted Treeline	3v3 Ranked Flex games	
-600	Summoner's Rift	Blood Hunt Assassin games	
-610	Cosmic Ruins	Dark Star games	
-800	Twisted Treeline	Co-op vs. AI Intermediate Bot games	
-810	Twisted Treeline	Co-op vs. AI Intro Bot games	
-820	Twisted Treeline	Co-op vs. AI Beginner Bot games	
-830	Summoner's Rift	Co-op vs. AI Intro Bot games	
-840	Summoner's Rift	Co-op vs. AI Beginner Bot games	
-850	Summoner's Rift	Co-op vs. AI Intermediate Bot games	
-940	Summoner's Rift	Nexus Siege games	
-980	Valoran City Park	Star Guardian Invasion: Normal games	
-990	Valoran City Park	Star Guardian Invasion: Onslaught games
+0	Custom games	
+2	Summoner's Rift 5v5 Blind Pick games	Deprecated in patch 7.19 in favor of queueId 430
+4	Summoner's Rift 5v5 Ranked Solo games	Deprecated in favor of queueId 420
+6	Summoner's Rift 5v5 Ranked Premade games	Game mode deprecated
+7	Summoner's Rift Co-op vs AI games	Deprecated in favor of queueId 32 and 33
+8	Twisted Treeline 3v3 Normal games	Deprecated in patch 7.19 in favor of queueId 460
+9	Twisted Treeline 3v3 Ranked Flex games	Deprecated in patch 7.19 in favor of queueId 470
+14	Summoner's Rift 5v5 Draft Pick games	Deprecated in favor of queueId 400
+16	Crystal Scar 5v5 Dominion Blind Pick games	Game mode deprecated
+17	Crystal Scar 5v5 Dominion Draft Pick games	Game mode deprecated
+25	Crystal Scar Dominion Co-op vs AI games	Game mode deprecated
+31	Summoner's Rift Co-op vs AI Intro Bot games	Deprecated in patch 7.19 in favor of queueId 830
+32	Summoner's Rift Co-op vs AI Beginner Bot games	Deprecated in patch 7.19 in favor of queueId 840
+33	Summoner's Rift Co-op vs AI Intermediate Bot games	Deprecated in patch 7.19 in favor of queueId 850
+41	Twisted Treeline 3v3 Ranked Team games	Game mode deprecated
+42	Summoner's Rift 5v5 Ranked Team games	Game mode deprecated
+52	Twisted Treeline Co-op vs AI games	Deprecated in patch 7.19 in favor of queueId 800
+61	Summoner's Rift 5v5 Team Builder games	Game mode deprecated
+65	Howling Abyss 5v5 ARAM games	Deprecated in patch 7.19 in favor of queueId 450
+70	Summoner's Rift One for All games	
+72	Howling Abyss 1v1 Snowdown Showdown games	
+73	Howling Abyss 2v2 Snowdown Showdown games	
+75	Summoner's Rift 6v6 Hexakill games	
+76	Summoner's Rift Ultra Rapid Fire games	
+78	Summoner's Rift Mirrored One for All	
+83	Summoner's Rift Co-op vs AI Ultra Rapid Fire games	
+91	Summoner's Rift Doom Bots Rank 1 games	
+92	Summoner's Rift Doom Bots Rank 2 games	
+93	Summoner's Rift Doom Bots Rank 5 games	
+96	Crystal Scar Ascension games	
+98	Twisted Treeline 6v6 Hexakill games	
+100	Butcher's Bridge 5v5 ARAM games	
+300	Howling Abyss King Poro games	
+310	Summoner's Rift Nemesis games	
+313	Summoner's Rift Black Market Brawlers games	
+315	Summoner's Rift Nexus Siege games	Deprecated in patch 7.19 in favor of queueId 940
+317	Crystal Scar Definitely Not Dominion games	
+318	Summoner's Rift All Random URF games	
+325	Summoner's Rift All Random games	
+400	Summoner's Rift 5v5 Draft Pick games	
+410	Summoner's Rift 5v5 Ranked Dynamic games	Game mode deprecated in patch 6.22
+420	Summoner's Rift 5v5 Ranked Solo games	
+430	Summoner's Rift 5v5 Blind Pick games	
+440	Summoner's Rift 5v5 Ranked Flex games	
+450	Howling Abyss 5v5 ARAM games	
+460	Twisted Treeline 3v3 Blind Pick games	
+470	Twisted Treeline 3v3 Ranked Flex games	
+600	Summoner's Rift Blood Hunt Assassin games	
+610	Cosmic Ruins Dark Star games	
+800	Twisted Treeline Co-op vs. AI Intermediate Bot games	
+810	Twisted Treeline Co-op vs. AI Intro Bot games	
+820	Twisted Treeline Co-op vs. AI Beginner Bot games	
+830	Summoner's Rift Co-op vs. AI Intro Bot games	
+840	Summoner's Rift Co-op vs. AI Beginner Bot games	
+850	Summoner's Rift Co-op vs. AI Intermediate Bot games	
+940	Summoner's Rift Nexus Siege games	
+980	Valoran City Park Star Guardian Invasion: Normal games	
+990	Valoran City Park Star Guardian Invasion: Onslaught games

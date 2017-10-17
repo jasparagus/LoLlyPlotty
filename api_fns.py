@@ -21,9 +21,13 @@ def api_key():
 def json_from_url(url):
     req = urllib.request.Request(url)  # add the api key header
     req.add_header("X-Riot-Token", api_key())
-    reply = urllib.request.urlopen(req)  # get the reply from the server
-    _ = api_wait(reply)  # calculate the wait time
-    json_data = json.loads(reply.read())  # create a dictionary the data as a JSON object
+    try:
+        reply = urllib.request.urlopen(req)  # get the reply from the server
+        json_data = json.loads(reply.read())  # create a dictionary the data as a JSON object
+        _ = api_wait(reply)  # calculate the wait time and wait
+    except:
+        print("Error opening URL. Check API Key.")
+        json_data = {}
 
     return json_data
 # once the above is done, you can use the following as usual:
@@ -99,8 +103,8 @@ def config(region, summoner_name):
     config_info["GameConstants"] = read_game_constants()
     config_info["ChampionDictionary"] = get_champ_dict()
 
-    if (summoner_name is not "" and
-    config_info["Region"] in config_info["GameConstants"]["regions.gameconstants"].copy().keys()):
+    if (config_info["SummonerName"] is not "" and
+         config_info["Region"] in config_info["GameConstants"]["regions.gameconstants"].copy().keys()):
         account_id, summoner_id = summoner_by_name(config_info)  # grab account & summoner IDs from web
 
     # Write (or overwrite, as applicable) new settings to a configuration dictionary
@@ -250,6 +254,18 @@ def append_match(config_info, match, match_index):
     return
 
 
+def verify_matches(match_data):
+    for match_index in range(len(match_data)):
+        match_number = str(match_index + 1)
+        try:
+            # See if the match has a gameId
+            match_data[match_number]["gameId"]
+        except:
+            # if you can't find the gameId, delete the match from the match list
+            match_data.pop(match_number, None)
+    return match_data
+
+
 def get_champ_dict():
     """
     Creates a champion lookup table using Riot's Data Dragon web service or locally if that fails
@@ -311,4 +327,8 @@ def read_game_constants():
             print("Unable to load/open file: " + ii)
             game_constants[ii] = {}
             pass
+
     return game_constants
+
+gcs = read_game_constants()
+print(gcs["queues.gameconstants"])
