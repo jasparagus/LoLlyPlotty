@@ -98,13 +98,13 @@ def config(region, summoner_name):
     summoner_id = ""
 
     # Store the information obtained so far in the configuration dictionary
-    config_info["Region"] = region
     config_info["SummonerName"] = summoner_name
+    config_info["Region"] = region
     config_info["GameConstants"] = read_game_constants()
     config_info["ChampionDictionary"] = get_champ_dict()
 
     if (config_info["SummonerName"] is not "" and
-         config_info["Region"] in config_info["GameConstants"]["regions.gameconstants"].copy().keys()):
+            config_info["Region"] in config_info["GameConstants"]["regions.gameconstants"].copy().keys()):
         account_id, summoner_id = summoner_by_name(config_info)  # grab account & summoner IDs from web
 
     # Write (or overwrite, as applicable) new settings to a configuration dictionary
@@ -329,6 +329,3 @@ def read_game_constants():
             pass
 
     return game_constants
-
-gcs = read_game_constants()
-print(gcs["queues.gameconstants"])

@@ -113,6 +113,7 @@ def parse_data(config_info, match_data):
         parsed_data["ally_stats"][match_index] = ally_stats
         parsed_data["enemy_stats"][match_index] = enemy_stats
 
+        parse_variable(config_info, match_data, parsed_data, "match_id", [match_number, "gameId"])
         parse_variable(config_info, match_data, parsed_data, "season", [match_number, "seasonId"])
         parse_variable(config_info, match_data, parsed_data, "timestamp", [match_number, "gameCreation"])
         parse_variable(config_info, match_data, parsed_data, "match_length", [match_number, "gameDuration"])
@@ -147,6 +148,51 @@ def parse_data(config_info, match_data):
         # parse_variable(config_info, match_data, parsed_data, "cs",
         #                [match_number, "participants", pid, "timeline", "lane"])
     return parsed_data
+
+
+def filter_matches(config_info, parsed_data, filter_key, parsed_key, desired_options, contains_values=False):
+    """
+
+    :param parsed_data: the parsed match data
+    :param filter_key: the string corresponding to the filter in the config
+    :param desired_options: list of strings corresponding to options
+    :param contains_values: desired_options lists keys (False) or values (True)
+    :return:
+    """
+
+    filtered_data = {}
+
+    print(filter_key)
+
+    print("filter_matches has begun. It received the following:")
+    print("    " + str(filter_key) + " is the parsed_data key for this filter")
+    print("    " + str(desired_options) + " is the list of choices used")
+    if contains_values == True:
+        print("    (which are values instead of keys)")
+    print("   ", parsed_data)
+    print("It received data from " + str(len(parsed_data["match_id"])) + " matches")
+
+    print("checking choice against the desired options")
+
+    # len(parsed_data["match_id"])
+    for ii in range(1100):
+        print("checking match", ii)
+        print(parsed_data[filter_key][ii])
+        print(parsed_data[filter_key][ii] in desired_options)
+
+        # thing in desired_options:
+        #     print("it's in there")
+
+        # print(element)
+
+
+    # for now, don't actually do anything to the data...
+    filtered_data = parsed_data
+
+    return filtered_data
+
+
+
 
 
 # TODO: FIX INDEXING IN FILTERS
