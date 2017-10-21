@@ -1,4 +1,4 @@
-def parse_variable(config_info, match_data, parsed_data, variable_name, key_list):
+def parse_variable(match_data, parsed_data, variable_name, key_list):
     """
     Creates an entry in the parsed_match_data dictionary under key "var_name" for the property at "json_path"   :param config_info:
     :param match_data: match_data dictionary
@@ -6,6 +6,7 @@ def parse_variable(config_info, match_data, parsed_data, variable_name, key_list
     :param key_list: list of keys, in order, where the data is located in the match_data dictionary
     :return:
     """
+    variable_name = variable_name.replace(" ","_")
     value = match_data.copy()
 
     # Extract the nested value from the list of keys
@@ -88,21 +89,22 @@ def find_player_id(config_info, match_data, match_number, parsed_data):
                 "damageSelfMitigated"]
 
         elif ii == player_id:
-            parse_variable(config_info, match_data, parsed_data, "gold_earned",
+            parse_variable(match_data, parsed_data, "gold_earned",
                            [str(match_number), "participants", ii, "stats", "goldEarned"])
-            parse_variable(config_info, match_data, parsed_data, "damage_dealt",
+            parse_variable(match_data, parsed_data, "damage_dealt",
                            [str(match_number), "participants", ii, "stats", "totalDamageDealt"])
-            parse_variable(config_info, match_data, parsed_data, "damage_champs",
+            parse_variable(match_data, parsed_data, "damage_champs",
                            [str(match_number), "participants", ii, "stats", "totalDamageDealtToChampions"])
-            parse_variable(config_info, match_data, parsed_data, "damage_taken",
+            parse_variable(match_data, parsed_data, "damage_taken",
                            [str(match_number), "participants", ii, "stats", "totalDamageTaken"])
-            parse_variable(config_info, match_data, parsed_data, "damage_mitigated",
+            parse_variable(match_data, parsed_data, "damage_mitigated",
                            [str(match_number), "participants", ii, "stats", "damageSelfMitigated"])
 
     return player_id, parsed_data, ally_stats, enemy_stats
 
 
 def parse_data(config_info, match_data):
+    # Note: parse variable names must not include spaces
     parsed_data = {}
     parsed_data["ally_stats"] = {}
     parsed_data["enemy_stats"] = {}
@@ -113,86 +115,92 @@ def parse_data(config_info, match_data):
         parsed_data["ally_stats"][match_index] = ally_stats
         parsed_data["enemy_stats"][match_index] = enemy_stats
 
-        parse_variable(config_info, match_data, parsed_data, "match_id", [match_number, "gameId"])
-        parse_variable(config_info, match_data, parsed_data, "season", [match_number, "seasonId"])
-        parse_variable(config_info, match_data, parsed_data, "timestamp", [match_number, "gameCreation"])
-        parse_variable(config_info, match_data, parsed_data, "match_length", [match_number, "gameDuration"])
-        parse_variable(config_info, match_data, parsed_data, "queue_type", [match_number, "queueId"])
-        parse_variable(config_info, match_data, parsed_data, "map_id", [match_number, "mapId"])
-        parse_variable(config_info, match_data, parsed_data, "game_mode", [match_number, "gameMode"])
-        parse_variable(config_info, match_data, parsed_data, "team",
+        parse_variable(match_data, parsed_data, "game_id", [match_number, "gameId"])
+        parse_variable(match_data, parsed_data, "season", [match_number, "seasonId"])
+        parse_variable(match_data, parsed_data, "timestamp", [match_number, "gameCreation"])
+        parse_variable(match_data, parsed_data, "match_length", [match_number, "gameDuration"])
+        parse_variable(match_data, parsed_data, "queue_type", [match_number, "queueId"])
+        parse_variable(match_data, parsed_data, "map_id", [match_number, "mapId"])
+        parse_variable(match_data, parsed_data, "game_mode", [match_number, "gameMode"])
+        parse_variable(match_data, parsed_data, "team",
                        [match_number, "participants", pid, "teamId"])
-        parse_variable(config_info, match_data, parsed_data, "role",
+        parse_variable(match_data, parsed_data, "role",
                        [match_number, "participants", pid, "timeline", "role"])
-        parse_variable(config_info, match_data, parsed_data, "lane",
+        parse_variable(match_data, parsed_data, "lane",
                        [match_number, "participants", pid, "timeline", "lane"])
-        parse_variable(config_info, match_data, parsed_data, "champion",
+        parse_variable(match_data, parsed_data, "champion",
                        [match_number, "participants", pid, "championId"])
-        parse_variable(config_info, match_data, parsed_data, "win_lose",
+        parse_variable(match_data, parsed_data, "win_lose",
                        [match_number, "participants", pid, "stats", "win"])
-        parse_variable(config_info, match_data, parsed_data, "kills",
+        parse_variable(match_data, parsed_data, "kills",
                        [match_number, "participants", pid, "stats", "kills"])
-        parse_variable(config_info, match_data, parsed_data, "deaths",
+        parse_variable(match_data, parsed_data, "deaths",
                        [match_number, "participants", pid, "stats", "deaths"])
-        parse_variable(config_info, match_data, parsed_data, "assists",
+        parse_variable(match_data, parsed_data, "assists",
                        [match_number, "participants", pid, "stats", "assists"])
-        parse_variable(config_info, match_data, parsed_data, "wards_placed",
+        parse_variable(match_data, parsed_data, "wards_placed",
                        [match_number, "participants", pid, "stats", "wardsPlaced"])
-        parse_variable(config_info, match_data, parsed_data, "wards_killed",
+        parse_variable(match_data, parsed_data, "wards_killed",
                        [match_number, "participants", pid, "stats", "wardsKilled"])
-        parse_variable(config_info, match_data, parsed_data, "first_blood",
+        parse_variable(match_data, parsed_data, "first_blood",
                        [match_number, "participants", pid, "stats", "firstBloodKill"])
-        parse_variable(config_info, match_data, parsed_data, "first_blood_asst",
+        parse_variable(match_data, parsed_data, "first_blood_asst",
                        [match_number, "participants", pid, "stats", "firstBloodAssist"])
         # TODO add cs stuff (csd at each point in the game, etc.)
-        # parse_variable(config_info, match_data, parsed_data, "cs",
+        # parse_variable(match_data, parsed_data, "cs",
         #                [match_number, "participants", pid, "timeline", "lane"])
     return parsed_data
 
 
-def filter_matches(config_info, parsed_data, filter_key, parsed_key, desired_options, contains_values=False):
-    """
+if 0:
+    import json
+    import api_fns
+    with open("Configuration.json", "r") as file:
+        config_info = json.loads(file.read())
+    with open(config_info["SummonerName"] + "_MatchData.json", "r") as file:
+        match_data = json.loads(file.read())
 
+
+def filter_matches(config_info, parsed_data, config_key, filter_keys, choices_list):
+    """
+    :param config_info: configuration info for the entire app, same as everywhere else
     :param parsed_data: the parsed match data
-    :param filter_key: the string corresponding to the filter in the config
-    :param desired_options: list of strings corresponding to options
-    :param contains_values: desired_options lists keys (False) or values (True)
+    :param config_key: string; filter's corresponding key from the config file
+    :param filter_keys: list of strings; key(s) in parsed_data that should be checked against the choices_list
+    :param choices_list: list of strings; the options the user chose in the GUI
     :return:
     """
 
-    filtered_data = {}
+    n_matches = len(parsed_data["game_id"])
 
-    print(filter_key)
+    print("Running filter_matches given the following:")
+    print("    ", filter_keys, " is the list of keys to check through in parsed_data")
+    print("    ", str(choices_list), " is the list of choices enabled in the GUI (via config_info)")
+    print("     Here's the config dictionary: ", config_info[config_key])
+    print("     parsed_data contained " + str(n_matches) + " matches")
 
-    print("filter_matches has begun. It received the following:")
-    print("    " + str(filter_key) + " is the parsed_data key for this filter")
-    print("    " + str(desired_options) + " is the list of choices used")
-    if contains_values == True:
-        print("    (which are values instead of keys)")
-    print("   ", parsed_data)
-    print("It received data from " + str(len(parsed_data["match_id"])) + " matches")
+    remove_indices = []
 
-    print("checking choice against the desired options")
+    # for ii in range(n_matches):
+    ii = 1
+    keep = 0
+    for choice in choices_list:
+        for parsed_key in filter_keys:
+            print(
+                "Comparing chosen key (" + str(config_info[config_key][choice]) +
+                ") with corresponding parsed_data value for this match (" + str(parsed_data[parsed_key][ii]) + ")"
+            )
 
-    # len(parsed_data["match_id"])
-    for ii in range(1100):
-        print("checking match", ii)
-        print(parsed_data[filter_key][ii])
-        print(parsed_data[filter_key][ii] in desired_options)
+            if str(config_info[config_key][choice]) in str(parsed_data[parsed_key][ii]):
+                print("They match")
+                keep += 1
 
-        # thing in desired_options:
-        #     print("it's in there")
+    if keep == 0:
+        remove_indices.append(ii)
+    print(keep)
+    print(remove_indices)
 
-        # print(element)
-
-
-    # for now, don't actually do anything to the data...
-    filtered_data = parsed_data
-
-    return filtered_data
-
-
-
+    return remove_indices
 
 
 # TODO: FIX INDEXING IN FILTERS
@@ -202,7 +210,7 @@ def filter_remakes(match_data, parsed_match_data):
     filtered_match_data = {}
     nn = 0
     for match_index in range(n_mat):
-        if parsed_match_data["match_lengths"][match_index] > 6:
+        if parsed_match_data["match_length"][match_index] > 6:
             filtered_match_data[str(nn)] = match_data[str(match_index)]
             nn += 1
     return filtered_match_data

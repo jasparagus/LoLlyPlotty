@@ -100,11 +100,11 @@ def config(region, summoner_name):
     # Store the information obtained so far in the configuration dictionary
     config_info["SummonerName"] = summoner_name
     config_info["Region"] = region
-    config_info["GameConstants"] = read_game_constants()
+    config_info = read_game_constants(config_info)
     config_info["ChampionDictionary"] = get_champ_dict()
 
     if (config_info["SummonerName"] is not "" and
-            config_info["Region"] in config_info["GameConstants"]["regions.gameconstants"].copy().keys()):
+            config_info["Region"] in config_info["regions.gameconstants"].copy().keys()):
         account_id, summoner_id = summoner_by_name(config_info)  # grab account & summoner IDs from web
 
     # Write (or overwrite, as applicable) new settings to a configuration dictionary
@@ -125,7 +125,7 @@ def summoner_by_name(config_info):
 
     summoner_by_name_url = (
         "https://" +
-        config_info["GameConstants"]["regions.gameconstants"][config_info["Region"]] +
+        config_info["regions.gameconstants"][config_info["Region"]] +
         "/lol/summoner/v3/summoners/by-name/" +
         config_info["SummonerName"]
         )
@@ -156,7 +156,7 @@ def get_matchlist(config_info, begin_index):
 
     matchlist_url = (
         "https://" +
-        config_info["GameConstants"]["regions.gameconstants"][config_info["Region"]] +
+        config_info["regions.gameconstants"][config_info["Region"]] +
         "/lol/match/v3/matchlists/by-account/" +
         config_info["AccountID"] +
         "?beginIndex=" + str(begin_index)
@@ -218,7 +218,7 @@ def get_match(config_info, match_id):
 
     match_url = (
         "https://" +
-        config_info["GameConstants"]["regions.gameconstants"][config_info["Region"]] +
+        config_info["regions.gameconstants"][config_info["Region"]] +
         "/lol/match/v3/matches/" +
         str(match_id)
     )
@@ -283,8 +283,8 @@ def get_champ_dict():
         champ_IDs = champ_data["data"].copy().keys()
         champ_dict = {}
 
-        for name in champ_IDs:
-            champ_dict[champ_data["data"][name]["key"]] = champ_data["data"][name]["name"]
+        for champ in champ_IDs:
+            champ_dict[champ_data["data"][champ]["name"]] = champ_data["data"][champ]["key"]
     except:
         # If data dragon isn't working, try to load the local file
         try:
@@ -307,7 +307,7 @@ def champ_name(champ_dict, cId):
     return cName
 
 
-def read_game_constants():
+def read_game_constants(config_info):
     """
     Loads up all game constant files, which are not available through Riot's API.
     Files are tab-delimited with each entry on a new line.
@@ -315,17 +315,16 @@ def read_game_constants():
     :return: Dictionary of game constants, allowing lookup of, e.g., maps by mapId.
     """
 
-    game_constants = {}
     game_constants_files = [str(p) for p in pathlib.Path(".").iterdir() if "gameconstants" in str(p)]
 
-    for ii in game_constants_files:
+    for constant in game_constants_files:
         try:
-            with open(ii) as file:
+            with open(constant) as file:
                 rows = (line.split("\t") for line in file)
-                game_constants[ii] = {row[0]: row[1].replace("\n", "") for row in rows}
+                config_info[constant] = {row[0]: row[1].replace("\n", "") for row in rows}
         except:
             print("Unable to load/open file: " + ii)
-            game_constants[ii] = {}
+            config_info[constant] = {}
             pass
 
-    return game_constants
+    return config_info

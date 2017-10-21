@@ -1,6 +1,6 @@
-TOP	Top
-JG	Jungle	
-MID	Middle	
-BOT	ADC/Bot	
-SUP	Support
-OTH	Other
+Top	TOP
+Jungle	JUN, jungle
+Middle	Mid, Middle
+ADC/Bot	Carry, Bot
+Support	Support
+Other	???

@@ -16,24 +16,24 @@ def refresh():
     Updates variables from drive; updates GUI from variables
     """
     try:
-        reg.set(Plots.config_info["Region"]) if Plots.config_info["Region"] is not "" else reg.set("Choose")
+        reg.set(PlotMaker.config_info["Region"]) if PlotMaker.config_info["Region"] is not "" else reg.set("Choose")
     except:
         reg.set("Choose")
     try:
-        summname.set(Plots.config_info["SummonerName"])
+        summname.set(PlotMaker.config_info["SummonerName"])
     except:
         summname.set("")
     try:
-        with open(Plots.config_info["SummonerName"] + "_MatchData.json", "r") as file:
-            Plots.match_data = json.loads(file.read())
-        api_fns.verify_matches(Plots.match_data)
+        with open(PlotMaker.config_info["SummonerName"] + "_MatchData.json", "r") as file:
+            PlotMaker.match_data = json.loads(file.read())
+        api_fns.verify_matches(PlotMaker.match_data)
     except:
-        Plots.match_data = {}
+        PlotMaker.match_data = {}
 
     # Update region filtering options
     dropdown_region["menu"].delete(0, "end")
     try:
-        region_list = list(Plots.config_info["GameConstants"]["regions.gameconstants"].copy().keys())
+        region_list = list(PlotMaker.config_info["regions.gameconstants"].copy().keys())
         for choice in region_list:
             dropdown_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
     except:
@@ -44,42 +44,20 @@ def refresh():
         root.update_idletasks()
         pass
 
-    # TODO: add looping over various filter elements here
-    # Update champion filtering options
-    try:
-        ChampionFilter.filter_options.set(list(Plots.config_info["ChampionDictionary"].copy().values()))
-    except:
-        ChampionFilter.filter_options.set(["Error Finding Champions"])
-        status_string.set("Unable to load champion list from servers or from config file")
+    # Update filter options
+    for filter in Filters:
+        try:
+            local_list = list(PlotMaker.config_info[str(filter.config_key)].copy().keys())
+
+            if filter.sort_list == True:
+                local_list.sort()
+
+            filter.filter_options.set(local_list)
+
+        except:
+            filter.filter_options.set("Error Getting " + str(filter.config_key) + " Data")
+            status_string.set("Unable to find " + str(filter.config_key) + " Data")
         root.update_idletasks()
-        pass
-
-    # Update season filtering options
-    try:
-        SeasonFilter.filter_options.set(list(Plots.config_info["GameConstants"]["seasons.gameconstants"].copy().values()))
-    except:
-        SeasonFilter.filter_options.set(["Error Finding Seasons"])
-        status_string.set("Unable to find seasons.gameconstants file")
-        root.update_idletasks()
-        pass
-
-    # Update queue filtering options (this one is sorted for clarity)
-    try:
-        l = list(Plots.config_info["GameConstants"]["queues.gameconstants"].copy().values())
-        l.sort()
-        QueueFilter.filter_options.set(l)
-    except:
-        QueueFilter.filter_options.set(["Unable to find seasons.gameconstants file"])
-        status_string.set("Unable to load queues.gameconstants file")
-        pass
-
-    # Update role filtering options
-    try:
-        RoleFilter.filter_options.set(list(Plots.config_info["GameConstants"]["roles.gameconstants"].copy().values()))
-    except:
-        RoleFilter.filter_options.set(["Unable to find roles.gameconstants file"])
-        status_string.set("Unable to load roles.gameconstants file")
-        pass
 
     return
 
@@ -93,18 +71,18 @@ def get_data():
         root.update_idletasks()
 
         # Update app information from the GUI, then refresh the app
-        Plots.config_info = api_fns.config(reg.get(), summname.get())  # update the configuration info from the GUI
-        reg.set(Plots.config_info["Region"])  # update the GUI
-        summname.set(Plots.config_info["SummonerName"])
+        PlotMaker.config_info = api_fns.config(reg.get(), summname.get())  # update the configuration info from the GUI
+        reg.set(PlotMaker.config_info["Region"])  # update the GUI
+        summname.set(PlotMaker.config_info["SummonerName"])
         refresh()
 
-        if Plots.config_info["AccountID"] == "" or Plots.config_info["SummonerID"] == "":
+        if PlotMaker.config_info["AccountID"] == "" or PlotMaker.config_info["SummonerID"] == "":
             status_string.set("Double-check summoner name, selected region, and API key")
             b_get_data.config(relief="raised", text="Get Game Data")
             root.update_idletasks()
             return
 
-        full_matchlist, len_full_matchlist = api_fns.get_full_matchlist(Plots.config_info)
+        full_matchlist, len_full_matchlist = api_fns.get_full_matchlist(PlotMaker.config_info)
         status_string.set("Found " + str(len_full_matchlist) + " matches")
         root.update_idletasks()
 
@@ -112,7 +90,7 @@ def get_data():
         for ii in range(len_full_matchlist):
             status_string.set("Checking local database for match #" + str(ii+1) + " of " + str(len_full_matchlist))
             root.update_idletasks()
-            if str(ii + 1) not in Plots.match_data:
+            if str(ii + 1) not in PlotMaker.match_data:
                 # download missing match
                 status_string.set(
                     "Downloading new match (MatchID =" +
@@ -121,14 +99,14 @@ def get_data():
                     " of " + str(len_full_matchlist) + ")"
                 )
                 root.update_idletasks()
-                match = api_fns.get_match(Plots.config_info, full_matchlist[ii + 1])
-                api_fns.append_match(Plots.config_info, match, ii + 1)
+                match = api_fns.get_match(PlotMaker.config_info, full_matchlist[ii + 1])
+                api_fns.append_match(PlotMaker.config_info, match, ii + 1)
 
         # Refresh the GUI one last time from the saved files
         refresh()
         b_get_data.config(relief="raised", text="Get Game Data")
         status_string.set(
-            str(len(Plots.match_data)) +
+            str(len(PlotMaker.match_data)) +
             "/" + str(len_full_matchlist) +
             " matches downloaded and ready to analyze"
         )
@@ -158,30 +136,32 @@ def testfn(my_arg=0):
     # no matches left after filtering
     # Too few matches remaining str(len(filtered_match_data))
 
-    print("I'm the plot function. I somehow need to get fed filtered match data.")
+    print("Plot function placeholder has run.")
 
     if my_arg:
-        print("I got handed the integer : " + str(my_arg))
+        print("     I got handed the integer : " + str(my_arg))
     else:
-        print("I got handed no integer because none was needed.")
-    print("Test function finished. Plot would be made now.")
+        print("     I got handed no integer because none was needed.")
+    print("          Test function finished. Plot would be made now.")
     return
 
 
 class Filter:
     pad_amt = 3
     longest_filter_item = 47
-    filters_dictionary = {}
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
-    def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height, filter_key, config_key):
-        # I don't know if these are necessary, except perhaps to access them from outside the class
-        self.title_string = title_string
-        self.curr_frame = curr_frame
-        self.subrow = subrow
+    def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height,
+                 config_key, filter_keys, sort_list=False):
+        self.title_string = title_string  # name of the filter boxes
+        self.curr_frame = curr_frame  # which frame to put the filter inside of
+        self.subrow = subrow  # the row/column of that frame to put it inside
         self.subcolumn = subcolumn
-        self.box_height = box_height
-        self.filter_key = filter_key
+        self.box_height = box_height  # how long to make the list of filters
+        self.config_key = config_key  # the filter's source from the config file
+        self.filter_keys = filter_keys  # list of key names in parsed_data to check through
+        self.sort_list = sort_list  # whether or not to sort the filter list alphabetically
+        self.choices_list = []  # a list of the stored choices for the filter
 
         # Build the subframe to hold the filter panes
         self.sub_frame = tkinter.Frame(self.curr_frame)
@@ -227,12 +207,11 @@ class Filter:
         self.filter_choices.config(state=tkinter.NORMAL)
         self.filter_choices.delete(1.0, tkinter.END)
         # Build the string (including newlines between entries using string.join)
-        output_string = "\n".join(self.lb.get(ii) for ii in self.lb.curselection())
+        choices_string = "\n".join(self.lb.get(ii) for ii in self.lb.curselection())
         # Empty the choices box, insert choices from menu
-        self.filter_choices.insert(tkinter.END, output_string)
+        self.filter_choices.insert(tkinter.END, choices_string)
+        self.choices_list = choices_string.split("\n")
         self.filter_choices.config(state=tkinter.DISABLED)
-        # Store the selections as a string inside of a shared class dictionary
-        self.filters_dictionary[self.filter_key] = output_string
         return
 
     def clear_choices(self):
@@ -242,12 +221,11 @@ class Filter:
         self.filter_choices.config(state=tkinter.NORMAL)
         self.filter_choices.delete(1.0, tkinter.END)
         self.filter_choices.config(state=tkinter.DISABLED)
-        # Store the selections as a string inside of a shared class dictionary
-        self.filters_dictionary[self.filter_key] = ""
+        self.choices_list = []
         return
 
 
-class Plots:
+class PlotMaker:
     # shared class variables
     pad_amt = 5
     plot_threads = []
@@ -297,25 +275,26 @@ class Plots:
             self.button.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
     def button_function_callback(self):
-        print("I'm trying to call a plot for: " + self.button_string)
+        print("Pressed Button: " + self.button_string)
 
         # parsing should happen here
-        print("First, parse the match data and print it. Here is the result:")
+        print("Parsing Match Data...")
         parsed_data = parse.parse_data(self.config_info, self.match_data)
+        print("Parsed data has " + str(len(parsed_data["game_id"])) + " matches. Time to loop over filters.")
 
-        print("Parsed " + str(len(parsed_data["win_lose"])) + " matches. Applying each filter")
+        for FilterInstance in Filters:
+            print("Looping over filters. Currently doing: " + str(FilterInstance.title_string))
+            # print("Starting filter with config key " + str(FilterInstance.config_key))
+            # print("corresponding parsed_data key(s): ", FilterInstance.filter_keys)
+            # print("Stored Choice(s) from the GUI: ", FilterInstance.choices_list)
+            remove_indices = parse.filter_matches(self.config_info, parsed_data, FilterInstance.config_key,
+                                               FilterInstance.filter_keys, FilterInstance.choices_list)
 
-        ii = 0
-        for key in Filter.filters_dictionary:
-            print("Filter #" + str(ii+1) + " is " + str(key) + ". Here is a list of the chosen options:")
-            # filter the parsed data using the appropriate filters
-            filter_list = Filter.filters_dictionary[key].split("\n")
-            parsed_data = parse.filter_matches(self.config_info, parsed_data, 0, key, filter_list)
-            ii += 1
+            for ii in remove_indices:
+                # self.match_data.pop(ii, None)
+                print("Removing game with gameId: ", self.match_data[str(ii+1)]["gameId"])
 
-        print("Filters listed out. Now the plot function is called.")
-        # run filter on the data here (loop over them somehow?)
-
+        print("Filters should be done now. Running the placeholder plot function on the filtered data")
         # run the function with or without any associated argument information, as applicable
         if self.default_value:
             self.plot_threads.append(threading.Thread(target=self.button_function(self.variable.get())))
@@ -367,11 +346,12 @@ filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
 filter_frame_label.grid(columnspan=1)
 
 # Add the filters to the middle frame
-# TODO: put this in list instead of calling them by name, then loop over that list within the refresh() function
-ChampionFilter = Filter("Champion(s)", filter_frame, 1, 0, 8, "champion", "ChampionDictionary")
-RoleFilter = Filter("Role(s)", filter_frame, 3, 0, 6, ["role", "lane"], "roles.gameconstants")
-SeasonFilter = Filter("Season(s)", filter_frame, 2, 0, 6, "season", "seasons.gameconstants")
-QueueFilter = Filter("Queue(s)", filter_frame, 4, 0, 10, ["map_id", "queue_type"], "queues.gameconstants")
+Filters = [
+    Filter("Champion(s)", filter_frame, 1, 0, 8, "ChampionDictionary", ["champion"]),
+    Filter("Season(s)", filter_frame, 2, 0, 6, "seasons.gameconstants", ["season"]),
+    Filter("Role(s)", filter_frame, 3, 0, 6, "roles.gameconstants", ["role", "lane"]),
+    Filter("Queue(s)", filter_frame, 4, 0, 12, "queues.gameconstants", ["map_id", "queue_type"], sort_list=True)
+    ]
 
 # Number of matches filter
 match_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
@@ -391,23 +371,24 @@ plot_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
 plot_frame_label.grid(columnspan=1)
 
 # Make the plot buttons
-# TODO: add various plotting functions to the plot buttons
-WinrateTime = Plots("Winrate Over Time\n(Moving Average; Specify Width in Games)", testfn, "timestamp",
-                    plot_frame, 1, 0, default_value=10)
-WinrateChamp = Plots("Winrate by Champion\n(Specify Minimum Games Played)", testfn, "champion",
-                     plot_frame, 2, 0, default_value=5)
-WinrateTeammate = Plots("Winrate by Teammate\n(Specify Minimum Games Played Together)", testfn, "key",
-                        plot_frame, 3, 0, default_value=3)
-WinratePartySize = Plots("Winrate by Party Size\n(Specify Minimum Games Played Together)", testfn, "key",
-                         plot_frame, 4, 0, default_value=3)
-WinrateRole = Plots("Winrate by Role\n(Specify Minimum Games Played)", testfn, "key",
-                    plot_frame, 5, 0, default_value=5)
-WinrateDamage = Plots("Winrate by Damage\n(Specify Number of Bins)", testfn, "key",
-                      plot_frame, 6, 0, default_value=5)
-WinrateDamageFrac = Plots("Winrate by Damage Fraction\n(Specify Number of Bins)", testfn, "key",
-                          plot_frame, 7, 0, default_value=5)
-WinrateMapside = Plots("Winrate by Map Side", testfn, "key",
+Plots = [
+    PlotMaker("Winrate Over Time\n(Moving Average; Specify Width in Games)", testfn, "timestamp",
+                    plot_frame, 1, 0, default_value=10),
+    PlotMaker("Winrate by Champion\n(Specify Minimum Games Played)", testfn, "champion",
+                     plot_frame, 2, 0, default_value=5),
+    PlotMaker("Winrate by Teammate\n(Specify Minimum Games Played Together)", testfn, "key",
+                        plot_frame, 3, 0, default_value=3),
+    PlotMaker("Winrate by Party Size\n(Specify Minimum Games Played Together)", testfn, "key",
+                         plot_frame, 4, 0, default_value=3),
+    PlotMaker("Winrate by Role\n(Specify Minimum Games Played)", testfn, "key",
+                    plot_frame, 5, 0, default_value=5),
+    PlotMaker("Winrate by Damage\n(Specify Number of Bins)", testfn, "key",
+                      plot_frame, 6, 0, default_value=5),
+    PlotMaker("Winrate by Damage Fraction\n(Specify Number of Bins)", testfn, "key",
+                          plot_frame, 7, 0, default_value=5),
+    PlotMaker("Winrate by Map Side", testfn, "key",
                        plot_frame, 8, 0, default_value=0)
+    ]
 
 # Build a status label at the bottom of the UI to keep the user informed
 status_string = tkinter.StringVar(value="App Started")
