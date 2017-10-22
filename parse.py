@@ -29,18 +29,18 @@ def parse_variable(match_data, parsed_data, variable_name, key_list):
     return parsed_data
 
 
-def find_player_id(config_info, match_data, match_number, parsed_data):
+def find_player_id(config_info, match_data, game_id, parsed_data):
     player_id = 999
     teamId = 999
-    n_players = len(match_data[str(match_number)]["participantIdentities"])
+    n_players = len(match_data[str(game_id)]["participantIdentities"])
     ally_stats = {}
     enemy_stats = {}
 
     for ii in range(n_players):
-        if (str(match_data[str(match_number)]["participantIdentities"][ii]["player"]["accountId"]) ==
+        if (str(match_data[str(game_id)]["participantIdentities"][ii]["player"]["accountId"]) ==
                 str(config_info["AccountID"])):
             player_id = ii
-            teamId = match_data[str(match_number)]["participants"][ii]["teamId"]
+            teamId = match_data[str(game_id)]["participants"][ii]["teamId"]
 
     ally_stats["names"] = []
     ally_stats["gold_earned"] = 0
@@ -60,45 +60,45 @@ def find_player_id(config_info, match_data, match_number, parsed_data):
     player_ids.remove(player_id)
     for ii in range(n_players):
         # TODO: implement "highestAchievedSeasonTier" average for allies and enemies
-        if teamId == match_data[str(match_number)]["participants"][ii]["teamId"] and ii != player_id:
+        if teamId == match_data[str(game_id)]["participants"][ii]["teamId"] and ii != player_id:
             ally_stats["names"].append(
-                match_data[str(match_number)]["participantIdentities"][ii]["player"]["summonerName"])
-            ally_stats["gold_earned"] += match_data[str(match_number)]["participants"][ii]["stats"][
+                match_data[str(game_id)]["participantIdentities"][ii]["player"]["summonerName"])
+            ally_stats["gold_earned"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "goldEarned"]
-            ally_stats["damage_dealt"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            ally_stats["damage_dealt"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealt"]
-            ally_stats["damage_champs"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            ally_stats["damage_champs"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealtToChampions"]
-            ally_stats["damage_taken"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            ally_stats["damage_taken"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageTaken"]
-            ally_stats["damage_mitigated"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            ally_stats["damage_mitigated"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "damageSelfMitigated"]
 
         elif ii != player_id:
             enemy_stats["names"].append(
-                match_data[str(match_number)]["participantIdentities"][ii]["player"]["summonerName"])
-            enemy_stats["gold_earned"] += match_data[str(match_number)]["participants"][ii]["stats"][
+                match_data[str(game_id)]["participantIdentities"][ii]["player"]["summonerName"])
+            enemy_stats["gold_earned"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "goldEarned"]
-            enemy_stats["damage_dealt"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            enemy_stats["damage_dealt"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealt"]
-            enemy_stats["damage_champs"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            enemy_stats["damage_champs"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealtToChampions"]
-            enemy_stats["damage_taken"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            enemy_stats["damage_taken"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageTaken"]
-            enemy_stats["damage_mitigated"] += match_data[str(match_number)]["participants"][ii]["stats"][
+            enemy_stats["damage_mitigated"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "damageSelfMitigated"]
 
         elif ii == player_id:
             parse_variable(match_data, parsed_data, "gold_earned",
-                           [str(match_number), "participants", ii, "stats", "goldEarned"])
+                           [str(game_id), "participants", ii, "stats", "goldEarned"])
             parse_variable(match_data, parsed_data, "damage_dealt",
-                           [str(match_number), "participants", ii, "stats", "totalDamageDealt"])
+                           [str(game_id), "participants", ii, "stats", "totalDamageDealt"])
             parse_variable(match_data, parsed_data, "damage_champs",
-                           [str(match_number), "participants", ii, "stats", "totalDamageDealtToChampions"])
+                           [str(game_id), "participants", ii, "stats", "totalDamageDealtToChampions"])
             parse_variable(match_data, parsed_data, "damage_taken",
-                           [str(match_number), "participants", ii, "stats", "totalDamageTaken"])
+                           [str(game_id), "participants", ii, "stats", "totalDamageTaken"])
             parse_variable(match_data, parsed_data, "damage_mitigated",
-                           [str(match_number), "participants", ii, "stats", "damageSelfMitigated"])
+                           [str(game_id), "participants", ii, "stats", "damageSelfMitigated"])
 
     return player_id, parsed_data, ally_stats, enemy_stats
 
@@ -106,49 +106,52 @@ def find_player_id(config_info, match_data, match_number, parsed_data):
 def parse_data(config_info, match_data):
     # Note: parse variable names must not include spaces
     parsed_data = {}
-    parsed_data["ally_stats"] = {}
-    parsed_data["enemy_stats"] = {}
-    for match_index in range(len(match_data)):
-        match_number = str(match_index + 1)
-        pid, parsed_data, ally_stats, enemy_stats = find_player_id(config_info, match_data, match_number, parsed_data)
+    parsed_data["ally_stats"] = []
+    parsed_data["enemy_stats"] = []
 
-        parsed_data["ally_stats"][match_index] = ally_stats
-        parsed_data["enemy_stats"][match_index] = enemy_stats
+    game_ids = list(match_data.copy().keys())  # list of strings of match numbers (e.g. "1") from the match data
 
-        parse_variable(match_data, parsed_data, "game_id", [match_number, "gameId"])
-        parse_variable(match_data, parsed_data, "season", [match_number, "seasonId"])
-        parse_variable(match_data, parsed_data, "timestamp", [match_number, "gameCreation"])
-        parse_variable(match_data, parsed_data, "match_length", [match_number, "gameDuration"])
-        parse_variable(match_data, parsed_data, "queue_type", [match_number, "queueId"])
-        parse_variable(match_data, parsed_data, "map_id", [match_number, "mapId"])
-        parse_variable(match_data, parsed_data, "game_mode", [match_number, "gameMode"])
+    for game_id in game_ids:
+        # Get information for allies and enemeis, as well as the player's ID for the given match
+        pid, parsed_data, ally_stats, enemy_stats = find_player_id(config_info, match_data, game_id, parsed_data)
+
+        parsed_data["ally_stats"].append(ally_stats)
+        parsed_data["enemy_stats"].append(enemy_stats)
+
+        parse_variable(match_data, parsed_data, "game_id", [game_id, "gameId"])
+        parse_variable(match_data, parsed_data, "season", [game_id, "seasonId"])
+        parse_variable(match_data, parsed_data, "timestamp", [game_id, "gameCreation"])
+        parse_variable(match_data, parsed_data, "match_length", [game_id, "gameDuration"])
+        parse_variable(match_data, parsed_data, "queue_type", [game_id, "queueId"])
+        parse_variable(match_data, parsed_data, "map_id", [game_id, "mapId"])
+        parse_variable(match_data, parsed_data, "game_mode", [game_id, "gameMode"])
         parse_variable(match_data, parsed_data, "team",
-                       [match_number, "participants", pid, "teamId"])
+                       [game_id, "participants", pid, "teamId"])
         parse_variable(match_data, parsed_data, "role",
-                       [match_number, "participants", pid, "timeline", "role"])
+                       [game_id, "participants", pid, "timeline", "role"])
         parse_variable(match_data, parsed_data, "lane",
-                       [match_number, "participants", pid, "timeline", "lane"])
+                       [game_id, "participants", pid, "timeline", "lane"])
         parse_variable(match_data, parsed_data, "champion",
-                       [match_number, "participants", pid, "championId"])
+                       [game_id, "participants", pid, "championId"])
         parse_variable(match_data, parsed_data, "win_lose",
-                       [match_number, "participants", pid, "stats", "win"])
+                       [game_id, "participants", pid, "stats", "win"])
         parse_variable(match_data, parsed_data, "kills",
-                       [match_number, "participants", pid, "stats", "kills"])
+                       [game_id, "participants", pid, "stats", "kills"])
         parse_variable(match_data, parsed_data, "deaths",
-                       [match_number, "participants", pid, "stats", "deaths"])
+                       [game_id, "participants", pid, "stats", "deaths"])
         parse_variable(match_data, parsed_data, "assists",
-                       [match_number, "participants", pid, "stats", "assists"])
+                       [game_id, "participants", pid, "stats", "assists"])
         parse_variable(match_data, parsed_data, "wards_placed",
-                       [match_number, "participants", pid, "stats", "wardsPlaced"])
+                       [game_id, "participants", pid, "stats", "wardsPlaced"])
         parse_variable(match_data, parsed_data, "wards_killed",
-                       [match_number, "participants", pid, "stats", "wardsKilled"])
+                       [game_id, "participants", pid, "stats", "wardsKilled"])
         parse_variable(match_data, parsed_data, "first_blood",
-                       [match_number, "participants", pid, "stats", "firstBloodKill"])
+                       [game_id, "participants", pid, "stats", "firstBloodKill"])
         parse_variable(match_data, parsed_data, "first_blood_asst",
-                       [match_number, "participants", pid, "stats", "firstBloodAssist"])
+                       [game_id, "participants", pid, "stats", "firstBloodAssist"])
         # TODO add cs stuff (csd at each point in the game, etc.)
         # parse_variable(match_data, parsed_data, "cs",
-        #                [match_number, "participants", pid, "timeline", "lane"])
+        #                [game_id, "participants", pid, "timeline", "lane"])
     return parsed_data
 
 
@@ -161,10 +164,11 @@ if 0:
         match_data = json.loads(file.read())
 
 
-def filter_matches(config_info, parsed_data, config_key, filter_keys, choices_list):
+def filter_matches(config_info, parsed_data, remove_indices, config_key, filter_keys, choices_list):
     """
     :param config_info: configuration info for the entire app, same as everywhere else
     :param parsed_data: the parsed match data
+    :param remove_indices: a list of integers whose entries are match indices to remove from parsed_data
     :param config_key: string; filter's corresponding key from the config file
     :param filter_keys: list of strings; key(s) in parsed_data that should be checked against the choices_list
     :param choices_list: list of strings; the options the user chose in the GUI
@@ -179,26 +183,31 @@ def filter_matches(config_info, parsed_data, config_key, filter_keys, choices_li
     print("     Here's the config dictionary: ", config_info[config_key])
     print("     parsed_data contained " + str(n_matches) + " matches")
 
-    remove_indices = []
+    print(len(filter_keys), " is the lenght of filter_keys")
+    if len(choices_list) == 0:
+        print("No active choices, skipping this filter.")
+    else:
+        keep = 0  # prep a variable for whether or not to keep this match
+        # TODO: remove hardcoding this to only 10 games lol
+        n_matches = 10
+        for ii in range(n_matches):
+            for choice in choices_list:  # look over each acceptable choice
+                for parsed_key in filter_keys:  # check it the corresponding entry in parsed_data
+                    print(
+                        "Comparing chosen key (" + str(config_info[config_key][choice]) +
+                        ") with parsed_data value for this match (" + str(parsed_data[parsed_key][ii]) + ")"
+                    )
 
-    # for ii in range(n_matches):
-    ii = 1
-    keep = 0
-    for choice in choices_list:
-        for parsed_key in filter_keys:
-            print(
-                "Comparing chosen key (" + str(config_info[config_key][choice]) +
-                ") with corresponding parsed_data value for this match (" + str(parsed_data[parsed_key][ii]) + ")"
-            )
+                    if str(config_info[config_key][choice]) in str(parsed_data[parsed_key][ii]):
+                        print("found what I was looking for; keeping the match")
+                        keep += 1
 
-            if str(config_info[config_key][choice]) in str(parsed_data[parsed_key][ii]):
-                print("They match")
-                keep += 1
+            if keep == 0:
+                remove_indices.append(ii)
 
-    if keep == 0:
-        remove_indices.append(ii)
-    print(keep)
-    print(remove_indices)
+            print(remove_indices)
+
+    remove_indices = sorted(list(set(remove_indices)))
 
     return remove_indices
 

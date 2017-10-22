@@ -26,7 +26,7 @@ def refresh():
     try:
         with open(PlotMaker.config_info["SummonerName"] + "_MatchData.json", "r") as file:
             PlotMaker.match_data = json.loads(file.read())
-        api_fns.verify_matches(PlotMaker.match_data)
+        PlotMaker.match_data = api_fns.verify_matches(PlotMaker.config_info, PlotMaker.match_data)
     except:
         PlotMaker.match_data = {}
 
@@ -45,6 +45,7 @@ def refresh():
         pass
 
     # Update filter options
+    # TODO: move these operations into the Filters object as a function, then call that function here instead
     for filter in Filters:
         try:
             local_list = list(PlotMaker.config_info[str(filter.config_key)].copy().keys())
@@ -86,21 +87,26 @@ def get_data():
         status_string.set("Found " + str(len_full_matchlist) + " matches")
         root.update_idletasks()
 
+
         # Check that every match in matchlist is also in the match data; retrieve missing matches
-        for ii in range(len_full_matchlist):
-            status_string.set("Checking local database for match #" + str(ii+1) + " of " + str(len_full_matchlist))
+        game_ids_in_file = list(PlotMaker.match_data.copy().keys())
+        game_ids_from_server = list(full_matchlist.copy().values())
+        mm = 0
+        for game_id in game_ids_from_server:
+            status_string.set("Checking local database for GameID = " + str(game_id))
             root.update_idletasks()
-            if str(ii + 1) not in PlotMaker.match_data:
+            if str(game_id) not in game_ids_in_file:
                 # download missing match
                 status_string.set(
-                    "Downloading new match (MatchID =" +
-                    full_matchlist[ii + 1] +
-                    ", #" + str(ii + 1) +
-                    " of " + str(len_full_matchlist) + ")"
+                    "Downloading game: ID #" + str(game_id) +
+                    ". Got " + str(len(game_ids_in_file) + mm) + " of " +
+                    str(len(game_ids_from_server)) + " matches."
                 )
                 root.update_idletasks()
-                match = api_fns.get_match(PlotMaker.config_info, full_matchlist[ii + 1])
-                api_fns.append_match(PlotMaker.config_info, match, ii + 1)
+                match = api_fns.get_match(PlotMaker.config_info, game_id, status_string)
+
+                api_fns.append_match(PlotMaker.config_info, match, game_id)
+                mm += 1
 
         # Refresh the GUI one last time from the saved files
         refresh()
@@ -149,6 +155,7 @@ def testfn(my_arg=0):
 class Filter:
     pad_amt = 3
     longest_filter_item = 47
+    remove_indices = []  # an empty list to eventually hold indices for removal
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height,
@@ -187,6 +194,7 @@ class Filter:
         self.pane_label_right.grid(row=0, column=2)
 
         # Add right pane contents
+        # TODO: change this pane to a listbox (same as left pane), then pass entries between the two listboxes
         self.filter_choices = tkinter.Text(self.sub_frame)
         self.filter_choices.config(bd=2, height=self.box_height, relief=tkinter.FLAT, wrap=tkinter.NONE)
         self.filter_choices.config(font="Helvetica 9", width=self.longest_filter_item)
@@ -244,6 +252,8 @@ class PlotMaker:
     except:
         match_data = {}
 
+    filtered_data = match_data.copy()
+
     def __init__(self, button_string, button_function, parsed_key, curr_frame, subrow, subcolumn, default_value=0):
         # I don't know if these are necessary, except perhaps to access them from outside the class
         self.button_string = button_string
@@ -277,24 +287,31 @@ class PlotMaker:
     def button_function_callback(self):
         print("Pressed Button: " + self.button_string)
 
+        self.filtered_data = self.match_data.copy()
+
         # parsing should happen here
         print("Parsing Match Data...")
-        parsed_data = parse.parse_data(self.config_info, self.match_data)
+        parsed_data = parse.parse_data(self.config_info, self.filtered_data)
         print("Parsed data has " + str(len(parsed_data["game_id"])) + " matches. Time to loop over filters.")
 
-        for FilterInstance in Filters:
-            print("Looping over filters. Currently doing: " + str(FilterInstance.title_string))
-            # print("Starting filter with config key " + str(FilterInstance.config_key))
-            # print("corresponding parsed_data key(s): ", FilterInstance.filter_keys)
-            # print("Stored Choice(s) from the GUI: ", FilterInstance.choices_list)
-            remove_indices = parse.filter_matches(self.config_info, parsed_data, FilterInstance.config_key,
-                                               FilterInstance.filter_keys, FilterInstance.choices_list)
+        for ff in Filters:
+            print("Looping over filters. Currently doing: " + str(ff.title_string))
 
-            for ii in remove_indices:
+            Filter.remove_indices = parse.filter_matches(self.config_info, parsed_data, Filter.remove_indices,
+                                                         ff.config_key, ff.filter_keys, ff.choices_list)
+
+            for ii in Filter.remove_indices:
                 # self.match_data.pop(ii, None)
-                print("Removing game with gameId: ", self.match_data[str(ii+1)]["gameId"])
+                try:
+                    print("Trying to remove gameId: ", self.filtered_data[str(ii + 1)]["gameId"])
+                    self.filtered_data.pop(str(ii+1), None)
+                except:
+                    print("A match was already gone and couldn't be removed")
 
-        print("Filters should be done now. Running the placeholder plot function on the filtered data")
+        # Now that the unk data has been removed,
+        parsed_data = parse.parse_data(self.config_info, self.filtered_data)
+        print("after filtering, " + str(len(parsed_data["game_id"])) + " matches remain. Time to make the plot")
+
         # run the function with or without any associated argument information, as applicable
         if self.default_value:
             self.plot_threads.append(threading.Thread(target=self.button_function(self.variable.get())))
@@ -315,7 +332,7 @@ bwid = 3  # border width for frames
 wid = 20
 style = tkinter.GROOVE
 
-# TODO: Put tkinter frames (the 3 root-level ones) into ttk.Notebook pages
+# TODO: Put tkinter frames (the 3 root-level ones) into ttk.Notebook pages, after switching over to ttk...
 
 # FRAME 1 - CONFIGURATION OPTIONS
 config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
@@ -350,7 +367,7 @@ Filters = [
     Filter("Champion(s)", filter_frame, 1, 0, 8, "ChampionDictionary", ["champion"]),
     Filter("Season(s)", filter_frame, 2, 0, 6, "seasons.gameconstants", ["season"]),
     Filter("Role(s)", filter_frame, 3, 0, 6, "roles.gameconstants", ["role", "lane"]),
-    Filter("Queue(s)", filter_frame, 4, 0, 12, "queues.gameconstants", ["map_id", "queue_type"], sort_list=True)
+    Filter("Queue(s)", filter_frame, 4, 0, 12, "queues.gameconstants", ["queue_type"], sort_list=True)
     ]
 
 # Number of matches filter
@@ -366,9 +383,9 @@ tkinter.Label(match_filter_subframe, text=" matches that meet criteria (0 = incl
 # Create the rightmost frame to contain the plot buttons
 plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 plot_frame.grid(row=0, column=2)
-plot_frame_label = tkinter.Label(filter_frame, text="Generate Plots")
+plot_frame_label = tkinter.Label(plot_frame, text="Plots")
 plot_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
-plot_frame_label.grid(columnspan=1)
+plot_frame_label.grid(columnspan=2)
 
 # Make the plot buttons
 Plots = [
@@ -398,6 +415,8 @@ status_label.grid(row=99, column=0, columnspan=9, sticky="s")
 
 # Refresh everything, setting it for first-run
 refresh()
+status_string.set(value="App started; loaded " + str(len(PlotMaker.match_data)) + " matches")
+root.update_idletasks()
 
 # Start the mainloop of the GUI
 root.mainloop()

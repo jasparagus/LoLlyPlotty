@@ -18,14 +18,18 @@ def api_key():
     return apikey
 
 
-def json_from_url(url):
+def json_from_url(url, status=None):
     req = urllib.request.Request(url)  # add the api key header
     req.add_header("X-Riot-Token", api_key())
     try:
         reply = urllib.request.urlopen(req)  # get the reply from the server
         json_data = json.loads(reply.read())  # create a dictionary the data as a JSON object
-        _ = api_wait(reply)  # calculate the wait time and wait
+        if status != None:
+            _ = api_wait(reply, status)  # calculate the wait time and wait
+        else:
+            _ = api_wait(reply)
     except:
+        print(url)
         print("Error opening URL. Check API Key.")
         json_data = {}
 
@@ -35,7 +39,7 @@ def json_from_url(url):
 # xx_data = test.read()
 
 
-def api_wait(html_reply):
+def api_wait(html_reply, status=None):
     # Waits an amount of time to avoid excessive API calls determined from the server reply
     wait_time = 0  # only wait if it's necessary
     app = html_reply.info()["X-App-Rate-Limit-Count"].split(",")
@@ -82,6 +86,8 @@ def api_wait(html_reply):
     while wait_remaining > 0:
         wait_remaining = started_waiting + wait_time - time.time()
         print("Wait remaining: " + str(int(wait_remaining)) + "s")
+        if status != None:
+            status.set("Waiting to make more API calls: " + str(int(wait_remaining)) + " seconds...")
         time.sleep(0.5)
         # popup("Waiting for Riot API rate limit" + str(wait_remaining) + "seconds")
 
@@ -196,8 +202,8 @@ def get_full_matchlist(config_info):
         # For each partial matchlist, get the match index and match IDs
         for jj in range(len(matchlist_tmp)):
             match_index = total_games - (begin_index + jj)
-            match_id = matchlist_tmp[jj]
-            full_matchlist[match_index] = match_id
+            game_id = matchlist_tmp[jj]
+            full_matchlist[match_index] = game_id
 
         # compute the next begin index
         begin_index += len(matchlist_tmp)
@@ -207,11 +213,12 @@ def get_full_matchlist(config_info):
     return full_matchlist, len_full_matchlist
 
 
-def get_match(config_info, match_id):
+def get_match(config_info, game_id, status):
     """
     Gets match data for the given match id
     :param config_info: configuration settings for application
-    :param match_id: match ID (string or int) for desired match
+    :param game_id: match ID (string or int) for desired match
+    :param status: status string object (tkinter StrinkVar for holding status information)
     :return: returns match as a dict
     """
     match = {}
@@ -220,25 +227,25 @@ def get_match(config_info, match_id):
         "https://" +
         config_info["regions.gameconstants"][config_info["Region"]] +
         "/lol/match/v3/matches/" +
-        str(match_id)
+        str(game_id)
     )
 
     # Ask for the match data
     for attempt in range(5):
         try:
-            match = json_from_url(match_url)
+            match = json_from_url(match_url, status)
             break
         except:
             pass
     return match
 
 
-def append_match(config_info, match, match_index):
+def append_match(config_info, match, match_key):
     """
     Appends the match data from "match" to the match data file
     :param config_info: configuration dictionary
     :param match: dictionary containing match data
-    :param match_index: index of the match
+    :param match_key: key to which the match will be linked in the file, e.g. the gameId for a game
     """
     f_path = config_info["SummonerName"] + "_MatchData.json"
 
@@ -247,22 +254,30 @@ def append_match(config_info, match, match_index):
             file.seek(0, 2)  # find the end of the file
             position = file.tell() - 1  # find the position of the 2nd-to-last character
             file.seek(position)  # go to the 2nd-to-last character
-            file.write(", \"" + str(match_index) + "\": " + json.dumps(match) + "}")
+            file.write(", \"" + str(match_key) + "\": " + json.dumps(match) + "}")
     else:
         with open(f_path, "w") as file:
-            json.dump({str(match_index):match}, file)
+            json.dump({str(match_key):match}, file)
     return
 
 
-def verify_matches(match_data):
-    for match_index in range(len(match_data)):
-        match_number = str(match_index + 1)
+def verify_matches(config_info, match_data):
+    game_ids = list(match_data.copy().keys())
+    for game_id in game_ids:
         try:
-            # See if the match has a gameId
-            match_data[match_number]["gameId"]
+            # See if the match has a gameId in its data; if so, assume it's OK. This could be improved.
+            # TODO: figure out a better way to check that match's data is correct than it's gameId field
+            if str(match_data[game_id]["gameId"]) != str(game_id):
+                # If you find the entry but its gameId is wrong, raise an exception
+                raise Exception
         except:
-            # if you can't find the gameId, delete the match from the match list
-            match_data.pop(match_number, None)
+            # if there was an issue with the match, remove it from the dictionary and overwrite the data file
+            print("Match file had an error with match " + str(game_id) + ". Removing it and updating file.")
+            match_data.pop(game_id, None)
+            # Overwrite the entire file with the corrected file
+            with open(config_info["SummonerName"] + "_MatchData.json", "w") as file:
+                json.dump(match_data, file)
+
     return match_data
 
 
@@ -323,7 +338,7 @@ def read_game_constants(config_info):
                 rows = (line.split("\t") for line in file)
                 config_info[constant] = {row[0]: row[1].replace("\n", "") for row in rows}
         except:
-            print("Unable to load/open file: " + ii)
+            print("Unable to load/open file: " + constant)
             config_info[constant] = {}
             pass
 
