@@ -30,11 +30,13 @@ urllib3
   2. Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
   3. Y-axis, plot 2:  Winrate per category
 
+
 + Gold and XP leads histograms
   
 + Starting item winrates (useful when filtering by a specific champion)
 
 + Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
+
 
 + Replace season, champion, queue type, and role with multiselection listboxes
   1. Update filter to loop over selected options
