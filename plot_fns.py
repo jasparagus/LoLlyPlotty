@@ -1,4 +1,3 @@
-import numpy  # This is u
 import math  # This is for various math functions (ceiling, sqrt, etc.)
 import matplotlib  # This is for editing the plot renderer
 matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering works on MacOS
@@ -13,7 +12,7 @@ import matplotlib.pyplot as plt  # This is for making plots
 # import matplotlib.pyplot as plt
 # config_file = open("Configuration.json", "r")
 # config_info = json.loads(config_file.read())
-# filtered_parsed_match_data = open(config_info["Settings"]["SummonerName"] + "_ParsedMatchData.json", "r")
+# filtered_parsed_match_data = open(config_info["SummonerName"] + "_ParsedMatchData.json", "r")
 # filtered_parsed_match_data = json.loads(filtered_parsed_match_data.read())
 
 
