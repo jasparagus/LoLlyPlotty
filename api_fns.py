@@ -157,7 +157,8 @@ def get_matchlist(config_info, begin_index):
     :return: matchlist, an array of strings of gameIds; total_games, the number of games Riot has available.
     Games are returned in chronological order (e.g. first game in "matchlist" is oldest).
     """
-    total_games = 0
+    end_index = "0"
+    total_games = "0"
     matchlist = []
 
     matchlist_url = (
@@ -172,7 +173,8 @@ def get_matchlist(config_info, begin_index):
     for attempt in range(5):
         try:
             matchlist_json = json_from_url(matchlist_url)  # make the matchlist call
-            total_games = matchlist_json["totalGames"]  # check the total number of games played
+            total_games = str(matchlist_json["totalGames"])  # check the total number of games - isn't always correct
+            end_index = str(matchlist_json["endIndex"])  # the last index retrieved, not inclusive
             n_matches = len(matchlist_json["matches"])  # check how many matches were returned
             for match_index in range(n_matches):
                 # new_matches =
@@ -180,34 +182,26 @@ def get_matchlist(config_info, begin_index):
             break
         except:
             print(matchlist)
-    return matchlist, total_games
+    return matchlist, end_index, total_games
 
 
 def get_full_matchlist(config_info):
-    begin_index = 0
-    full_matchlist = {}
+    begin_index = "0"
+    full_matchlist = []
 
-    matchlist_tmp, total_games = get_matchlist(config_info, begin_index)
-
-    # Figure out how many partial matchlists will need to be retrieved
-    num_times = total_games/len(matchlist_tmp)  # this may be a non-integer...
-    if int(num_times) < num_times:
-        num_times += 1  # if there's anything that got truncated, account for it before final truncation
-    num_times = int(num_times)
-
-    for ii in range(num_times):
+    while True:
         # Get the matchlist for this iteration
-        matchlist_tmp, total_games = get_matchlist(config_info, begin_index)
+        partial_matchlist, end_index, _ = get_matchlist(config_info, begin_index)
 
-        # For each partial matchlist, get the match index and match IDs
-        for jj in range(len(matchlist_tmp)):
-            match_index = total_games - (begin_index + jj)
-            game_id = matchlist_tmp[jj]
-            full_matchlist[match_index] = game_id
+        full_matchlist += partial_matchlist
 
-        # compute the next begin index
-        begin_index += len(matchlist_tmp)
+        if str(begin_index) == str(end_index):  # see if you have reached the end of the matchlist
+            break
+        else:  # if not, the next iteration should start where this one ended
+            begin_index = str(end_index)
 
+    # Remove any duplicates and sorth the whole matchlist by gameId
+    full_matchlist = sorted(list(set(full_matchlist)))
     len_full_matchlist = len(full_matchlist)
 
     return full_matchlist, len_full_matchlist

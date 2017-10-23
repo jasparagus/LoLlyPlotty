@@ -87,12 +87,10 @@ def get_data():
         status_string.set("Found " + str(len_full_matchlist) + " matches")
         root.update_idletasks()
 
-
         # Check that every match in matchlist is also in the match data; retrieve missing matches
         game_ids_in_file = list(PlotMaker.match_data.copy().keys())
-        game_ids_from_server = list(full_matchlist.copy().values())
         mm = 0
-        for game_id in game_ids_from_server:
+        for game_id in full_matchlist:
             status_string.set("Checking local database for GameID = " + str(game_id))
             root.update_idletasks()
             if str(game_id) not in game_ids_in_file:
@@ -100,7 +98,7 @@ def get_data():
                 status_string.set(
                     "Downloading game: ID #" + str(game_id) +
                     ". Got " + str(len(game_ids_in_file) + mm) + " of " +
-                    str(len(game_ids_from_server)) + " matches."
+                    str(len_full_matchlist) + " matches."
                 )
                 root.update_idletasks()
                 match = api_fns.get_match(PlotMaker.config_info, game_id, status_string)
@@ -133,7 +131,7 @@ def cleanup_filters(config_info, match_data):
     return parsed_data
 
 
-def testfn(my_arg=0):
+def testfn(parsed_data, my_arg=0):
     # TODO: replace this with an actual function for making a plot
     # filters to run:
     # champ, season, role, queue, last n
@@ -142,20 +140,21 @@ def testfn(my_arg=0):
     # no matches left after filtering
     # Too few matches remaining str(len(filtered_match_data))
 
-    print("Plot function placeholder has run.")
+    print("Plot function placeholder has run. It prints parsed_data, making no plots")
 
     if my_arg:
-        print("     I got handed the integer : " + str(my_arg))
+        print("    I got handed the integer : " + str(my_arg))
     else:
-        print("     I got handed no integer because none was needed.")
-    print("          Test function finished. Plot would be made now.")
+        print("    I got handed no integer because none was needed.")
+    print("    Here's that data... ", parsed_data)
+
     return
 
 
 class Filter:
     pad_amt = 3
     longest_filter_item = 47
-    remove_indices = []  # an empty list to eventually hold indices for removal
+    games_to_remove = []  # an empty list to eventually hold game_ids for removal
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, title_string, curr_frame, subrow, subcolumn, box_height,
@@ -287,6 +286,7 @@ class PlotMaker:
     def button_function_callback(self):
         print("Pressed Button: " + self.button_string)
 
+        Filter.games_to_remove = []   # clear the list of games to remove; it is remade below
         self.filtered_data = self.match_data.copy()
 
         # parsing should happen here
@@ -295,31 +295,39 @@ class PlotMaker:
         print("Parsed data has " + str(len(parsed_data["game_id"])) + " matches. Time to loop over filters.")
 
         for ff in Filters:
-            print("Looping over filters. Currently doing: " + str(ff.title_string))
-
-            Filter.remove_indices = parse.filter_matches(self.config_info, parsed_data, Filter.remove_indices,
+            Filter.games_to_remove = parse.filter_matches(self.config_info, parsed_data, Filter.games_to_remove,
                                                          ff.config_key, ff.filter_keys, ff.choices_list)
 
-            for ii in Filter.remove_indices:
-                # self.match_data.pop(ii, None)
-                try:
-                    print("Trying to remove gameId: ", self.filtered_data[str(ii + 1)]["gameId"])
-                    self.filtered_data.pop(str(ii+1), None)
-                except:
-                    print("A match was already gone and couldn't be removed")
+        # TODO: filter out remakes (games with length < 6 mins
+        Filter.games_to_remove = parse.filter_remakes(parsed_data, Filter.games_to_remove)
+        Filter.games_to_remove = parse.filter_recency(parsed_data, Filter.games_to_remove, recency_filter.get())
 
-        # Now that the unk data has been removed,
+        for game_id in Filter.games_to_remove:
+            try:
+                self.filtered_data.pop(str(game_id), None)
+            except:
+                print("A match was already gone and couldn't be removed")
+
+        # Now that the unwanted data has been removed, parse it and make the plot!
         parsed_data = parse.parse_data(self.config_info, self.filtered_data)
-        print("after filtering, " + str(len(parsed_data["game_id"])) + " matches remain. Time to make the plot")
+        matches_left = len(parsed_data[list(parsed_data.keys())[0]])
+
+        print("Filtering done; " + str(matches_left) + " matches remain (" +
+              str(len(Filter.games_to_remove)) + " removed). Time to make the plot")
 
         # run the function with or without any associated argument information, as applicable
-        if self.default_value:
-            self.plot_threads.append(threading.Thread(target=self.button_function(self.variable.get())))
-            self.plot_threads[-1].start()
-        else:
-            self.plot_threads.append(threading.Thread(target=self.button_function()))
-            self.plot_threads[-1].start()
-        return
+        if matches_left > 2:
+            if self.default_value != 0 and matches_left > self.default_value:
+                self.plot_threads.append(threading.Thread(
+                    target=self.button_function(parsed_data, self.variable.get())
+                ))
+                self.plot_threads[-1].start()
+            elif matches_left > 2:
+                self.plot_threads.append(threading.Thread(
+                    target=self.button_function(parsed_data)
+                ))
+                self.plot_threads[-1].start()
+            return
 
 
 root = tkinter.Tk()  # prepare a widget to hold the UI
@@ -338,28 +346,30 @@ style = tkinter.GROOVE
 config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 config_frame.grid(row=0, column=0)
 
+# tkinter.Label(config_frame, text="Enter Summoner Details\n-------", font="Helvetica 14 bold").grid(
+#     row=0, column=0, columnspan=2)
 summname = tkinter.StringVar()
 tkinter.Label(config_frame, text="Summoner Name:", font="Helvetica 12 bold").grid(
-    row=0, column=0, columnspan=2)
+    row=1, column=0, columnspan=2)
 tkinter.Entry(config_frame, width=wid, justify="center", textvariable=summname).grid(
-    row=1, column=0, columnspan=2, sticky="nsew")
+    row=2, column=0, columnspan=2, sticky="nsew")
 
 reg = tkinter.StringVar(value="Choose")
 tkinter.Label(config_frame, text="Region:", font="Helvetica 12 bold", height=1, width=8, anchor="w").grid(
-    row=2, column=0, sticky="nsew")
+    row=3, column=0, sticky="nsew")
 region_list = ["Choose"]
 dropdown_region = tkinter.OptionMenu(config_frame, reg, *region_list)
-dropdown_region.grid(row=2, column=1, sticky="nsew")
+dropdown_region.grid(row=3, column=1, sticky="nsew")
 
 b_get_data = tkinter.Button(config_frame, text="Get Game Data")
 b_get_data.config(font="Helvetica 12 bold", width=wid, command=get_data, bd=5)
-b_get_data.grid(row=3,column=0, columnspan=2, sticky="nsew")
+b_get_data.grid(row=4,column=0, columnspan=2, sticky="nsew")
 
 # Make the middle frame to contain the filtering options
 filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 filter_frame.grid(row=0, column=1)
 filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
-filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
+filter_frame_label.config(font="Helvetica 14 bold", width=30, anchor="s")
 filter_frame_label.grid(columnspan=1)
 
 # Add the filters to the middle frame
@@ -371,25 +381,25 @@ Filters = [
     ]
 
 # Number of matches filter
-match_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
-match_filter_subframe.grid(row=5, column=0, sticky="ew")
-number_of_matches = tkinter.IntVar(value=20)
-tkinter.Label(match_filter_subframe, text="Include last ").grid(row=0, column=0)
-number_of_matches_entry = tkinter.Entry(match_filter_subframe, width=8, justify="center",
-                                        textvariable=number_of_matches)
-number_of_matches_entry.grid(row=0, column=1, sticky="ew")
-tkinter.Label(match_filter_subframe, text=" matches that meet criteria (0 = include all)").grid(row=0, column=2)
+recency_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
+recency_filter_subframe.grid(row=5, column=0, sticky="ew")
+recency_filter = tkinter.IntVar(value=0)
+tkinter.Label(recency_filter_subframe, text="Include last ").grid(row=0, column=0)
+recency_entry = tkinter.Entry(recency_filter_subframe, width=8, justify="center",
+                                        textvariable=recency_filter)
+recency_entry.grid(row=0, column=1, sticky="ew")
+tkinter.Label(recency_filter_subframe, text=" days worth of matches (0 = include all)").grid(row=0, column=2)
 
 # Create the rightmost frame to contain the plot buttons
 plot_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 plot_frame.grid(row=0, column=2)
-plot_frame_label = tkinter.Label(plot_frame, text="Plots")
-plot_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
+plot_frame_label = tkinter.Label(plot_frame, text="Make Plots")
+plot_frame_label.config(font="Helvetica 14 bold", width=30, anchor="s")
 plot_frame_label.grid(columnspan=2)
 
 # Make the plot buttons
 Plots = [
-    PlotMaker("Winrate Over Time\n(Moving Average; Specify Width in Games)", testfn, "timestamp",
+    PlotMaker("Winrate Over Time\n(Moving Average; Specify Width in Games)", plot_fns.wr_time, "timestamp",
                     plot_frame, 1, 0, default_value=10),
     PlotMaker("Winrate by Champion\n(Specify Minimum Games Played)", testfn, "champion",
                      plot_frame, 2, 0, default_value=5),
@@ -404,8 +414,10 @@ Plots = [
     PlotMaker("Winrate by Damage Fraction\n(Specify Number of Bins)", testfn, "key",
                           plot_frame, 7, 0, default_value=5),
     PlotMaker("Winrate by Map Side", testfn, "key",
-                       plot_frame, 8, 0, default_value=0)
-    ]
+              plot_frame, 8, 0),
+    PlotMaker("Games Played vs. Time", testfn, "timestamp",
+              plot_frame, 9, 0)
+]
 
 # Build a status label at the bottom of the UI to keep the user informed
 status_string = tkinter.StringVar(value="App Started")

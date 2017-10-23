@@ -11,9 +11,9 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 
 
 ## Required Modules:
-numpy
-matplotlib
-urllib3
++ numpy
++ matplotlib
++ urllib3
 
 
 ## Notes:

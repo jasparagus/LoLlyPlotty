@@ -1,3 +1,6 @@
+import time  # import time to allow for use of time.sleep(secs). Prevents excessive API calls
+
+
 def parse_variable(match_data, parsed_data, variable_name, key_list):
     """
     Creates an entry in the parsed_match_data dictionary under key "var_name" for the property at "json_path"   :param config_info:
@@ -41,7 +44,9 @@ def find_player_id(config_info, match_data, game_id, parsed_data):
                 str(config_info["AccountID"])):
             player_id = ii
             teamId = match_data[str(game_id)]["participants"][ii]["teamId"]
+        # TODO: rework this to return two lists in addition to the PID variable: ally and enemy player IDs
 
+    # TODO move some of this (the non-teammate/enemy stuff) into the parse_data function
     ally_stats["names"] = []
     ally_stats["gold_earned"] = 0
     ally_stats["damage_dealt"] = 0
@@ -61,6 +66,7 @@ def find_player_id(config_info, match_data, game_id, parsed_data):
     for ii in range(n_players):
         # TODO: implement "highestAchievedSeasonTier" average for allies and enemies
         if teamId == match_data[str(game_id)]["participants"][ii]["teamId"] and ii != player_id:
+            # If the participant was on your team, stick their info in ally stats
             ally_stats["names"].append(
                 match_data[str(game_id)]["participantIdentities"][ii]["player"]["summonerName"])
             ally_stats["gold_earned"] += match_data[str(game_id)]["participants"][ii]["stats"][
@@ -87,6 +93,7 @@ def find_player_id(config_info, match_data, game_id, parsed_data):
                 "totalDamageTaken"]
             enemy_stats["damage_mitigated"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "damageSelfMitigated"]
+            # TODO identify lane opponent
 
         elif ii == player_id:
             parse_variable(match_data, parsed_data, "gold_earned",
@@ -155,172 +162,90 @@ def parse_data(config_info, match_data):
     return parsed_data
 
 
-if 0:
-    import json
-    import api_fns
-    with open("Configuration.json", "r") as file:
-        config_info = json.loads(file.read())
-    with open(config_info["SummonerName"] + "_MatchData.json", "r") as file:
-        match_data = json.loads(file.read())
-
-
-def filter_matches(config_info, parsed_data, remove_indices, config_key, filter_keys, choices_list):
+def filter_matches(config_info, parsed_data, games_to_remove, config_key, filter_keys, choices_list):
     """
     :param config_info: configuration info for the entire app, same as everywhere else
     :param parsed_data: the parsed match data
-    :param remove_indices: a list of integers whose entries are match indices to remove from parsed_data
+    :param games_to_remove: a list of strings whose entries are game_id values to filter out of match_data
     :param config_key: string; filter's corresponding key from the config file
     :param filter_keys: list of strings; key(s) in parsed_data that should be checked against the choices_list
     :param choices_list: list of strings; the options the user chose in the GUI
     :return:
     """
 
-    n_matches = len(parsed_data["game_id"])
+    n_matches = len(parsed_data[list(parsed_data.keys())[0]])  # find the first key in parsed_data and see how long it is
 
-    print("Running filter_matches given the following:")
-    print("    ", filter_keys, " is the list of keys to check through in parsed_data")
-    print("    ", str(choices_list), " is the list of choices enabled in the GUI (via config_info)")
-    print("     Here's the config dictionary: ", config_info[config_key])
-    print("     parsed_data contained " + str(n_matches) + " matches")
+    print("Running filter_matches with ", n_matches, "matches; filtering for ", config_key)
+    print("    Corresponding config_info dictionary: ", config_info[config_key])
+    print("    Keys to check through in parsed_data: ", filter_keys)
+    print("    List of choices from the GUI", str(choices_list))
 
-    print(len(filter_keys), " is the lenght of filter_keys")
     if len(choices_list) == 0:
-        print("No active choices, skipping this filter.")
+        print("        No active choices, skipping this filter.")
     else:
-        keep = 0  # prep a variable for whether or not to keep this match
-        # TODO: remove hardcoding this to only 10 games lol
-        n_matches = 10
         for ii in range(n_matches):
+            keep = 0  # prep a variable for whether or not to keep this match
             for choice in choices_list:  # look over each acceptable choice
                 for parsed_key in filter_keys:  # check it the corresponding entry in parsed_data
                     print(
-                        "Comparing chosen key (" + str(config_info[config_key][choice]) +
-                        ") with parsed_data value for this match (" + str(parsed_data[parsed_key][ii]) + ")"
+                        "        Comparing GUI choice (" + str(config_info[config_key][choice]) +
+                        ") with data for this game (" + str(parsed_data[parsed_key][ii]) + ")"
                     )
 
-                    if str(config_info[config_key][choice]) in str(parsed_data[parsed_key][ii]):
-                        print("found what I was looking for; keeping the match")
-                        keep += 1
-
+                    # if str(config_info[config_key][choice]).lower() in str(parsed_data[parsed_key][ii]).lower():
+                    keylist = config_info[config_key][choice].split("*")
+                    for config_subkey in keylist:
+                        if str(config_subkey).lower() in str(parsed_data[parsed_key][ii]).lower():
+                            print("        Filter applies; keeping the match")
+                            keep += 1
             if keep == 0:
-                remove_indices.append(ii)
+                print("        This match will be removed: ", parsed_data["game_id"][ii])
+                games_to_remove.append(parsed_data["game_id"][ii])
 
-            print(remove_indices)
+    # Remove duplicates and sort the games to be removed
+    games_to_remove = sorted(list(set(games_to_remove)))
+    print("            Will remove the following games: ", games_to_remove)
 
-    remove_indices = sorted(list(set(remove_indices)))
-
-    return remove_indices
+    return games_to_remove
 
 
-# TODO: FIX INDEXING IN FILTERS
-def filter_remakes(match_data, parsed_match_data):
+def filter_remakes(parsed_data, games_to_remove):
     """ Filter out remakes (games with length < 6 minutes) """
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    nn = 0
-    for match_index in range(n_mat):
-        if parsed_match_data["match_length"][match_index] > 6:
-            filtered_match_data[str(nn)] = match_data[str(match_index)]
-            nn += 1
-    return filtered_match_data
+    n_matches = len(parsed_data[list(parsed_data.keys())[0]])
+
+    for ii in range(n_matches):
+        try:
+            if parsed_data["match_length"][ii] < 360:
+                games_to_remove.append(str(parsed_data["game_id"][ii]))
+        except:
+            games_to_remove.append(str(parsed_data["game_id"][ii]))
+
+    games_to_remove = sorted(list(set(games_to_remove)))
+
+    return games_to_remove
 
 
-def filter_season(match_data, parsed_match_data, ssn_filter):
-    """ Filter by desired season """
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    nn = 0
-    for match_index in range(n_mat):
-        if parsed_match_data["season"][match_index] == ssn_filter:
-            filtered_match_data[str(nn)] = match_data[str(match_index)]
-            nn += 1
-    return filtered_match_data
-
-
-def filter_champ(match_data, parsed_match_data, champ_filter):
-    """ Filter by desired champ """
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    nn = 0
-    for match_index in range(n_mat):
-        if parsed_match_data["champ"][match_index] == champ_filter:
-            filtered_match_data[str(nn)] = match_data[str(match_index)]
-            nn += 1
-    return filtered_match_data
-
-
-def filter_match(match_data, match_filter):
+def filter_recency(parsed_data, games_to_remove, days_to_keep):
     """ Filter for recent matches, where match_filter is a number of matches to keep """
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    if match_filter < n_mat:
-        nn = 0
-        for match_index in range(n_mat-match_filter, n_mat):
-            filtered_match_data[str(nn)] = match_data[str(match_index)]
-            nn += 1
-    else:
-        filtered_match_data = match_data
-    return filtered_match_data
+    if int(days_to_keep) > 0:
+        oldest_timestamp = int(time.time())*1000 - (int(days_to_keep) * 24 * 60 * 60 * 1000)
 
+        n_matches = len(parsed_data[list(parsed_data.keys())[0]])
 
-def filter_qtype(match_data, parsed_match_data, q_filter):
-    """ Filter for recent matches """
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    nn = 0
-    for match_index in range(n_mat):
-        if parsed_match_data["queue_type"][match_index] == q_filter:
-            filtered_match_data[str(nn)] = match_data[str(match_index)]
-            nn += 1
-    return filtered_match_data
+        nrem = 0
+        for ii in range(n_matches):
+            try:
+                if int(parsed_data["timestamp"][ii]) < oldest_timestamp:
+                    games_to_remove.append(str(parsed_data["game_id"][ii]))
+                    nrem += 1
+            except:
+                games_to_remove.append(str(parsed_data["game_id"][ii]))
+                nrem += 1
 
+        games_to_remove = sorted(list(set(games_to_remove)))
+        print("removing due to oldness:", nrem)
 
-def filter_role(match_data, parsed_match_data, role_filter):
-    """ Filter for recent matches """
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    nn = 0
-    for match_index in range(n_mat):
-        if parsed_match_data["role"][match_index] == role_filter:
-            filtered_match_data[str(nn)] = match_data[str(match_index)]
-            nn += 1
-    return filtered_match_data
-
-
-def filter_map(match_data, map_id):
-    """ filter out matches by map (e.g. summoner's rift) """
-    # New summoner's rift is mapId = 11
-    n_mat = len(match_data)
-    filtered_match_data = {}
-    nn = 0
-    for match_index in range(n_mat):
-        if match_data[str(match_index)]["mapId"] == map_id:
-            filtered_match_data[str(nn)] = match_data[ii]
-            nn += 1
-    return filtered_match_data
-
-
-
-# for debugging
-if 0:
-    import json
-    with open("Configuration.json", "r") as file:
-        config_info = json.loads(file.read())
-    with open(config_info["SummonerName"] + "_MatchData.json", "r") as file:
-        match_data = json.loads(file.read())
-
-    try:
-        with open(config_info["SummonerName"] + "_ParsedData.LoHData", "r") as file:
-            parsed_data = json.loads(file.read())
-    except:
-        parsed_data = {}
-        pass
-
-    parsed_data = parse_data(config_info, match_data)
-
-
-
-
+    return games_to_remove
 
 
 

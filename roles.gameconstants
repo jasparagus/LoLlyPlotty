@@ -1,6 +1,6 @@
-Top	TOP
-Jungle	JUN, jungle
-Middle	Mid, Middle
-ADC/Bot	Carry, Bot
-Support	Support
-Other	???
+Top	top
+Jungle	jun
+Middle	mid
+ADC (consider including "Bottom Lane - All")	duo_carry
+Support (consider including "Bottom Lane - All")	sup
+Bottom Lane - All	bot
