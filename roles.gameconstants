@@ -1,0 +1,6 @@
+Top	top
+Jungle	jungle&&jun
+Middle	mid&&middle
+ADC (consider including "Bottom Lane - All")	duo_carry&&adc
+Support (consider including "Bottom Lane - All")	duo_support&&support
+Bottom Lane - All	bot&&bottom&&duo&&duo_support&&duo_carry

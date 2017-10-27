@@ -1,12 +1,15 @@
-# Jasper uses pycharm and this is annoying
+# Pycharm configuration files
 .idea/**
 
-# Sometimes a pychache file gets made
+# Don't track usage-specific files
+apikey.txt
+
+# Debug files and python cache files
 __pycache__/**
 *.pyc
-
+debug.py
 
 # Don't track stored application data
-*.LoHConfig
 *.json
 *_ParsedMatchData.LoHData
+*_MatchData*

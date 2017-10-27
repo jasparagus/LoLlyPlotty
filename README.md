@@ -1,51 +1,60 @@
 # LeagueOfHistograms
 ## League of legends statistics analyzer
-### Initial version 2017-03-07: jasparagus, cjc77, PVisnRT
+### Begun 2017-03-07 for League API v2
+### By jasparagus, cjc77, and PVisnRT
 ![LeagueOfHistograms](https://github.com/jasparagus/LeagueOfHistograms/blob/master/icon.png "LeagueOfHistograms")
 
 **Requires an API key, obtained for free from:**
-[https://developer.riotgames.com/docs/api-keys]
+[https://developer.riotgames.com/api-keys.html]
 
-Uses Riot Games API to obtain match data, parses and analyzes that data according to a set of filters, and generates plots for data visualization.
+Uses Riot Games API to download complete match data for a summoner (normals, ranked, etc.), parses and analyzes that data, and generates plots for data visualization given the user's preferences (e.g. champions played, friends played with, etc.).
 
 
 ## Required Modules:
-numpy
-matplotlib
-urllib3
++ numpy
++ matplotlib
++ urllib3
 
 
 ## Notes:
-1. Will run in-place and create a set of json files containing player data
-2. It takes about 1.5s per match to download matches due to API rate limit, so on first-run you may need to give it a while
-3. Match data is saved to your hard drive, and data is saved locally (it does not have to be re-downloaded each time the program is started)
++ Will run in-place (wherever the master file is located) and creates a (someimes large) json file of data for each summoner
++ Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches at first
++ Match data is saved to your hard drive (it does not have to be re-downloaded each time the program is started)
 
 
 ## To-Do:
-1. Damage Share Histograms
-  -X-axis: percentage share of champion damage dealt, structure damage dealt, damage tanked in blocks of ~10%
-  -Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
-  -Y-axis, plot 2:  Winrate per category
++ Fix plot generation code to use the new parsed_data format (for the match data once it has been parsed)
 
-2. Gold and XP leads histograms
++ Damage Share Histograms
+  1. X-axis: percentage share of champion damage dealt, structure damage dealt, damage tanked in blocks of ~10%
+  2. Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
+  3. Y-axis, plot 2:  Winrate per category
+
+
++ Gold and XP leads histograms
   
-3. Starting item winrates (useful when filtering by a specific champion)
++ Starting item winrates (useful when filtering by a specific champion)
 
-4. Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
++ Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
 
-5. Require/Exclude mode for all filters
 
-6. Update Filtering
-  -Replace season, champion, queue type, and role with multiselection listboxes
-  -Create enable/disable toggle for all options to be looped over
-  -Update filter to loop over selected rather than a long list of if/then statements
++ GUI Update
+  1. Switch to ttk
+  2. Add tabs to different panes
+  3. Modify font sizes/styles to improve look
+  4. Break out into multiple panes instead of one giant thing to make the formatting nicer.
   
-  
-7. GUI Update
-  -Fix colors in general (expecially background)
-  -Add graphics
-  -Add explanation of 90% CI
++ Add mean/median/mode to histograms
 
-8. Add mean/median/mode to histograms
-9. Encorporate KDA somehow (probably through a histogram)
-10. Add kill participation graph(s) (e.g. % KP by champion/role/win or histogram of wins)
++ Incorporate KDA somehow (probably through a histogram)
+
++ Switch GUI filter panes to trade entries rather than reproducing them
+  1. read queues, etc. as dictionaries
+  2. add them to the appropriate filtering dropdowns
+  3. Replace the dropdowns with multiselect boxes
+  
++ Add CS and CS differential data
+
++ Winrate by lane opponent's champion
+
++ Winrate for when every champion is on the enemy or on your team (not including when you play them); use overlaid red(enemy team)/green(ally team) bars with winrates, with n_games printed below each bar
