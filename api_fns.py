@@ -5,22 +5,43 @@ import time  # import time to allow for use of time.sleep(secs). Prevents excess
 import pathlib  # allows checking for whether or not match_data JSON file exists already
 
 
-def api_key():
-    # gets the API key from a text file called "apikey.txt". Modify this function if that method changes
+def get_api_key(write_mode=False, key_in=""):
+    # gets the API key from a text file called "apikey.txt". Modify this function if that methodof acquisition changes
+
     try:
         with open("apikey.txt", "r") as file:
-            apikey = file.readline()  # Read the first line
-        apikey = apikey.replace(" ", "").replace("\n", "")  # strip spaces & newlines
-    except:
-        print("File \"apikey.txt\", containing api key, not found")
-        apikey = ""
+            file_contents = file.readlines()  # Read the first line
 
-    return apikey
+        try:
+            key = file_contents[0].replace(" ", "").replace("\n", "")  # strip spaces & newlines
+
+            if write_mode == True and str(key) != str(key_in):
+                with open("apikey.txt", "w") as file:
+                    file.write(str(key_in))
+                    file.seek(0, 2)  # seek point 0 characters away from end of file ("2")
+                    file.write("\n" + str(time.time() + 24 * 60 * 60))
+        except:
+            key = "Couldn't read API key from file"
+
+        try:
+            expiry = str(file_contents[1]).replace(" ", "").replace("\n", "") # read the 2nd line
+            if float(expiry) < float(time.time()):
+                key = "API Key EXPIRED"
+        except:
+            expiry = 0
+
+    except:
+        print("Error reading file \"apikey.txt\"")
+        key = ""
+        expiry = 0
+
+    return key, expiry
 
 
 def json_from_url(url, status=None):
     req = urllib.request.Request(url)  # add the api key header
-    req.add_header("X-Riot-Token", api_key())
+    api_key, _ = get_api_key()
+    req.add_header("X-Riot-Token", api_key)
     try:
         reply = urllib.request.urlopen(req)  # get the reply from the server
         json_data = json.loads(reply.read())  # create a dictionary the data as a JSON object
@@ -107,7 +128,7 @@ def config(region, summoner_name):
     config_info["SummonerName"] = summoner_name
     config_info["Region"] = region
     config_info = read_game_constants(config_info)
-    config_info["ChampionDictionary"] = get_champ_dict()
+    config_info["ChampionDictionary"], config_info["ChampionLookup"] = get_champ_dict()
 
     if (config_info["SummonerName"] is not "" and
             config_info["Region"] in config_info["regions.gameconstants"].copy().keys()):
@@ -241,7 +262,7 @@ def append_match(config_info, match, match_key):
     :param match: dictionary containing match data
     :param match_key: key to which the match will be linked in the file, e.g. the gameId for a game
     """
-    f_path = config_info["SummonerName"] + "_MatchData.json"
+    f_path = "MatchData_" + str(config_info["SummonerName"]) + ".json"
 
     if pathlib.Path(f_path).is_file():
         with open(f_path, mode="r+") as file:
@@ -257,10 +278,11 @@ def append_match(config_info, match, match_key):
 
 def verify_matches(config_info, match_data):
     game_ids = list(match_data.copy().keys())
+
     for game_id in game_ids:
         try:
             # See if the match has a gameId in its data; if so, assume it's OK. This could be improved.
-            # TODO: figure out a better way to check that match's data is correct than it's gameId field
+            # TODO: figure out a better way to check if a match's data is correct than it's gameId field
             if str(match_data[game_id]["gameId"]) != str(game_id):
                 # If you find the entry but its gameId is wrong, raise an exception
                 raise Exception
@@ -269,7 +291,7 @@ def verify_matches(config_info, match_data):
             print("Match file had an error with match " + str(game_id) + ". Removing it and updating file.")
             match_data.pop(game_id, None)
             # Overwrite the entire file with the corrected file
-            with open(config_info["SummonerName"] + "_MatchData.json", "w") as file:
+            with open("MatchData_" + str(config_info["SummonerName"]) + ".json", "w") as file:
                 json.dump(match_data, file)
 
     return match_data
@@ -291,20 +313,25 @@ def get_champ_dict():
 
         champ_IDs = champ_data["data"].copy().keys()
         champ_dict = {}
+        champ_lookup = {}
 
         for champ in champ_IDs:
             champ_dict[champ_data["data"][champ]["name"]] = champ_data["data"][champ]["key"]
+            champ_lookup[champ_data["data"][champ]["key"]] = champ_data["data"][champ]["name"]
+
     except:
         # If data dragon isn't working, try to load the local file
         try:
             with open("Configuration.json","r") as file:
                 config_info = json.loads(file.read())
                 champ_dict = config_info["ChampionDictionary"]
+                champ_lookup = config_info["ChampionLookup"]
         except:
             champ_dict = {}
+            champ_lookup = {}
             print("Couldn't connect to data dragon or load champion list... sorry :(")
 
-    return champ_dict
+    return champ_dict, champ_lookup
 
 
 def champ_name(champ_dict, cId):

@@ -6,11 +6,6 @@ import matplotlib.pyplot as plt  # This is for making plots
 
 # TODO - Add error bars (e.g. 90% confidence interval) to all plots where that's feasible.
 
-# FOR DEBUGGING STUFF OUT IN CONSOLE
-# import json
-# import numpy
-# import matplotlib.pyplot as plt
-
 
 def make_wr_dictionary(key_ls, win_ls, store_dict):
     """
@@ -154,59 +149,93 @@ def make_hist(wins_var, losses_var, n_bins, title, xlabel, ylabel):
     ax.legend(handles=(p1[0], p2[0]), loc=(0, 1.1), ncol=1)
     return
 
+# TODO: DELETE THIS DEBUGGING STUFF
+testing_stuff = 0
 
-def wr_time(parsed_data, box, addtl_text=""):
+if testing_stuff:
+    import math  # This is for various math functions (ceiling, sqrt, etc.)
+    import matplotlib  # This is for editing the plot renderer
+
+    matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering works on MacOS
+    import matplotlib.pyplot as plt  # This is for making plots
+    import json
+    with open("Configuration.json", "r") as file:
+        config_info = json.load(file)
+    with open("ParsedData.json", "r") as file:
+        parsed_data = json.load(file)
+    with open("MatchData_jasparagus.json", "r") as file:
+        match_data = json.load(file)
+    print(parsed_data)
+
+
+def simple_wr_var(parsed_data, xvar_path, yvar_path, threshold=1, title_string="NoTitle"):
+
+    xvar = parsed_data.copy()
+    yvar = parsed_data.copy()
+
+    for key in xvar_path:
+        xvar = xvar[key]
+
+    for key in yvar_path:
+        yvar = yvar[key]
+
+    print(len(xvar))
+    print(xvar)
+    print(len(yvar))
+    print(yvar)
+
+    plot_dict = make_plottable_dictionary(
+        xvar,
+        yvar,
+        threshold
+    )
+
+    make_wr_barchart(
+        plot_dict["wr_by_var"], plot_dict["n_by_var"], plot_dict["error_by_var"], plot_dict["var_ls"],
+        title_string, parsed_data["winrate"]
+    )
+    plt.show()
+
+
+def wr_time(parsed_data, box=0, addtl_text=""):
     """
     Plots winrate trend over time using a moving average with average with width "box"
     """
+
+    print(parsed_data)
+    print(box)
+
     fig, ax = plt.subplots()
     fig.subplots_adjust(top=0.7, bottom=0.1)
 
-    n_matches = len(parsed_data["win_lose"])
-    wr = parsed_data["avg_wr"]
+    win_lose_chrono = [x for y, x in sorted(zip(parsed_data["timestamp"], parsed_data["win_lose"]))]
+
     p1, = plt.plot(
-            moving_avg(parsed_data["win_lose"], box), label="Moving Avg.", linestyle="-", color="r")
-    p2, = plt.plot([0, n_matches], [wr, wr], label="Avg. WR", linestyle="--", color="b")
-    p3, = plt.plot([0, n_matches], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
+            moving_avg(win_lose_chrono, box), label="Moving Avg.", linestyle="-", color="r")
+    p2, = plt.plot([0, parsed_data["n_matches"]], [parsed_data["winrate"], parsed_data["winrate"]], label="Avg. WR", linestyle="--", color="b")
+    p3, = plt.plot([0, parsed_data["n_matches"]], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
 
     ax.legend(handles=(p1, p2, p3), loc=(0, 1.1), ncol=1)
 
     ax.set_xlabel("Match Number (Chronological)")
     ax.set_ylabel("Win Rate")
     ax.set_title("Winrate Over Time \n" + addtl_text)
-    plt.xlim([0, n_matches])
+    plt.xlim([0, parsed_data["n_matches"]])
     plt.ylim([0, 1])
 
-
-def wr_champ(parsed_data, n_played, addtl_text=""):
-    """
-    Winrates for each champion played more than n_games
-    """
-    wr_champ_dict = make_plottable_dictionary(
-        parsed_data["champ"],
-        parsed_data["win_lose"],
-        n_played
-    )
-
-    title_string = "Winrate By Champion \n" + "(Played " + str(n_played) + "+ Games)\n" + addtl_text
-
-    make_wr_barchart(
-        wr_champ_dict["wr_by_var"], wr_champ_dict["n_by_var"], wr_champ_dict["error_by_var"], wr_champ_dict["var_ls"],
-        title_string, parsed_data["avg_wr"]
-    )
+    plt.show()
 
 
 def wr_teammate(parsed_data, n_played, addtl_text=""):
     """ Winrates on a per-teammate basis for teammates from a number of games >= n_games """
-    n_games = len(parsed_data["win_lose"])
     all_teammates = []
 
     # Get a list of every teammate
-    for tt in range(n_games):
-        all_teammates = all_teammates + parsed_data["teammates"][str(tt)]
-
-    teammates_unique = sorted(list(set(all_teammates)))
-    n_teammates = len(teammates_unique)
+    # for ii in range(parsed_data["n_matches"]):
+    #     all_teammates = all_teammates + parsed_data["ally_stats"][ii]["names"]
+    #
+    # teammates_unique = sorted(list(set(all_teammates)), key=str.lower)
+    n_teammates = len(parsed_data["teammates_unique"])
     wr_by_teammate = []
     games_with_teammate = []
     teammates_unique_keep = []
@@ -216,13 +245,13 @@ def wr_teammate(parsed_data, n_played, addtl_text=""):
     n_deleted = 0
     for tt in range(n_teammates):
         wins = []
-        for gg in range(n_games):
-            if teammates_unique[tt] in parsed_data["teammates"][str(gg)]:
-                wins.append(parsed_data["win_lose"][gg])
+        for ii in range(parsed_data["n_matches"]):
+            if parsed_data["teammates_unique"][tt] in parsed_data["ally_stats"][ii]["names"]:
+                wins.append(parsed_data["win_lose"][ii])
         if len(wins) >= n_played:
             wr_by_teammate.append(sum(wins)/len(wins))
             games_with_teammate.append(len(wins))
-            teammates_unique_keep.append(teammates_unique[tt])
+            teammates_unique_keep.append(parsed_data["teammates_unique"][tt])
             error.append(
                 1.96*math.sqrt(
                     1/(games_with_teammate[tt-n_deleted])
@@ -235,9 +264,9 @@ def wr_teammate(parsed_data, n_played, addtl_text=""):
     n_per_bar = games_with_teammate
     x_labels = teammates_unique_keep
     title_string = "Winrate by Teammate\n" + "(" + str(n_played) + "+ Games Together)\n" + addtl_text
-    avg_win_rate = parsed_data["avg_wr"]
 
-    make_wr_barchart(bars_data, n_per_bar, error, x_labels, title_string, avg_win_rate)
+    make_wr_barchart(bars_data, n_per_bar, error, x_labels, title_string, parsed_data["winrate"])
+    plt.show()
 
 
 def wr_partysize(parsed_data, n_played_with, addtl_text=""):
@@ -245,26 +274,24 @@ def wr_partysize(parsed_data, n_played_with, addtl_text=""):
     Winrates by number of recurring teammates (with an N game cutoff for "teammates")
     n_played_with is threshold # of games with teammate to be considered part of a a "premade"
     """
-    n_games = len(parsed_data["win_lose"])
     all_teammates = []
 
     # Get a list of every teammate
-    for game in range(n_games):
-        all_teammates += parsed_data["teammates"][str(game)]
+    for ii in range(parsed_data["n_matches"]):
+        all_teammates += parsed_data["ally_stats"][ii]["names"]
     # Get rid of duplicates
-    teammates_unique = sorted(list(set(all_teammates)))
 
     # Filter out the teammates with whom you played too few games
     teammates = []
-    for teammate in teammates_unique:
+    for teammate in parsed_data["teammates_unique"]:
         if all_teammates.count(teammate) >= n_played_with:
             teammates.append(teammate)
 
     # Go through each game and count number of teammates, storing the result in a dictionary
     party_size = []
-    for game in range(n_games):
+    for ii in range(parsed_data["n_matches"]):
         party_size.append(
-            len(set(teammates) & set(parsed_data["teammates"][str(game)]))
+            len(set(teammates) & set(parsed_data["ally_stats"][ii]["names"]))
         )
 
     wr_partysize_dict = make_plottable_dictionary(
@@ -277,29 +304,13 @@ def wr_partysize(parsed_data, n_played_with, addtl_text=""):
 
     make_wr_barchart(
         wr_partysize_dict["wr_by_var"], wr_partysize_dict["n_by_var"], wr_partysize_dict["error_by_var"],
-        wr_partysize_dict["var_ls"], title_string, parsed_data["avg_wr"]
+        wr_partysize_dict["var_ls"], title_string, parsed_data["winrate"]
     )
-
-
-def wr_role(parsed_data, n_games_role, addtl_text=""):
-    """ Winrate as a function of role """
-    wr_role_dict = make_plottable_dictionary(
-        parsed_data["role"],
-        parsed_data["win_lose"],
-        n_games_role
-    )
-
-    title_string = "Winrate By Role\n" + addtl_text
-
-    make_wr_barchart(
-        wr_role_dict["wr_by_var"], wr_role_dict["n_by_var"], wr_role_dict["error_by_var"], wr_role_dict["var_ls"],
-        title_string, parsed_data["avg_wr"]
-    )
+    plt.show()
 
 
 def wr_dmg(parsed_data, n_bins, addtl_text=""):
     # Histograms of damage in won and lost games
-    n_matches = len(parsed_data["win_lose"])
 
     damage_total_win = []
     damage_total_lose = []
@@ -310,18 +321,23 @@ def wr_dmg(parsed_data, n_bins, addtl_text=""):
     damage_taken_win = []
     damage_taken_lose = []
 
-    for mm in range(n_matches):
-        if parsed_data["win_lose"][mm] == 1:
-            damage_total_win.append(parsed_data["damage_total"][mm])
-            damage_to_champs_win.append(parsed_data["damage_to_champs"][mm])
-            damage_taken_win.append(parsed_data["damage_taken"][mm])
+    damage_mitigated_win = []
+    damage_mitigated_lose = []
+
+    for ii in range(parsed_data["n_matches"]):
+        if parsed_data["win_lose"][ii] == 1:
+            damage_total_win.append(parsed_data["damage_total"][ii])
+            damage_to_champs_win.append(parsed_data["damage_champs"][ii])
+            damage_taken_win.append(parsed_data["damage_taken"][ii])
+            damage_mitigated_win.append(parsed_data["damage_mitigated"][ii])
         else:
-            damage_total_lose.append(parsed_data["damage_total"][mm])
-            damage_to_champs_lose.append(parsed_data["damage_to_champs"][mm])
-            damage_taken_lose.append(parsed_data["damage_taken"][mm])
+            damage_total_lose.append(parsed_data["damage_total"][ii])
+            damage_to_champs_lose.append(parsed_data["damage_champs"][ii])
+            damage_taken_lose.append(parsed_data["damage_taken"][ii])
+            damage_mitigated_lose.append(parsed_data["damage_mitigated"][ii])
 
     title = "Damage Dealt by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
-    make_hist(damage_total_win, damage_total_lose, n_bins, title, "Damage Dealt", "Number of Games")
+    make_hist(damage_total_win, damage_total_lose, n_bins, title, "Total Damage Dealt", "Number of Games")
 
     title = "Damage To Champs by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
     make_hist(damage_to_champs_win, damage_to_champs_lose, n_bins, title, "Damage To Champs", "Number of Games")
@@ -329,11 +345,14 @@ def wr_dmg(parsed_data, n_bins, addtl_text=""):
     title = "Damage Taken by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
     make_hist(damage_taken_win, damage_taken_lose, n_bins, title, "Damage Taken", "Number of Games")
 
+    title = "Damage Mitigated by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
+    make_hist(damage_mitigated_win, damage_mitigated_lose, n_bins, title, "Damage Mitigated", "Number of Games")
+
+    plt.show()
+
 
 def wr_dmg_frac(parsed_data, n_bins, addtl_text=""):
     # Histograms of damage fractions in won and lost games
-    n_matches = len(parsed_data["win_lose"])
-
     damage_total_frac_win = []
     damage_total_frac_lose = []
 
@@ -343,16 +362,16 @@ def wr_dmg_frac(parsed_data, n_bins, addtl_text=""):
     damage_taken_frac_win = []
     damage_taken_frac_lose = []
 
-    for mm in range(n_matches):
+    for mm in range(parsed_data["n_matches"]):
         # If it's a win
         if parsed_data["win_lose"][mm] == 1:
             damage_total_frac_win.append(parsed_data["damage_total_frac"][mm])
-            damage_to_champs_frac_win.append(parsed_data["damage_to_champs_frac"][mm])
+            damage_to_champs_frac_win.append(parsed_data["damage_champs_frac"][mm])
             damage_taken_frac_win.append(parsed_data["damage_taken_frac"][mm])
         # If it's a loss
         else:
             damage_total_frac_lose.append(parsed_data["damage_total_frac"][mm])
-            damage_to_champs_frac_lose.append(parsed_data["damage_to_champs_frac"][mm])
+            damage_to_champs_frac_lose.append(parsed_data["damage_champs_frac"][mm])
             damage_taken_frac_lose.append(parsed_data["damage_taken_frac"][mm])
 
     title = "% of Team Damage Dealt by\n" + parsed_data["summoner_name"] \
@@ -369,31 +388,13 @@ def wr_dmg_frac(parsed_data, n_bins, addtl_text=""):
             + "\n" + addtl_text
     make_hist(damage_taken_frac_win, damage_taken_frac_lose, n_bins,
               title, "Damage Taken", "Number of Games")
+    plt.show()
 
 
-def wr_mapside(parsed_data, addtl_text=""):
-    """ Winrate as a function of map side """
-    wr_side_dict = make_plottable_dictionary(
-        parsed_data["map_side"],
-        parsed_data["win_lose"],
-        1
-    )
-
-    x_labels = []
-    for side in wr_side_dict["var_ls"]:
-        if side == 100:
-            x_labels.append("Blue")
-        elif side == 200:
-            x_labels.append("Red")
-        else:
-            x_labels.append("Unknown")
-
-    title_string = "Winrate By Map Side\n" + addtl_text
-
-    make_wr_barchart(
-        wr_side_dict["wr_by_var"], wr_side_dict["n_by_var"], wr_side_dict["error_by_var"], x_labels,
-        title_string, parsed_data["avg_wr"]
-    )
+def games_vs_time(parsed_data, addtl_text=""):
+    """ frequency  of games played over time NOT WRITTEN YET"""
+    # TODO: make this function
+    plt.show()
 
 
 def moving_avg(ls, box):
@@ -411,8 +412,8 @@ def moving_avg(ls, box):
 
     length = len(ls)
 
-    b_fwd = math.ceil((box - 1) / 2)  # points to grab after -3 in test
-    b_rev = math.floor((box - 1) / 2)  # points to grab before -2 in test
+    b_fwd = int(math.ceil((box - 1) / 2))  # points to grab after -3 in test
+    b_rev = int(math.floor((box - 1) / 2))  # points to grab before -2 in test
 
     # prepare a list to hold the moving average
     mov_avg = [0 for ii in ls]

@@ -1,4 +1,4 @@
-import time  # import time to allow for use of time.sleep(secs). Prevents excessive API calls
+import time
 
 
 def parse_variable(match_data, parsed_data, variable_name, key_list):
@@ -17,7 +17,7 @@ def parse_variable(match_data, parsed_data, variable_name, key_list):
         for key in key_list:
             value = value[key]
     except:
-        value = ""
+        value = "Unknown"
 
     # Load the old variable list or create it if this is the first time it's been called
     try:
@@ -35,6 +35,9 @@ def parse_variable(match_data, parsed_data, variable_name, key_list):
 def find_player_id(config_info, match_data, game_id, parsed_data):
     player_id = 999
     teamId = 999
+    enemy_id = 999
+    player_lane = "UNKNOWN"
+    player_role = "UNKNOWN"
     n_players = len(match_data[str(game_id)]["participantIdentities"])
     ally_stats = {}
     enemy_stats = {}
@@ -44,34 +47,39 @@ def find_player_id(config_info, match_data, game_id, parsed_data):
                 str(config_info["AccountID"])):
             player_id = ii
             teamId = match_data[str(game_id)]["participants"][ii]["teamId"]
-        # TODO: rework this to return two lists in addition to the PID variable: ally and enemy player IDs
+            player_lane = match_data[str(game_id)]["participants"][ii]["timeline"]["lane"]
+            player_role = match_data[str(game_id)]["participants"][ii]["timeline"]["role"]
 
-    # TODO move some of this (the non-teammate/enemy stuff) into the parse_data function
     ally_stats["names"] = []
     ally_stats["gold_earned"] = 0
-    ally_stats["damage_dealt"] = 0
+    ally_stats["damage_total"] = 0
     ally_stats["damage_champs"] = 0
     ally_stats["damage_taken"] = 0
     ally_stats["damage_mitigated"] = 0
 
     enemy_stats["names"] = []
     enemy_stats["gold_earned"] = 0
-    enemy_stats["damage_dealt"] = 0
+    enemy_stats["damage_total"] = 0
     enemy_stats["damage_champs"] = 0
     enemy_stats["damage_taken"] = 0
     enemy_stats["damage_mitigated"] = 0
+    enemy_stats["lane_opponent_damage_total"] = 0
+    enemy_stats["lane_opponent_gold"] = 0
+    enemy_stats["lane_opponent_damage_champs"] = 0
+    enemy_stats["lane_opponent_rank"] = ""
 
     player_ids = list(range(n_players))
     player_ids.remove(player_id)
     for ii in range(n_players):
         # TODO: implement "highestAchievedSeasonTier" average for allies and enemies
+        # Find ally players
         if teamId == match_data[str(game_id)]["participants"][ii]["teamId"] and ii != player_id:
             # If the participant was on your team, stick their info in ally stats
             ally_stats["names"].append(
                 match_data[str(game_id)]["participantIdentities"][ii]["player"]["summonerName"])
             ally_stats["gold_earned"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "goldEarned"]
-            ally_stats["damage_dealt"] += match_data[str(game_id)]["participants"][ii]["stats"][
+            ally_stats["damage_total"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealt"]
             ally_stats["damage_champs"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealtToChampions"]
@@ -80,12 +88,13 @@ def find_player_id(config_info, match_data, game_id, parsed_data):
             ally_stats["damage_mitigated"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "damageSelfMitigated"]
 
+        # Find enemy players
         elif ii != player_id:
             enemy_stats["names"].append(
                 match_data[str(game_id)]["participantIdentities"][ii]["player"]["summonerName"])
             enemy_stats["gold_earned"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "goldEarned"]
-            enemy_stats["damage_dealt"] += match_data[str(game_id)]["participants"][ii]["stats"][
+            enemy_stats["damage_total"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealt"]
             enemy_stats["damage_champs"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "totalDamageDealtToChampions"]
@@ -93,26 +102,19 @@ def find_player_id(config_info, match_data, game_id, parsed_data):
                 "totalDamageTaken"]
             enemy_stats["damage_mitigated"] += match_data[str(game_id)]["participants"][ii]["stats"][
                 "damageSelfMitigated"]
-            # TODO identify lane opponent
 
-        elif ii == player_id:
-            parse_variable(match_data, parsed_data, "gold_earned",
-                           [str(game_id), "participants", ii, "stats", "goldEarned"])
-            parse_variable(match_data, parsed_data, "damage_dealt",
-                           [str(game_id), "participants", ii, "stats", "totalDamageDealt"])
-            parse_variable(match_data, parsed_data, "damage_champs",
-                           [str(game_id), "participants", ii, "stats", "totalDamageDealtToChampions"])
-            parse_variable(match_data, parsed_data, "damage_taken",
-                           [str(game_id), "participants", ii, "stats", "totalDamageTaken"])
-            parse_variable(match_data, parsed_data, "damage_mitigated",
-                           [str(game_id), "participants", ii, "stats", "damageSelfMitigated"])
+        # Find the player's lane opponent
+        if (str(match_data[str(game_id)]["participants"][ii]["timeline"]["lane"]) == str(player_lane) and
+            str(match_data[str(game_id)]["participants"][ii]["timeline"]["role"]) == str(player_role) and
+            ii != player_id):
+            enemy_id = ii
 
-    return player_id, parsed_data, ally_stats, enemy_stats
+    return player_id, parsed_data, ally_stats, enemy_stats, enemy_id
 
 
 def parse_data(config_info, match_data):
-    # Note: parse variable names must not include spaces
     parsed_data = {}
+    parsed_data["n_matches"] = 0
     parsed_data["ally_stats"] = []
     parsed_data["enemy_stats"] = []
 
@@ -120,7 +122,7 @@ def parse_data(config_info, match_data):
 
     for game_id in game_ids:
         # Get information for allies and enemeis, as well as the player's ID for the given match
-        pid, parsed_data, ally_stats, enemy_stats = find_player_id(config_info, match_data, game_id, parsed_data)
+        pid, parsed_data, ally_stats, enemy_stats, eid = find_player_id(config_info, match_data, game_id, parsed_data)
 
         parsed_data["ally_stats"].append(ally_stats)
         parsed_data["enemy_stats"].append(enemy_stats)
@@ -156,10 +158,109 @@ def parse_data(config_info, match_data):
                        [game_id, "participants", pid, "stats", "firstBloodKill"])
         parse_variable(match_data, parsed_data, "first_blood_asst",
                        [game_id, "participants", pid, "stats", "firstBloodAssist"])
+        parse_variable(match_data, parsed_data, "gold_earned",
+                       [game_id, "participants", pid, "stats", "goldEarned"])
+        parse_variable(match_data, parsed_data, "damage_total",
+                       [game_id, "participants", pid, "stats", "totalDamageDealt"])
+        parse_variable(match_data, parsed_data, "damage_champs",
+                       [game_id, "participants", pid, "stats", "totalDamageDealtToChampions"])
+        parse_variable(match_data, parsed_data, "damage_taken",
+                       [game_id, "participants", pid, "stats", "totalDamageTaken"])
+        parse_variable(match_data, parsed_data, "damage_mitigated",
+                       [game_id, "participants", pid, "stats", "damageSelfMitigated"])
+
+        parse_variable(match_data, parsed_data, "lane_opponent_champion",
+                       [game_id, "participants", eid, "championId"])
+        parse_variable(match_data, parsed_data, "lane_opponent_damage_total",
+                       [game_id, "participants", eid, "stats", "totalDamageDealt"])
+        parse_variable(match_data, parsed_data, "lane_opponent_damage_champs",
+                       [game_id, "participants", eid, "stats", "totalDamageDealtToChampions"])
+        parse_variable(match_data, parsed_data, "lane_opponent_gold",
+                       [game_id, "participants", eid, "stats", "goldEarned"])
+        parse_variable(match_data, parsed_data, "lane_opponent_first_blood",
+                       [game_id, "participants", eid, "stats", "firstBloodKill"])
+        parse_variable(match_data, parsed_data, "lane_opponent_rank",
+                       [game_id, "participants", eid, "highestAchievedSeasonTier"])
+
+
         # TODO add cs stuff (csd at each point in the game, etc.)
         # parse_variable(match_data, parsed_data, "cs",
         #                [game_id, "participants", pid, "timeline", "lane"])
+        parsed_data["n_matches"] += 1
+
+    parsed_data["summoner_name"] = config_info["SummonerName"]
+    parsed_data["hours_played"] = 0  # the total hours played in the data set
+    parsed_data["champion_name"] = []  # the pretty champion name
+    parsed_data["lane_opponent_champion_name"] = []  # the pretty champion name
+    parsed_data["teammates_unique"] = []  # a list of unique teammate names
+    parsed_data["map_side"] = []  # red or blue side
+    parsed_data["role_pretty"] = []  # the player's role, formatted for display
+    parsed_data["damage_total_frac"] = []  # player's fraction of total team damage
+    parsed_data["damage_champs_frac"] = []  # player's fraction of team damage to champs
+    parsed_data["damage_taken_frac"] = []  # player's fraction of team damage taken
+
+    for ii in range(parsed_data["n_matches"]):
+        parsed_data["hours_played"] += int(parsed_data["match_length"][ii]) / 3600
+        parsed_data["champion_name"].append(config_info["ChampionLookup"][str(parsed_data["champion"][ii])])
+
+        try:
+            parsed_data["lane_opponent_champion_name"].append(
+                config_info["ChampionLookup"][str(parsed_data["lane_opponent_champion"][ii])])
+        except:
+            parsed_data["lane_opponent_champion_name"].append("Unknown")
+
+        parsed_data["teammates_unique"] += parsed_data["ally_stats"][ii]["names"]
+
+        if parsed_data["team"][ii] == 100:
+            parsed_data["map_side"].append("Blue")
+        elif parsed_data["team"][ii] == 200:
+            parsed_data["map_side"].append("Red")
+        else:
+            parsed_data["map_side"].append("Unknown")
+
+        # Determine the role (neatly formatted)
+        if parsed_data["lane"][ii].lower() == "middle" or parsed_data["lane"][ii].lower() == "mid":
+            parsed_data["role_pretty"].append("Mid")
+        elif parsed_data["lane"][ii].lower() == "top":
+            parsed_data["role_pretty"].append("Top")
+        elif parsed_data["lane"][ii].lower() == "jungle":
+            parsed_data["role_pretty"].append("Jungle")
+        elif parsed_data["lane"][ii].lower() == "bottom" or parsed_data["lane"][ii].lower() == "bot":
+            if "carry" in parsed_data["role"][ii].lower():
+                parsed_data["role_pretty"].append("Bot")
+            elif "sup" in parsed_data["role"][ii].lower():
+                parsed_data["role_pretty"].append("Support")
+            else:
+                parsed_data["role_pretty"].append("Bottom (Other)")
+        else:
+            parsed_data["role_pretty"].append("Unknown")
+
+
+        parsed_data["damage_total_frac"].append(parsed_data["damage_total"][ii] /
+                                                parsed_data["ally_stats"][ii]["damage_total"])
+        parsed_data["damage_champs_frac"].append(parsed_data["damage_champs"][ii] /
+                                                 parsed_data["ally_stats"][ii]["damage_taken"])
+        parsed_data["damage_taken_frac"].append(parsed_data["damage_taken"][ii] /
+                                                parsed_data["ally_stats"][ii]["damage_taken"])
+
+    parsed_data["hours_played"] = round(parsed_data["hours_played"], 1)
+    parsed_data["teammates_unique"] = sorted(list(set(parsed_data["teammates_unique"])), key=str.lower)
+
+    parsed_data["winrate"] = 0
+    if len(parsed_data["win_lose"]) > 0:
+        parsed_data["winrate"] = sum(parsed_data["win_lose"]) / len(parsed_data["win_lose"])
+    else:
+        parsed_data["winrate"] = 0
+
     return parsed_data
+
+testing=0
+
+if testing:
+    import json
+    with open("ParsedData.json", "r") as file:
+        parsed_data = json.load(file)
+
 
 
 def filter_matches(config_info, parsed_data, games_to_remove, config_key, filter_keys, choices_list):
@@ -173,9 +274,7 @@ def filter_matches(config_info, parsed_data, games_to_remove, config_key, filter
     :return:
     """
 
-    n_matches = len(parsed_data[list(parsed_data.keys())[0]])  # find the first key in parsed_data and see how long it is
-
-    print("Running filter_matches with ", n_matches, "matches; filtering for ", config_key)
+    print("Running filter_matches with ", parsed_data["n_matches"], "matches; filtering for ", config_key)
     print("    Corresponding config_info dictionary: ", config_info[config_key])
     print("    Keys to check through in parsed_data: ", filter_keys)
     print("    List of choices from the GUI", str(choices_list))
@@ -183,39 +282,38 @@ def filter_matches(config_info, parsed_data, games_to_remove, config_key, filter
     if len(choices_list) == 0:
         print("        No active choices, skipping this filter.")
     else:
-        for ii in range(n_matches):
+        for ii in range(parsed_data["n_matches"]):
             keep = 0  # prep a variable for whether or not to keep this match
             for choice in choices_list:  # look over each acceptable choice
                 for parsed_key in filter_keys:  # check it the corresponding entry in parsed_data
                     print(
                         "        Comparing GUI choice (" + str(config_info[config_key][choice]) +
-                        ") with data for this game (" + str(parsed_data[parsed_key][ii]) + ")"
+                        ") with data for this game (" + str(parsed_data[parsed_key][ii]) +
+                        "), game ID = ", parsed_data["game_id"][ii]
                     )
 
                     # if str(config_info[config_key][choice]).lower() in str(parsed_data[parsed_key][ii]).lower():
-                    keylist = config_info[config_key][choice].split("*")
+                    keylist = config_info[config_key][choice].split("&&")
                     for config_subkey in keylist:
-                        if str(config_subkey).lower() in str(parsed_data[parsed_key][ii]).lower():
+                        if str(config_subkey).lower() == str(parsed_data[parsed_key][ii]).lower():
                             print("        Filter applies; keeping the match")
                             keep += 1
             if keep == 0:
-                print("        This match will be removed: ", parsed_data["game_id"][ii])
-                games_to_remove.append(parsed_data["game_id"][ii])
+                games_to_remove.append(str(parsed_data["game_id"][ii]))
 
     # Remove duplicates and sort the games to be removed
     games_to_remove = sorted(list(set(games_to_remove)))
-    print("            Will remove the following games: ", games_to_remove)
+    print("            Will remove the following ", str(len(games_to_remove)), " games: ", games_to_remove)
 
     return games_to_remove
 
 
 def filter_remakes(parsed_data, games_to_remove):
     """ Filter out remakes (games with length < 6 minutes) """
-    n_matches = len(parsed_data[list(parsed_data.keys())[0]])
 
-    for ii in range(n_matches):
+    for ii in range(parsed_data["n_matches"]):
         try:
-            if parsed_data["match_length"][ii] < 360:
+            if int(parsed_data["match_length"][ii]) < 360:
                 games_to_remove.append(str(parsed_data["game_id"][ii]))
         except:
             games_to_remove.append(str(parsed_data["game_id"][ii]))
@@ -230,10 +328,8 @@ def filter_recency(parsed_data, games_to_remove, days_to_keep):
     if int(days_to_keep) > 0:
         oldest_timestamp = int(time.time())*1000 - (int(days_to_keep) * 24 * 60 * 60 * 1000)
 
-        n_matches = len(parsed_data[list(parsed_data.keys())[0]])
-
         nrem = 0
-        for ii in range(n_matches):
+        for ii in range(parsed_data["n_matches"]):
             try:
                 if int(parsed_data["timestamp"][ii]) < oldest_timestamp:
                     games_to_remove.append(str(parsed_data["game_id"][ii]))
@@ -246,7 +342,6 @@ def filter_recency(parsed_data, games_to_remove, days_to_keep):
         print("removing due to oldness:", nrem)
 
     return games_to_remove
-
 
 
 # def parse_match_data(config_info, match_data, parsed_data):

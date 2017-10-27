@@ -17,9 +17,9 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 
 
 ## Notes:
-1. Will run in-place (wherever the master file is located) and creates a (someimes large) json file of data for each summoner
-2. Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches at first
-3. Match data is saved to your hard drive (it does not have to be re-downloaded each time the program is started)
++ Will run in-place (wherever the master file is located) and creates a (someimes large) json file of data for each summoner
++ Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches at first
++ Match data is saved to your hard drive (it does not have to be re-downloaded each time the program is started)
 
 
 ## To-Do:
@@ -38,20 +38,17 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 + Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
 
 
-+ Replace season, champion, queue type, and role with multiselection listboxes
-  1. Update filter to loop over selected options
-  2. 
-  
 + GUI Update
-  1. Add background colors
-  2. Modify font sizes/styles to improve look
-  3. Break out into multiple panes instead of one giant thing to make the formatting nicer.
+  1. Switch to ttk
+  2. Add tabs to different panes
+  3. Modify font sizes/styles to improve look
+  4. Break out into multiple panes instead of one giant thing to make the formatting nicer.
   
 + Add mean/median/mode to histograms
 
 + Incorporate KDA somehow (probably through a histogram)
 
-+ Read in a dictionary for the appropriate game constants and populate dropdowns
++ Switch GUI filter panes to trade entries rather than reproducing them
   1. read queues, etc. as dictionaries
   2. add them to the appropriate filtering dropdowns
   3. Replace the dropdowns with multiselect boxes
