@@ -4,9 +4,6 @@ matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering work
 import matplotlib.pyplot as plt  # This is for making plots
 
 
-# TODO - Add error bars (e.g. 90% confidence interval) to all plots where that's feasible.
-
-
 def make_wr_dictionary(key_ls, win_ls, store_dict):
     """
     Find winrate, wins, losses for a given variable (key_ls) from list of total
@@ -30,73 +27,103 @@ def make_wr_dictionary(key_ls, win_ls, store_dict):
         store_dict[k][3] = 1.96 * math.sqrt(1 / store_dict[k][0] * store_dict[k][2] * (1 - store_dict[k][2]))
 
 
-def make_plottable_dictionary(var_ls, win_ls, threshold, z_score=1.645):
+def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval="90%"):
     """
-    Makes a dictionary that is ready to be fed to make_wr_barchart for plotting
-    :param var_ls: a list of the variable to cross-reference with win_ls
-    :param win_ls: a list of wins and losses whose indices match those of key_ls
-    :param threshold: a cutoff for number of matches to exclude (e.g. exclude data with n<3 matches
-    :param z_score: constant for various confidence intervals. 80% [1.28], 90% [1.645], 95% [1.96], 99% [2.58]
+    Makes a dictionary that is ready to be fed to make_barchart for plotting
+    :param x_list: a list of the variable to cross-reference with y_list
+    :param y_list: a list of, e.g. wins and losses whose indices match those of key_ls
+    :param threshold: a cutoff for number of matches to exclude (e.g. exclude data with n<3 matches)
+    :param conf_interval: confidence interval (e.g. 0.9) in which conf_interval fraction of measurements will reside
     :return: plot_dict: a dictionary of:
-            List of Variable strings (e.g. champion names)
-            Number of matches (e.g. number of matches played on each champion in var_ls)
-            Number of wins (e.g. number of wins on each champion in var_ls)
-            Winrate by variable (e.g. winrate for each champion in var_ls)
-            Uncertainty by variable (e.g. 90% confidence interval for winrates of each champ in var_ls)
+            var_list: list of unique variable strings (e.g. champion names or roles)
+            n_by_var: instances of each unique variable (e.g. number of matches played on each champion in var_list)
+            y_cumul_by_var: cumulative y for each variable in var_list
+            avg_by_var: mean y value for each element in var_list (e.g. winrate for each champion)
+            error_by_var: uncertainty by variable (e.g. 90% confidence interval for winrates of each champ in var_list)
     """
-    ls_length = len(var_ls)
-    plot_dict = {"var_ls": [], "n_by_var": [], "win_by_var": [], "wr_by_var": [], "error_by_var": []}
 
-    # Sort by var_ls using a Schwartzian transform (thanks, Ignacio Vazquez-Abrams from stackoverflow)
-    var_ls, win_ls = zip(*sorted(zip(var_ls, win_ls)))
+    plot_dict = {
+        "overall_avg": 0,
+        "var_list": [],
+        "n_by_var": [],
+        "y_cumul_by_var": [],
+        "y_list_by_var": {},
+        "avg_by_var": [],
+        "error_by_var": [],
+    }
 
-    # Start tracking the number of variables you've found
-    # For every match...
+    x_list_clean = []
+    y_list_clean = []
+
+    for ii in range(len(y_list)):
+        try:
+            float(y_list[ii])
+            if x_list[ii] != "Unknown":
+                x_list_clean.append(x_list[ii])
+                y_list_clean.append(float(y_list[ii]))
+        except ValueError:
+            pass
+
+    # Sort by x_list using a Schwartzian transform (thanks, Ignacio Vazquez-Abrams from stackoverflow)
+    x_list_clean, y_list_clean = zip(*sorted(zip(x_list_clean, y_list_clean)))
+
+    plot_dict["overall_avg"] = sum(y_list_clean) / float(len(y_list_clean))
+
+    ls_length = len(x_list_clean)
     for ii in range(ls_length):
-        # Check to see if the given variable has been added to the variable list yet
-        if var_ls[ii] not in plot_dict["var_ls"]:
-            # If not: record it, add a 1 to the list of matches, and record a win or a loss
-            plot_dict["var_ls"].append(var_ls[ii])
+        # Check to see if the given x variable has been seen yet
+        if x_list_clean[ii] not in plot_dict["var_list"]:
+            # If it is a new x variable: record it, its value, and one instance (for division later)
+            plot_dict["var_list"].append(x_list_clean[ii])
+            plot_dict["y_list_by_var"][x_list_clean[ii]] = [float(y_list_clean[ii])]
             plot_dict["n_by_var"].append(1)
-            if win_ls[ii] == 1:
-                plot_dict["win_by_var"].append(1)
-            elif win_ls[ii] == 0:
-                plot_dict["win_by_var"].append(0)
+            plot_dict["y_cumul_by_var"].append(float(y_list_clean[ii]))
         else:
-            # If so, find out what index it gets
-            idx = plot_dict["var_ls"].index(var_ls[ii])
+            # If it is an existing x variable: find its index, increment the occurrences, and add to the running total
+            idx = plot_dict["var_list"].index(x_list_clean[ii])
+            plot_dict["y_list_by_var"][x_list_clean[ii]].append(float(y_list_clean[ii]))
             plot_dict["n_by_var"][idx] += 1
-            if win_ls[ii] == 1:
-                plot_dict["win_by_var"][idx] += 1
+            plot_dict["y_cumul_by_var"][idx] += float(y_list_clean[ii])
 
-    # Calculate winrate (wins/n) and 95% confidence (err = 1.96 * sqrt( 1/n * mean * (1 - mean))   )
-    var_length = len(plot_dict["var_ls"])
+
+    # Calculate winrate (wins/n), then the 95% confidence (err = 1.96 * sqrt[ 1/n * mean * (1 - mean)])
+    var_length = len(plot_dict["var_list"])
     n_deleted = 0
     for ii in range(var_length):
         if plot_dict["n_by_var"][ii - n_deleted] >= threshold:
-            plot_dict["wr_by_var"].append(plot_dict["win_by_var"][ii - n_deleted] / plot_dict["n_by_var"][ii - n_deleted])
-            plot_dict["error_by_var"].append(
-                z_score * math.sqrt(
-                    1 / (plot_dict["n_by_var"][ii - n_deleted])
-                    * plot_dict["wr_by_var"][ii - n_deleted] * (1 - plot_dict["wr_by_var"][ii - n_deleted]))
-            )
+            curr_var = plot_dict["var_list"][ii - n_deleted]
+            curr_list = plot_dict["y_list_by_var"][curr_var]
+            curr_ave, curr_error = compute_error(curr_list, z_scores, conf_inverval)
+            plot_dict["avg_by_var"].append(curr_ave)
+            plot_dict["error_by_var"].append(curr_error)
         else:
-            del plot_dict["var_ls"][ii - n_deleted]
+            del plot_dict["var_list"][ii - n_deleted]
             del plot_dict["n_by_var"][ii - n_deleted]
-            del plot_dict["win_by_var"][ii - n_deleted]
+            del plot_dict["y_cumul_by_var"][ii - n_deleted]
             n_deleted += 1
+
+    plot_dict["min_y"] = sorted(plot_dict["avg_by_var"])[0]
+    if plot_dict["min_y"] > 0:
+        plot_dict["min_y"] = 0
+
+    plot_dict["max_y"] = sorted(plot_dict["avg_by_var"])[-1]
+    if plot_dict["max_y"] < 0:
+        plot_dict["max_y"] = 0
+
+    plot_dict["half_max"] = float(sorted(y_list_clean)[-1] * 0.5)
 
     return plot_dict
 
 
-def make_wr_barchart(bars_data, n_per_bar, error_bars, x_labels, title_string, avg_win_rate):
+def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     """
     Make a bar chart from data. Inputs: list of data to be plotted in bar form (a list of numbers
     """
-    n_of_things_to_plot = len(bars_data)
+
+    n_of_things_to_plot = len(plot_dict["var_list"])
 
     fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.8, bottom=0.2)
+    fig.subplots_adjust(top=0.75, bottom=0.25)
 
     # prepare basics
     locs = range(n_of_things_to_plot)
@@ -105,96 +132,154 @@ def make_wr_barchart(bars_data, n_per_bar, error_bars, x_labels, title_string, a
     endx = n_of_things_to_plot - 1 + width + 0.25  # where the x axis ends
 
     # create objects to plot
-    if error_bars == 0:
-        bars1 = ax.bar(locs, bars_data, width, color='r')
-    else:
-        bars1 = ax.bar(locs, bars_data, width, color='r', yerr=error_bars)
-    wr_avg, = plt.plot([startx, endx], [avg_win_rate, avg_win_rate], label="Avg. WR", linestyle="--", color="b")
-    wr_50, = plt.plot([startx, endx], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
+    bars1 = ax.bar(locs, plot_dict["avg_by_var"], width, color='r', yerr=plot_dict["error_by_var"])
+    pl_avg, = plt.plot([startx, endx], [plot_dict["overall_avg"], plot_dict["overall_avg"]],
+                       label="Overall Average For \"" + y_label + "\" = " + str(round(plot_dict["overall_avg"], 2)),
+                       linestyle="--", color="b")
+
+    pl_hlf, = plt.plot([startx, endx], [plot_dict["half_max"], plot_dict["half_max"]],
+                       label="Half-Max = " + str(round(plot_dict["half_max"], 2)) + " " +  y_label,
+                       linestyle=":", color="k")
+
+    plt.plot([startx, endx], [0, 0], label="Zero", linestyle="-", color="k")
 
     # add some text for labels, title and axes ticks
-    ax.set_ylabel('Winrate')
-    ax.set_title(title_string)
-    ax.set_xticks(locs)
-    ax.set_xticklabels(x_labels, rotation=45, ha="right")
-    plt.xlim([startx, endx])
-    plt.ylim([0, 1.2])
+    if y_label != "":
+        ax.set_ylabel("Average " + y_label)
+    if x_label != "":
+        ax.set_xlabel(x_label)
+    if title_string != "":
+        ax.set_title(title_string)
 
-    leg = plt.legend(handles=(wr_avg, wr_50), loc=(0, 1.1), ncol=1)
+    bar_labels = []
+    for ii in range(len(plot_dict["var_list"])):
+        bar_labels += [plot_dict["var_list"][ii] + " (" + str(plot_dict["n_by_var"][ii]) + " games)"]
+
+    ax.set_xticks(locs)
+    ax.set_xticklabels(bar_labels, rotation=35, ha="right")
+    plt.xlim([startx, endx])
+    plt.ylim([plot_dict["min_y"]*1.15, plot_dict["max_y"]*1.15])
+
+    leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(leg)
 
-    def label_bars(bars):
-        """ Attach a text label above each bar displaying its height """
-        rr = 0
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.1,
-                    'n=%d' % n_per_bar[rr],
-                    ha='center', va='top')
-            rr += 1
-
-    label_bars(bars1)
+    for ii in range(len(plot_dict["avg_by_var"])):
+        ax.text(int(ii), plot_dict["avg_by_var"][ii] * 1.1,
+                str(round(plot_dict["avg_by_var"][ii], 2)),
+                ha='center', va='top')
+    plt.show()
 
 
-def make_hist(wins_var, losses_var, n_bins, title, xlabel, ylabel):
+def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_label=""):
+    """
+    Make a bar chart from data. Inputs: list of data to be plotted in bar form (a list of numbers
+    """
+
+    x_list_clean = []
+    y_list_clean = []
+
+    for ii in range(len(x_list)):
+        try:
+            x_i = float(x_list[ii])
+            y_i = float(y_list[ii])
+            # If both lists have a good value here, keep the point
+            x_list_clean += [x_i]
+            y_list_clean += [y_i]
+        except ValueError:
+            pass
+
     fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.8, bottom=0.1)
-    (_, _, p1) = plt.hist(wins_var, n_bins,
-                          label="Wins", histtype="bar", normed=0, color='green', alpha=0.5)
-    (_, _, p2) = plt.hist(losses_var, n_bins,
-                          label="Losses", histtype="bar", normed=0, color='red', alpha=0.5)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    ax.legend(handles=(p1[0], p2[0]), loc=(0, 1.1), ncol=1)
-    return
+    fig.subplots_adjust(top=0.8, bottom=0.25)
 
-# TODO: DELETE THIS DEBUGGING STUFF
-testing_stuff = 0
+    x_min = sorted(x_list_clean)[0]
+    x_max = sorted(x_list_clean)[-1]
+    y_min = sorted(y_list_clean)[0]
+    y_max = sorted(y_list_clean)[-1]
 
-if testing_stuff:
-    import math  # This is for various math functions (ceiling, sqrt, etc.)
-    import matplotlib  # This is for editing the plot renderer
+    y_avg = float(sum(y_list_clean) / len(y_list_clean))
 
-    matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering works on MacOS
-    import matplotlib.pyplot as plt  # This is for making plots
-    import json
-    with open("Configuration.json", "r") as file:
-        config_info = json.load(file)
-    with open("ParsedData.json", "r") as file:
-        parsed_data = json.load(file)
-    with open("MatchData_jasparagus.json", "r") as file:
-        match_data = json.load(file)
-    print(parsed_data)
+    # create objects to plot
+
+    pl_avg, = plt.plot([x_min, x_max], [y_avg, y_avg],
+                       label="Overall Average For \""+ y_label + "\" is " + str(round(y_avg, 2)),
+                       linestyle="--", color="b")
+
+    pl_hlf, = plt.plot([x_min, x_max], [y_max * 0.5, y_max * 0.5],
+                       label="Half-Max is " + str(round(y_max, 2)) + " " +  y_label,
+                       linestyle=":", color="k")
+
+    plt.plot(x_list_clean, y_list_clean, "r.", label=y_name)
+
+    # add some text for labels, title and axes ticks
+    if y_label != "":
+        ax.set_ylabel(y_label)
+    if x_label != "":
+        ax.set_xlabel(x_label)
+    if title_string != "":
+        ax.set_title(title_string)
+
+    leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
+    plt.gca().add_artist(leg)
+
+    plt.show()
 
 
-def simple_wr_var(parsed_data, xvar_path, yvar_path, threshold=1, title_string="NoTitle"):
+def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
 
-    xvar = parsed_data.copy()
-    yvar = parsed_data.copy()
+    green_list = []
+    red_list = []
 
-    for key in xvar_path:
-        xvar = xvar[key]
+    n_bins = int(n_bins)
 
-    for key in yvar_path:
-        yvar = yvar[key]
+    for ii in range(len(bool_list)):
+        try:
+            h_i = float(hist_list[ii])
+            if bool_list[ii] == 1 and bool_list[ii] != "Unknown":
+                green_list.append(h_i)
+            elif bool_list[ii] == 0 and bool_list[ii] != "Unknown":
+                red_list.append(h_i)
+        except ValueError:
+            pass
 
-    print(len(xvar))
-    print(xvar)
-    print(len(yvar))
-    print(yvar)
+    print(green_list," \n",red_list)
+
+    green_mean = sum(green_list) / len(green_list)
+    red_mean = sum(red_list) / len(red_list)
+
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.75, bottom=0.1)
+    (_, _, p1) = plt.hist(green_list, n_bins,
+                          label= y_label + " True", histtype="bar", normed=0, color="green", alpha=0.5)
+    (_, _, p2) = plt.hist(red_list, n_bins,
+                          label= y_label + " False", histtype="bar", normed=0, color="red", alpha=0.5)
+    m_g = plt.axvline(green_mean, color="green", linestyle="dashed", label="Average, " + y_label + " True")
+    m_r = plt.axvline(red_mean, color="red", linestyle="dashed", label="Average, " + y_label + " False")
+
+    if x_label != "":
+        plt.xlabel(x_label)
+    if y_label != "":
+        plt.ylabel(y_label + " Count")
+    else:
+        plt.ylabel("Number of True Instances")
+    if title != "":
+        plt.title(title)
+    ax.legend(handles=(p1[0], p2[0], m_g, m_r), loc=(0, 1.07), ncol=1)
+
+    plt.show()
+
+
+def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
+                       z_scores={"68%": 0.99}, conf_interval="68%"):
 
     plot_dict = make_plottable_dictionary(
-        xvar,
-        yvar,
-        threshold
+        x_var,
+        y_var,
+        threshold,
+        z_scores,
+        conf_interval,
     )
 
-    make_wr_barchart(
-        plot_dict["wr_by_var"], plot_dict["n_by_var"], plot_dict["error_by_var"], plot_dict["var_ls"],
-        title_string, parsed_data["winrate"]
-    )
-    plt.show()
+    make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
 
 
 def wr_time(parsed_data, box=0, addtl_text=""):
@@ -202,13 +287,10 @@ def wr_time(parsed_data, box=0, addtl_text=""):
     Plots winrate trend over time using a moving average with average with width "box"
     """
 
-    print(parsed_data)
-    print(box)
-
     fig, ax = plt.subplots()
     fig.subplots_adjust(top=0.7, bottom=0.1)
 
-    win_lose_chrono = [x for y, x in sorted(zip(parsed_data["timestamp"], parsed_data["win_lose"]))]
+    win_lose_chrono = [x for y, x in sorted(zip(parsed_data["timestamp"], parsed_data["Win/Loss Rate"]))]
 
     p1, = plt.plot(
             moving_avg(win_lose_chrono, box), label="Moving Avg.", linestyle="-", color="r")
@@ -226,50 +308,7 @@ def wr_time(parsed_data, box=0, addtl_text=""):
     plt.show()
 
 
-def wr_teammate(parsed_data, n_played, addtl_text=""):
-    """ Winrates on a per-teammate basis for teammates from a number of games >= n_games """
-    all_teammates = []
-
-    # Get a list of every teammate
-    # for ii in range(parsed_data["n_matches"]):
-    #     all_teammates = all_teammates + parsed_data["ally_stats"][ii]["names"]
-    #
-    # teammates_unique = sorted(list(set(all_teammates)), key=str.lower)
-    n_teammates = len(parsed_data["teammates_unique"])
-    wr_by_teammate = []
-    games_with_teammate = []
-    teammates_unique_keep = []
-    error = []
-
-    # For each unique teammate, look at every game and see if they were there and (if so) if it was a W/L
-    n_deleted = 0
-    for tt in range(n_teammates):
-        wins = []
-        for ii in range(parsed_data["n_matches"]):
-            if parsed_data["teammates_unique"][tt] in parsed_data["ally_stats"][ii]["names"]:
-                wins.append(parsed_data["win_lose"][ii])
-        if len(wins) >= n_played:
-            wr_by_teammate.append(sum(wins)/len(wins))
-            games_with_teammate.append(len(wins))
-            teammates_unique_keep.append(parsed_data["teammates_unique"][tt])
-            error.append(
-                1.96*math.sqrt(
-                    1/(games_with_teammate[tt-n_deleted])
-                    * wr_by_teammate[tt-n_deleted] * (1-wr_by_teammate[tt-n_deleted]))
-            )
-        else:
-            n_deleted += 1
-
-    bars_data = wr_by_teammate
-    n_per_bar = games_with_teammate
-    x_labels = teammates_unique_keep
-    title_string = "Winrate by Teammate\n" + "(" + str(n_played) + "+ Games Together)\n" + addtl_text
-
-    make_wr_barchart(bars_data, n_per_bar, error, x_labels, title_string, parsed_data["winrate"])
-    plt.show()
-
-
-def wr_partysize(parsed_data, n_played_with, addtl_text=""):
+def wr_partysize(parsed_data, n_played_with, z_scores={"68%": 0.99}, conf_interval="68%", addtl_text=""):
     """
     Winrates by number of recurring teammates (with an N game cutoff for "teammates")
     n_played_with is threshold # of games with teammate to be considered part of a a "premade"
@@ -296,105 +335,23 @@ def wr_partysize(parsed_data, n_played_with, addtl_text=""):
 
     wr_partysize_dict = make_plottable_dictionary(
         party_size,
-        parsed_data["win_lose"],
-        1
+        parsed_data["Win/Loss Rate"],
+        1,
+        z_scores,
+        conf_interval,
     )
 
     title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)\n" + addtl_text
 
-    make_wr_barchart(
-        wr_partysize_dict["wr_by_var"], wr_partysize_dict["n_by_var"], wr_partysize_dict["error_by_var"],
-        wr_partysize_dict["var_ls"], title_string, parsed_data["winrate"]
-    )
-    plt.show()
-
-
-def wr_dmg(parsed_data, n_bins, addtl_text=""):
-    # Histograms of damage in won and lost games
-
-    damage_total_win = []
-    damage_total_lose = []
-
-    damage_to_champs_win = []
-    damage_to_champs_lose = []
-
-    damage_taken_win = []
-    damage_taken_lose = []
-
-    damage_mitigated_win = []
-    damage_mitigated_lose = []
-
-    for ii in range(parsed_data["n_matches"]):
-        if parsed_data["win_lose"][ii] == 1:
-            damage_total_win.append(parsed_data["damage_total"][ii])
-            damage_to_champs_win.append(parsed_data["damage_champs"][ii])
-            damage_taken_win.append(parsed_data["damage_taken"][ii])
-            damage_mitigated_win.append(parsed_data["damage_mitigated"][ii])
-        else:
-            damage_total_lose.append(parsed_data["damage_total"][ii])
-            damage_to_champs_lose.append(parsed_data["damage_champs"][ii])
-            damage_taken_lose.append(parsed_data["damage_taken"][ii])
-            damage_mitigated_lose.append(parsed_data["damage_mitigated"][ii])
-
-    title = "Damage Dealt by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
-    make_hist(damage_total_win, damage_total_lose, n_bins, title, "Total Damage Dealt", "Number of Games")
-
-    title = "Damage To Champs by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
-    make_hist(damage_to_champs_win, damage_to_champs_lose, n_bins, title, "Damage To Champs", "Number of Games")
-
-    title = "Damage Taken by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
-    make_hist(damage_taken_win, damage_taken_lose, n_bins, title, "Damage Taken", "Number of Games")
-
-    title = "Damage Mitigated by\n" + parsed_data["summoner_name"] + "\n" + addtl_text
-    make_hist(damage_mitigated_win, damage_mitigated_lose, n_bins, title, "Damage Mitigated", "Number of Games")
-
-    plt.show()
-
-
-def wr_dmg_frac(parsed_data, n_bins, addtl_text=""):
-    # Histograms of damage fractions in won and lost games
-    damage_total_frac_win = []
-    damage_total_frac_lose = []
-
-    damage_to_champs_frac_win = []
-    damage_to_champs_frac_lose = []
-
-    damage_taken_frac_win = []
-    damage_taken_frac_lose = []
-
-    for mm in range(parsed_data["n_matches"]):
-        # If it's a win
-        if parsed_data["win_lose"][mm] == 1:
-            damage_total_frac_win.append(parsed_data["damage_total_frac"][mm])
-            damage_to_champs_frac_win.append(parsed_data["damage_champs_frac"][mm])
-            damage_taken_frac_win.append(parsed_data["damage_taken_frac"][mm])
-        # If it's a loss
-        else:
-            damage_total_frac_lose.append(parsed_data["damage_total_frac"][mm])
-            damage_to_champs_frac_lose.append(parsed_data["damage_champs_frac"][mm])
-            damage_taken_frac_lose.append(parsed_data["damage_taken_frac"][mm])
-
-    title = "% of Team Damage Dealt by\n" + parsed_data["summoner_name"] \
-            + "\n" + addtl_text
-    make_hist(damage_total_frac_win, damage_total_frac_lose, n_bins,
-              title, "Damage Share", "Number of Games")
-
-    title = "% of Team Damage To Champs by\n" + parsed_data["summoner_name"] \
-            + "\n" + addtl_text
-    make_hist(damage_to_champs_frac_win, damage_to_champs_frac_lose, n_bins,
-              title, "Damage To Champs", "Number of Games")
-
-    title = "% of Team Damage Taken by\n" + parsed_data["summoner_name"] \
-            + "\n" + addtl_text
-    make_hist(damage_taken_frac_win, damage_taken_frac_lose, n_bins,
-              title, "Damage Taken", "Number of Games")
+    make_barchart(wr_partysize_dict, title_string, parsed_data["winrate"])
     plt.show()
 
 
 def games_vs_time(parsed_data, addtl_text=""):
     """ frequency  of games played over time NOT WRITTEN YET"""
+    print("I Don't exist yet...")
     # TODO: make this function
-    plt.show()
+    # plt.show()
 
 
 def moving_avg(ls, box):
@@ -428,3 +385,41 @@ def moving_avg(ls, box):
         mov_avg[ii] = sum(ls[(ii - b_rev):]) / len(ls[(ii - b_rev):])
 
     return mov_avg
+
+
+def compute_error(data_list, z_scores, conf_interval="90%"):
+
+    if conf_interval in list(z_scores.keys()):
+        z_score = float(z_scores[conf_interval])
+    else:
+        z_score = 0.99
+        print("Couldn't figure out desired confidence interval; showing one standard deviation (68%)")
+
+    continuous = 0
+    for ii in data_list:
+        if ii != 0 and ii != 1:
+            continuous += 1
+
+    if continuous:
+        n = float(len(data_list) + 1)  # can never be 0
+        u = sum(data_list) / n
+        s = math.sqrt(sum((x - u) ** 2 for x in data_list) / len(data_list))
+        ci = z_score * s / math.sqrt(len(data_list))
+
+    else:
+        n = float(len(data_list) + 1)  # can never be zero
+        u = sum(data_list) / n
+        ci = z_score * math.sqrt(u * (1 - u) / n)
+
+    return u, ci
+
+
+z_scores = {
+        "68%": 0.99,
+        "80%": 1.28,
+        "85%": 1.44,
+        "90%": 1.64,
+        "95%": 1.96,
+        "98%": 2.33,
+        "99%": 2.58,
+}

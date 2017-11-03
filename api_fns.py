@@ -6,34 +6,31 @@ import pathlib  # allows checking for whether or not match_data JSON file exists
 
 
 def get_api_key(write_mode=False, key_in=""):
-    # gets the API key from a text file called "apikey.txt". Modify this function if that methodof acquisition changes
-
+    # gets the API key from a text file called "apikey.txt". Modify this function if that changes
     try:
         with open("apikey.txt", "r") as file:
             file_contents = file.readlines()  # Read the first line
 
-        try:
-            key = file_contents[0].replace(" ", "").replace("\n", "")  # strip spaces & newlines
+        key = file_contents[0].replace(" ", "").replace("\n", "")  # strip spaces & newlines
 
-            if write_mode == True and str(key) != str(key_in):
-                with open("apikey.txt", "w") as file:
-                    file.write(str(key_in))
-                    file.seek(0, 2)  # seek point 0 characters away from end of file ("2")
-                    file.write("\n" + str(time.time() + 24 * 60 * 60))
-        except:
-            key = "Couldn't read API key from file"
+        expiry = str(file_contents[1]).replace(" ", "").replace("\n", "")  # read the 2nd line
+        if float(expiry) < float(time.time()):
+            key = "API Key Expired. Please Get A New Key"
 
-        try:
-            expiry = str(file_contents[1]).replace(" ", "").replace("\n", "") # read the 2nd line
-            if float(expiry) < float(time.time()):
-                key = "API Key EXPIRED"
-        except:
-            expiry = 0
-
-    except:
-        print("Error reading file \"apikey.txt\"")
-        key = ""
+    except FileNotFoundError:
+        key = "API Key Not Found. Please Get A Key"
         expiry = 0
+
+    except (AttributeError, ValueError):
+        key = "API Key Error. Please Get A New Key"
+        expiry = 0
+
+    if write_mode is True and str(key) != str(key_in):
+        print("in write mode")
+        with open("apikey.txt", "w") as file:
+            file.write(str(key_in).replace(" ", "").replace("\n", ""))
+            file.seek(0, 2)  # seek point 0 characters away from end of file ("2")
+            file.write("\n" + str(time.time() + 24 * 60 * 60))
 
     return key, expiry
 
@@ -45,19 +42,17 @@ def json_from_url(url, status=None):
     try:
         reply = urllib.request.urlopen(req)  # get the reply from the server
         json_data = json.loads(reply.read())  # create a dictionary the data as a JSON object
-        if status != None:
+        if status is not None:
             _ = api_wait(reply, status)  # calculate the wait time and wait
         else:
             _ = api_wait(reply)
-    except:
+    except Exception as e:
         print(url)
+        print(e)
         print("Error opening URL. Check API Key.")
         json_data = {}
 
     return json_data
-# once the above is done, you can use the following as usual:
-# xx_reply = urllib.request.urlopen(req)
-# xx_data = test.read()
 
 
 def api_wait(html_reply, status=None):
@@ -107,7 +102,7 @@ def api_wait(html_reply, status=None):
     while wait_remaining > 0:
         wait_remaining = started_waiting + wait_time - time.time()
         print("Wait remaining: " + str(int(wait_remaining)) + "s")
-        if status != None:
+        if status is not None:
             status.set("Waiting to make more API calls: " + str(int(wait_remaining)) + " seconds...")
         time.sleep(0.5)
         # popup("Waiting for Riot API rate limit" + str(wait_remaining) + "seconds")
@@ -127,13 +122,12 @@ def config(region, summoner_name):
     # Store the information obtained so far in the configuration dictionary
     config_info["SummonerName"] = summoner_name
     config_info["Region"] = region
-    config_info = read_game_constants(config_info)
-    config_info["ChampionDictionary"], config_info["ChampionLookup"] = get_champ_dict()
+    config_info = add_game_constants(config_info)
+    config_info = add_static_data(config_info)
 
     if (config_info["SummonerName"] is not "" and
             config_info["Region"] in config_info["regions.gameconstants"].copy().keys()):
         account_id, summoner_id = summoner_by_name(config_info)  # grab account & summoner IDs from web
-
     # Write (or overwrite, as applicable) new settings to a configuration dictionary
     config_info["AccountID"] = account_id
     config_info["SummonerID"] = summoner_id
@@ -165,7 +159,7 @@ def summoner_by_name(config_info):
             summoner_id = acct_data_json["id"]
             summoner_id = str(summoner_id)
             break
-        except:
+        except KeyError:
             pass
     return account_id, summoner_id
 
@@ -201,8 +195,8 @@ def get_matchlist(config_info, begin_index):
                 # new_matches =
                 matchlist.append(str(matchlist_json["matches"][match_index]["gameId"]))
             break
-        except:
-            print(matchlist)
+        except Exception as e:
+            print("Error with:", e, "\nMatchlist was:", matchlist)
     return matchlist, end_index, total_games
 
 
@@ -250,7 +244,8 @@ def get_match(config_info, game_id, status):
         try:
             match = json_from_url(match_url, status)
             break
-        except:
+        except Exception as e:
+            print(e)
             pass
     return match
 
@@ -272,7 +267,7 @@ def append_match(config_info, match, match_key):
             file.write(", \"" + str(match_key) + "\": " + json.dumps(match) + "}")
     else:
         with open(f_path, "w") as file:
-            json.dump({str(match_key):match}, file)
+            json.dump({str(match_key): match}, file)
     return
 
 
@@ -286,7 +281,11 @@ def verify_matches(config_info, match_data):
             if str(match_data[game_id]["gameId"]) != str(game_id):
                 # If you find the entry but its gameId is wrong, raise an exception
                 raise Exception
-        except:
+            timestamp = match_data[game_id]["gameCreation"]  # Check that the match has a timestamp
+            length = match_data[game_id]["gameDuration"]  # check that match has a length
+            float(timestamp)  # check that timestamp can be a number
+            float(length)  # check that length can be a number
+        except (Exception, ValueError, NameError, KeyError):
             # if there was an issue with the match, remove it from the dictionary and overwrite the data file
             print("Match file had an error with match " + str(game_id) + ". Removing it and updating file.")
             match_data.pop(game_id, None)
@@ -297,53 +296,55 @@ def verify_matches(config_info, match_data):
     return match_data
 
 
-def get_champ_dict():
+def add_static_data(config_info):
     """
-    Creates a champion lookup table using Riot's Data Dragon web service or locally if that fails
+    Creates a spell lookup table using Riot's Data Dragon web service or locally if that fails
     """
+    # Create a dictionary to hold the lookup tables (keys are Riot-determined names for the variables of interest)
+    static_data_list = ["champion",  "summoner", "item"]
+    for kk in static_data_list:
+        config_info[kk] = {}
+
     try:
-        time.sleep(0.1)
         realms_url = "http://ddragon.leagueoflegends.com/realms/na.json"
-        dd_version = json.loads(urllib.request.urlopen(realms_url).read())
-        champ_version = str(dd_version["n"]["champion"])
+        dd_version = json.loads(urllib.request.urlopen(realms_url).read())["n"]
 
-        time.sleep(0.1)
-        champ_url = "http://ddragon.leagueoflegends.com/cdn/" + champ_version + "/data/en_US/champion.json"
-        champ_data = json.loads(urllib.request.urlopen(champ_url).read())
+        url = ("http://ddragon.leagueoflegends.com/cdn/" + str(dd_version["champion"]) + "/data/en_US/champion.json")
+        reply = json.loads(urllib.request.urlopen(url).read())
+        lookup_keys = reply["data"].copy().keys()
 
-        champ_IDs = champ_data["data"].copy().keys()
-        champ_dict = {}
-        champ_lookup = {}
+        for lk in list(lookup_keys):
+            config_info["champion"][reply["data"][lk]["key"]] = reply["data"][lk]["name"]
 
-        for champ in champ_IDs:
-            champ_dict[champ_data["data"][champ]["name"]] = champ_data["data"][champ]["key"]
-            champ_lookup[champ_data["data"][champ]["key"]] = champ_data["data"][champ]["name"]
+        url = ("http://ddragon.leagueoflegends.com/cdn/" + str(dd_version["summoner"]) + "/data/en_US/summoner.json")
+        reply = json.loads(urllib.request.urlopen(url).read())
+        lookup_keys = reply["data"].copy().keys()
 
-    except:
+        for lk in list(lookup_keys):
+            config_info["summoner"][reply["data"][lk]["key"]] = reply["data"][lk]["name"]
+
+        url = ("http://ddragon.leagueoflegends.com/cdn/" + str(dd_version["item"]) + "/data/en_US/item.json")
+        reply = json.loads(urllib.request.urlopen(url).read())
+        lookup_keys = reply["data"].copy().keys()
+
+        for lk in list(lookup_keys):
+            config_info["item"][lk] = reply["data"][lk]["name"]
+
+    except Exception as e:
+        print("Error with:", e)
         # If data dragon isn't working, try to load the local file
         try:
-            with open("Configuration.json","r") as file:
-                config_info = json.loads(file.read())
-                champ_dict = config_info["ChampionDictionary"]
-                champ_lookup = config_info["ChampionLookup"]
-        except:
-            champ_dict = {}
-            champ_lookup = {}
-            print("Couldn't connect to data dragon or load champion list... sorry :(")
+            with open("Configuration.json", "r") as file:
+                loaded_config = json.loads(file.read())
+                for kk in static_data_list:
+                    config_info[kk] = loaded_config[kk]
+        except (FileNotFoundError, KeyError):
+            print("Couldn't connect to data dragon or load static data from file... sorry :(")
 
-    return champ_dict, champ_lookup
+    return config_info
 
 
-def champ_name(champ_dict, cId):
-    """ Returns a champion name from its champion ID using the lookup table pulled from Data Dragon. """
-    try:
-        cName = champ_dict[str(cId)]
-    except:
-        cName = "MissingNo"
-    return cName
-
-
-def read_game_constants(config_info):
+def add_game_constants(config_info):
     """
     Loads up all game constant files, which are not available through Riot's API.
     Files are tab-delimited with each entry on a new line.
@@ -354,13 +355,20 @@ def read_game_constants(config_info):
     game_constants_files = [str(p) for p in pathlib.Path(".").iterdir() if "gameconstants" in str(p)]
 
     for constant in game_constants_files:
+        config_info[constant] = {}
+        # config_info[constant+"_lookup"] = {}
         try:
             with open(constant) as file:
                 rows = (line.split("\t") for line in file)
-                config_info[constant] = {row[0]: row[1].replace("\n", "") for row in rows}
-        except:
+                # config_info[constant] = {str(row[0]): str(row[1]).replace("\n", "") for row in rows}
+                for row in rows:
+                    # config_info[constant][str(row[0])] = str(row[1]).replace("\n", "")
+                    # config_info[constant+"_lookup"][str(row[1]).replace("\n", "")] = str(row[0])
+                    config_info[constant][str(row[0])] = str(row[1]).replace("\n", "")
+        except FileNotFoundError:
             print("Unable to load/open file: " + constant)
             config_info[constant] = {}
+            # config_info[constant+"_lookup"] = {}
             pass
 
     return config_info
