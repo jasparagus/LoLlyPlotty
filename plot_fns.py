@@ -110,15 +110,17 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
     if plot_dict["max_y"] < 0:
         plot_dict["max_y"] = 0
 
+    plot_dict["half_max"] = float(sorted(y_list_clean)[-1] * 0.5)
+
     return plot_dict
 
 
-def make_barchart(bars_data, n_per_bar, error_bars, x_labels, avg_y, min_y, max_y, title_string="", y_label="",
-                     x_label=""):
+def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     """
     Make a bar chart from data. Inputs: list of data to be plotted in bar form (a list of numbers
     """
-    n_of_things_to_plot = len(bars_data)
+
+    n_of_things_to_plot = len(plot_dict["var_list"])
 
     fig, ax = plt.subplots()
     fig.subplots_adjust(top=0.8, bottom=0.25)
@@ -130,13 +132,85 @@ def make_barchart(bars_data, n_per_bar, error_bars, x_labels, avg_y, min_y, max_
     endx = n_of_things_to_plot - 1 + width + 0.25  # where the x axis ends
 
     # create objects to plot
-    if error_bars == 0:
-        bars1 = ax.bar(locs, bars_data, width, color='r')
-    else:
-        bars1 = ax.bar(locs, bars_data, width, color='r', yerr=error_bars)
-    pl_avg, = plt.plot([startx, endx], [avg_y, avg_y], label="Average for "+y_label, linestyle="--", color="b")
-    pl_half, = plt.plot([startx, endx], [max_y*0.5, max_y*0.5], label="Half-Maximum", linestyle=":", color="k")
-    pl_zero, = plt.plot([startx, endx], [0, 0], label="Zero", linestyle="-", color="k")
+    bars1 = ax.bar(locs, plot_dict["avg_by_var"], width, color='r', yerr=plot_dict["error_by_var"])
+    pl_avg, = plt.plot([startx, endx], [plot_dict["overall_avg"], plot_dict["overall_avg"]],
+                       label="Overall Average For \"" + y_label + "\" = " + str(round(plot_dict["overall_avg"], 2)),
+                       linestyle="--", color="b")
+
+    pl_hlf, = plt.plot([startx, endx], [plot_dict["half_max"], plot_dict["half_max"]],
+                       label="Half-Max = " + str(round(plot_dict["half_max"], 2)) + " " +  y_label,
+                       linestyle=":", color="k")
+
+    plt.plot([startx, endx], [0, 0], label="Zero", linestyle="-", color="k")
+
+    # add some text for labels, title and axes ticks
+    if y_label != "":
+        ax.set_ylabel("Average " + y_label)
+    if x_label != "":
+        ax.set_xlabel(x_label)
+    if title_string != "":
+        ax.set_title(title_string)
+
+    ax.set_xticks(locs)
+    ax.set_xticklabels(plot_dict["var_list"], rotation=35, ha="right")
+    plt.xlim([startx, endx])
+    plt.ylim([plot_dict["min_y"]*1.1, plot_dict["max_y"]*1.15])
+
+    leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
+    plt.gca().add_artist(leg)
+
+    def label_bars(bars):
+        """ Attach a text label above each bar displaying its height """
+        rr = 0
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height*1.1,
+                    'n=%d' % plot_dict["n_by_var"][rr],
+                    ha='center', va='top')
+            rr += 1
+
+    label_bars(bars1)
+
+
+def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_label=""):
+    """
+    Make a bar chart from data. Inputs: list of data to be plotted in bar form (a list of numbers
+    """
+
+    x_list_clean = []
+    y_list_clean = []
+
+    for ii in range(len(x_list)):
+        try:
+            x_i = float(x_list[ii])
+            y_i = float(y_list[ii])
+            # If both lists have a good value here, keep the point
+            x_list_clean += [x_i]
+            y_list_clean += [y_i]
+        except ValueError:
+            pass
+
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(top=0.8, bottom=0.25)
+
+    x_min = sorted(x_list_clean)[0]
+    x_max = sorted(x_list_clean)[-1]
+    y_min = sorted(y_list_clean)[0]
+    y_max = sorted(y_list_clean)[-1]
+
+    y_avg = float(sum(y_list_clean) / len(y_list_clean))
+
+    # create objects to plot
+
+    pl_avg, = plt.plot([x_min, x_max], [y_avg, y_avg],
+                       label="Overall Average For \""+ y_label + "\" is " + str(round(y_avg, 2)),
+                       linestyle="--", color="b")
+
+    pl_hlf, = plt.plot([x_min, x_max], [y_max * 0.5, y_max * 0.5],
+                       label="Half-Max is " + str(round(y_max, 2)) + " " +  y_label,
+                       linestyle=":", color="k")
+
+    plt.plot(x_list_clean, y_list_clean, "r.", label=y_name)
 
     # add some text for labels, title and axes ticks
     if y_label != "":
@@ -146,64 +220,62 @@ def make_barchart(bars_data, n_per_bar, error_bars, x_labels, avg_y, min_y, max_
     if title_string != "":
         ax.set_title(title_string)
 
-    ax.set_xticks(locs)
-    ax.set_xticklabels(x_labels, rotation=35, ha="right")
-    plt.xlim([startx, endx])
-    plt.ylim([min_y*1.1, max_y*1.15])
+    # ax.set_xticks(locs)
+    # ax.set_xticklabels(plot_dict["var_list"], rotation=35, ha="right")
+    # plt.xlim([startx, endx])
+    # plt.ylim([plot_dict["min_y"]*1.1, plot_dict["max_y"]*1.15])
 
-    leg = plt.legend(handles=(pl_avg, pl_half), loc=(0, 1.1), ncol=1)
+    leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(leg)
 
-    def label_bars(bars):
-        """ Attach a text label above each bar displaying its height """
-        rr = 0
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2., height*1.1,
-                    'n=%d' % n_per_bar[rr],
-                    ha='center', va='top')
-            rr += 1
-
-    label_bars(bars1)
+    plt.show()
 
 
-def make_hist(win_loss_list, hist_list, n_bins, title="", x_label="", y_label=""):
+def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
 
     green_list = []
     red_list = []
 
     n_bins = int(n_bins)
 
-    for ii in range(len(win_loss_list)):
+    for ii in range(len(bool_list)):
         try:
-            float(hist_list[ii])
-            if win_loss_list[ii] == 1 and win_loss_list[ii] != "Unknown":
-                green_list.append(hist_list[ii])
-            elif win_loss_list[ii] == 0 and win_loss_list[ii] != "Unknown":
-                red_list.append(hist_list[ii])
-        except:
+            h_i = float(hist_list[ii])
+            if bool_list[ii] == 1 and bool_list[ii] != "Unknown":
+                green_list.append(h_i)
+            elif bool_list[ii] == 0 and bool_list[ii] != "Unknown":
+                red_list.append(h_i)
+        except ValueError:
             pass
 
+    print(green_list," \n",red_list)
+
+    green_mean = sum(green_list) / len(green_list)
+    red_mean = sum(red_list) / len(red_list)
+
     fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.8, bottom=0.1)
+    fig.subplots_adjust(top=0.75, bottom=0.1)
     (_, _, p1) = plt.hist(green_list, n_bins,
-                          label="Wins", histtype="bar", normed=0, color='green', alpha=0.5)
+                          label= y_label + " True", histtype="bar", normed=0, color="green", alpha=0.5)
     (_, _, p2) = plt.hist(red_list, n_bins,
-                          label="Losses", histtype="bar", normed=0, color='red', alpha=0.5)
+                          label= y_label + " False", histtype="bar", normed=0, color="red", alpha=0.5)
+    m_g = plt.axvline(green_mean, color="green", linestyle="dashed", label="Average, " + y_label + " True")
+    m_r = plt.axvline(red_mean, color="red", linestyle="dashed", label="Average, " + y_label + " False")
+
     if x_label != "":
         plt.xlabel(x_label)
     if y_label != "":
-        plt.ylabel(y_label)
+        plt.ylabel(y_label + " Count")
     else:
-        plt.ylabel("Frequency")
+        plt.ylabel("Number of True Instances")
     if title != "":
         plt.title(title)
-    ax.legend(handles=(p1[0], p2[0]), loc=(0, 1.1), ncol=1)
+    ax.legend(handles=(p1[0], p2[0], m_g, m_r), loc=(0, 1.07), ncol=1)
 
     plt.show()
 
 
-def simple_bar_plotter(y_var, x_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
+def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
                        z_scores={"68%": 0.99}, conf_interval="68%"):
 
     plot_dict = make_plottable_dictionary(
@@ -214,11 +286,7 @@ def simple_bar_plotter(y_var, x_var, threshold=1, title_string="", x_label="", y
         conf_interval,
     )
 
-    make_barchart(
-        plot_dict["avg_by_var"], plot_dict["n_by_var"], plot_dict["error_by_var"], plot_dict["var_list"],
-        plot_dict["overall_avg"], plot_dict["min_y"], plot_dict["max_y"],
-        title_string=title_string, x_label=x_label, y_label=y_label
-    )
+    make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
     plt.show()
 
 
@@ -245,49 +313,6 @@ def wr_time(parsed_data, box=0, addtl_text=""):
     plt.xlim([0, parsed_data["n_matches"]])
     plt.ylim([0, 1])
 
-    plt.show()
-
-
-def wr_teammate(parsed_data, n_played, z_scores={"68%": 0.99}, conf_interval="68%", addtl_text=""):
-    """ Winrates on a per-teammate basis for teammates from a number of games >= n_games """
-    all_teammates = []
-
-    # Get a list of every teammate
-    # for ii in range(parsed_data["n_matches"]):
-    #     all_teammates = all_teammates + parsed_data["ally_stats"][ii]["names"]
-    #
-    # teammates_unique = sorted(list(set(all_teammates)), key=str.lower)
-    n_teammates = len(parsed_data["teammates_unique"])
-    wr_by_teammate = []
-    games_with_teammate = []
-    teammates_unique_keep = []
-    error = []
-
-    # For each unique teammate, look at every game and see if they were there and (if so) if it was a W/L
-    n_deleted = 0
-    for tt in range(n_teammates):
-        wins = []
-        for ii in range(parsed_data["n_matches"]):
-            if parsed_data["teammates_unique"][tt] in parsed_data["ally_stats"][ii]["names"]:
-                wins.append(parsed_data["Win/Loss Rate"][ii])
-        if len(wins) >= n_played:
-            wr_by_teammate.append(sum(wins)/len(wins))
-            games_with_teammate.append(len(wins))
-            teammates_unique_keep.append(parsed_data["teammates_unique"][tt])
-            error.append(
-                1.96*math.sqrt(
-                    1/(games_with_teammate[tt-n_deleted])
-                    * wr_by_teammate[tt-n_deleted] * (1-wr_by_teammate[tt-n_deleted]))
-            )
-        else:
-            n_deleted += 1
-
-    bars_data = wr_by_teammate
-    n_per_bar = games_with_teammate
-    x_labels = teammates_unique_keep
-    title_string = "Winrate by Teammate\n" + "(" + str(n_played) + "+ Games Together)\n" + addtl_text
-
-    make_barchart(bars_data, n_per_bar, error, x_labels, 0, 1, title_string, parsed_data["winrate"])
     plt.show()
 
 
@@ -326,10 +351,7 @@ def wr_partysize(parsed_data, n_played_with, z_scores={"68%": 0.99}, conf_interv
 
     title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)\n" + addtl_text
 
-    make_barchart(
-        wr_partysize_dict["avg_by_var"], wr_partysize_dict["n_by_var"], wr_partysize_dict["error_by_var"],
-        wr_partysize_dict["var_list"], 0, 1, title_string, parsed_data["winrate"]
-    )
+    make_barchart(wr_partysize_dict, title_string, parsed_data["winrate"])
     plt.show()
 
 

@@ -1,15 +1,11 @@
 # Pycharm configuration files
 .idea/**
 
-# Don't track usage-specific files
-apikey.txt
-
 # Debug files and python cache files
 __pycache__/**
 *.pyc
 debug.py
 
 # Don't track stored application data
+apikey.txt
 *.json
-*_ParsedMatchData.LoHData
-*_MatchData*

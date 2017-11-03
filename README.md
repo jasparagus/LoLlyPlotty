@@ -11,40 +11,32 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 
 
 ## Required Modules:
-+ numpy
 + matplotlib
 + urllib3
 
 
 ## Notes:
-+ Will run in-place (wherever the master file is located) and creates a (someimes large) json file of data for each summoner
-+ Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches at first
-+ Match data is saved to your hard drive (it does not have to be re-downloaded each time the program is started)
++ Will run in-place (wherever the master file is located) to create a (rather large) json data file for each summoner
++ Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches the first time it is run (matches are saved to disk for later use)
++ This is a work in progress, and features will be added over time
 
 
 ## To-Do:
-+ Fix plot generation code to use the new parsed_data format (for the match data once it has been parsed)
-
-+ Damage Share Histograms
-  1. X-axis: percentage share of champion damage dealt, structure damage dealt, damage tanked in blocks of ~10%
-  2. Y-axis, plot 1: Percentage/fraction of wins per category or number of wins per category (both are identical except for normalization)
-  3. Y-axis, plot 2:  Winrate per category
-
-
-+ Gold and XP leads histograms
++ Re-implement fractional variables (for histograms): percentage of team's (VARIABLE) that the player did/earned/etc. (e.g. damage or gold)
+  2. Damage stats
+  3. Gold stats
+  4. XP stats
+  5. Wards placed
+  6. Kills/Deaths/Assists?
   
-+ Starting item winrates (useful when filtering by a specific champion)
-
-+ Secondary plot options (entry boxes for things like number of matches to be considered a "teammate")
-
++ Identify starting item(s) on a per-match basis - this may require "timeline" data api calls, which are not currently implemented
 
 + GUI Update
-  1. Switch to ttk
-  2. Add tabs to different panes
-  3. Modify font sizes/styles to improve look
-  4. Break out into multiple panes instead of one giant thing to make the formatting nicer.
+  0. Make it not look hideous
+  1. Switch to ttk for theming
+  2. Add tabbed navigation? Or a scrollbar for more filters
   
-+ Add mean/median/mode to histograms
++ Add mean/median to histograms?
 
 + Incorporate KDA somehow (probably through a histogram)
 

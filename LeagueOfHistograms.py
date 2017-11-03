@@ -7,31 +7,35 @@ import threading
 import json
 import tkinter
 # import tkinter.ttk
-import matplotlib
-import matplotlib.pyplot as plt
 import webbrowser
 import time
-matplotlib.use("TkAgg")
+import pathlib
+# LEGACY IMPORTS - DELTE LATER?
+# import matplotlib
+# matplotlib.use("TkAgg")
+# import matplotlib.pyplot as plt
 
 
 def refresh():
     """
-    Updates variables from drive; updates GUI from variables
+    Updates variables from files on disk; updates GUI from variables
     """
     try:
         reg.set(Params.config_info["Region"]) if Params.config_info["Region"] is not "" else reg.set("Choose")
-    except:
+    except (NameError, KeyError):
         reg.set("Choose")
     try:
         summname.set(Params.config_info["SummonerName"])
-    except:
+    except (NameError, KeyError):
         summname.set("")
     try:
         with open("MatchData_" + str(Params.config_info["SummonerName"]) + ".json", "r") as file:
             Params.match_data = json.loads(file.read())
         Params.match_data = api_fns.verify_matches(Params.config_info, Params.match_data)
-    except:
+        Params.status_string.set(value="Loaded " + str(len(Params.match_data)) + " games")
+    except (FileNotFoundError, NameError, KeyError):
         Params.match_data = {}
+        Params.status_string.set(value="Game data not found. Try getting data.")
 
     try:
         key, expiry = api_fns.get_api_key()
@@ -40,8 +44,9 @@ def refresh():
             key_box.config(fg="red")
         else:
             key_box.config(fg="black")
-    except:
-        api_key.set("")
+    except (NameError, ValueError):
+        api_key.set("Key Not Found")
+
 
     # Update region filtering options
     dropdown_region["menu"].delete(0, "end")
@@ -53,15 +58,11 @@ def refresh():
         region_list = ["Unable to find regions.gameconstants file"]
         for choice in region_list:
             dropdown_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
-        Params.status_string.set("Unable to find regions.gameconstants file")
-        root.update_idletasks()
         pass
 
     # Update filter options
-    for filter in Filters:
-        filter.reset_box()
-
-    root.update_idletasks()
+    for flt in Filters:
+        flt.reset_box()
 
     return
 
@@ -73,9 +74,8 @@ def get_data():
         # Hand off the API key from the GUI
         api_fns.get_api_key(write_mode=True, key_in=api_key.get())
 
-        Params.status_string.set("Downloading list of matches from Riot's servers...")
-        b_get_data.config(relief="sunken", text="Updating Games")  # update the button's appearance
-        root.update_idletasks()
+        Params.status_string.set("Updating settings...")
+        b_get_data.config(relief="sunken", text="Please Wait...")  # update the button's appearance
 
         # Update app information from the GUI, then refresh the app
         Params.config_info = api_fns.config(reg.get(), summname.get())  # update the configuration info from the GUI
@@ -86,19 +86,17 @@ def get_data():
         if Params.config_info["AccountID"] == "" or Params.config_info["SummonerID"] == "":
             Params.status_string.set("Double-check summoner name, selected region, and API key")
             b_get_data.config(relief="raised", text="Get Game Data")
-            root.update_idletasks()
             return
 
+        Params.status_string.set("Getting match list from Riot servers...")
         full_matchlist, len_full_matchlist = api_fns.get_full_matchlist(Params.config_info)
-        Params.status_string.set("Found " + str(len_full_matchlist) + " matches")
-        root.update_idletasks()
+        Params.status_string.set("Found " + str(len_full_matchlist) + " matches online")
 
         # Check that every match in matchlist is also in the match data; retrieve missing matches
         game_ids_in_file = list(Params.match_data.copy().keys())
         mm = 0
         for game_id in full_matchlist:
             Params.status_string.set("Checking local database for GameID = " + str(game_id))
-            root.update_idletasks()
             if str(game_id) not in game_ids_in_file:
                 # download missing match
                 Params.status_string.set(
@@ -106,7 +104,6 @@ def get_data():
                     ". Got " + str(len(game_ids_in_file) + mm) + " of " +
                     str(len_full_matchlist) + " matches."
                 )
-                root.update_idletasks()
                 match = api_fns.get_match(Params.config_info, game_id, Params.status_string)
 
                 api_fns.append_match(Params.config_info, match, game_id)
@@ -116,12 +113,12 @@ def get_data():
         refresh()
         b_get_data.config(relief="raised", text="Get Game Data")
         Params.status_string.set(
+            "Downloaded " +
             str(len(Params.match_data)) +
-            "/" + str(len_full_matchlist) +
-            " matches downloaded and ready to analyze"
+            " of " + str(len_full_matchlist) +
+            " matches. Ready to plot stuff!"
         )
 
-        root.update_idletasks()
         return
 
     local_threads.append(threading.Thread(target=callback))
@@ -130,59 +127,49 @@ def get_data():
     return
 
 
-def purge(purge_all=False):
-    with open("Configuration.json", "w") as file:
-        json.dump({}, file)
-
-    if purge_all == True:
-        print("set this up to delete MatchData and ParsedData files, etc.")
-
-
-def cleanup_filters(config_info, match_data):
-    parsed_data = parse.parse_data(config_info, match_data)
-    # use the resulting parsed data to update the filter options
-    return parsed_data
-
-
-def bar_plotter():
+def xy_plotter():
     # Check that valid variables have been selected
-    print("making barplot")
-    if y_var.get() in parse.Var.y_vars and x_var.get() in parse.Var.x_vars:
-        Params.status_string.set(value="Analyzing data...")
-        y_list, x_list = parse.Var.create_list(
-            Params.config_info, Params.match_data, y_var.get(), x_var.get(), Filters, recency_filter.get()
+    if y_var.get() in (parse.Var.b_vars + parse.Var.f_vars
+                       ) and x_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars):
+        Params.status_string.set(value="Parsing data...")
+        y_list, x_list, n_kept = parse.Var.create_list(
+            Params.config_info, Params.match_data, parse.Vars,
+            y_var.get(), x_var.get(), Filters, recency_filter.get()
         )
 
-        if len(y_list) == len(x_list) and len(y_list) > int(threshold_var.get()) and len(y_list) > 2:
-            Params.status_string.set(value="Preparing " + str(len(y_list)) + " matches for plotting")
+        print(y_list, "\n", x_list)
 
-            plot_fns.simple_bar_plotter(y_list, x_list, threshold=int(threshold_var.get()),
-                                        x_label=x_var.get(), y_label=y_var.get(),
-                                        z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
+        if len(y_list) == len(x_list) and n_kept > int(threshold_var.get()) and len(y_list) > 2:
+            Params.status_string.set(value="Preparing " + str(n_kept) + " matches for plotting")
 
-            Params.status_string.set(value="Plot made using " + str(len(y_list)) + " games")
+            # If the x variable isn't countable (e.g. if it's "Champion" or "Win/Loss"), use a bar chart
+            if (x_var.get() in parse.Var.s_vars or x_var.get() in parse.Var.b_vars
+                ) and (y_var.get() in parse.Var.b_vars or y_var.get() in parse.Var.f_vars):
+                plot_fns.simple_bar_plotter(x_list, y_list, threshold=int(threshold_var.get()),
+                                            x_label=x_var.get(), y_label=y_var.get(),
+                                            z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
+
+            # If the x variable and y variable are numeric (e.g. "Damage" vs. "CS"), use a scatter plot
+            elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.f_vars:
+                plot_fns.make_scatterplot(x_list, y_list, y_var.get(),
+                                          x_label=x_var.get(), y_label=y_var.get())
+
+            elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
+                plot_fns.make_hist(x_list, y_list, h_bins.get(),
+                                   x_label=x_var.get(), y_label=y_var.get())
+
+
+            Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
+            print("plot was made?")
+
         else:
-            Params.status_string.set(value="Not enough matches (only " + str(len(y_list)) + " remain)")
+            Params.status_string.set(value="Not enough matches (" + str(len(y_list)) + " remain after filtering)")
     else:
         Params.status_string.set(value="Check that X and Y variables are valid")
 
 
-def histogram_plotter():
-    if h_var.get() in h_var.get() in parse.Var.h_vars:
-
-        Params.status_string.set(value="Analyzing data...")
-
-        h_list, win_loss_list = parse.Var.create_list(
-            Params.config_info, Params.match_data, h_var.get(), "Win/Loss Rate", Filters, recency_filter.get()
-        )
-
-        Params.status_string.set(value="Preparing " + str(len(h_list)) + " matches for plotting")
-
-        plot_fns.make_hist(win_loss_list, h_list, h_bins.get(), x_label=h_var.get())
-
-        Params.status_string.set(value="Plot made using " + str(len(h_list)) + " games")
-    else:
-        Params.status_string.set(value="Check that histogram variable is valid")
+def special_plotter():
+    print("Sorry, I don't exist yet.")
     return
 
 
@@ -300,7 +287,7 @@ class Filter:
         try:
             local_list = list(Params.config_info[str(self.config_key)].copy().values())
 
-            if self.sort_list == True:
+            if self.sort_list is True:
                 local_list = sorted(local_list)
 
             self.filter_options.set(local_list)
@@ -325,15 +312,30 @@ class Params:
     try:
         with open("Configuration.json", "r") as file:
             config_info = json.loads(file.read())
-    except:
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         config_info = api_fns.config("", "")
         pass
 
     try:
         with open("MatchData_" + str(config_info["SummonerName"]) + ".json", "r") as file:
             match_data = json.loads(file.read())
-    except:
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         match_data = {}
+
+    @classmethod
+    def purge(cls, purge_all=False):
+
+        cls.config_info = {}
+        with open("Configuration.json", "w") as file:
+            json.dump({}, file)
+
+        if purge_all is True:
+            # Clear out all match data files for every player
+            match_data_files = [str(p) for p in pathlib.Path(".json").iterdir() if "MatchData_" in str(p)]
+            for pp in match_data_files:
+                with open(pp, "w") as file:
+                    json.dump({}, file)
+            cls.match_data = {}
 
 
 # Finalize the UI
@@ -395,7 +397,7 @@ filter_frame_label.grid(columnspan=1)
 
 # Add the filters to the middle frame
 Filters = [
-    Filter("Champion(s)", filter_frame, 0, 8, "ChampionLookup", ["Champion"], sort_list=True),
+    Filter("Champion(s)", filter_frame, 0, 8, "champion", ["Champion"], sort_list=True),
     Filter("Season(s)", filter_frame, 0, 6, "seasons.gameconstants", ["Season"], sort_list=True),
     Filter("Role(s)", filter_frame, 0, 7, "roles.gameconstants", ["Role"], sort_list=True),
     Filter("Queue(s)", filter_frame, 0, 12, "queues.gameconstants", ["Queue Type"], sort_list=True)
@@ -417,17 +419,16 @@ plotter_frame.grid(row=1, column=0)
 bar_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 bar_frame.grid(row=0, column=0)
 
-tkinter.Label(bar_frame, text="Bar Plots", font="Helvetica 14 bold", fg="Green").grid()
-
+tkinter.Label(bar_frame, text="Custom Plots", font="Helvetica 14 bold", fg="Green").grid()
 tkinter.Label(bar_frame, text="Choose Variables:", font="Helvetica 12 bold").grid()
 
 y_var = tkinter.StringVar(value="Y Variable")
-tkinter.OptionMenu(bar_frame, y_var, *sorted(parse.Var.y_vars)).grid()
+tkinter.OptionMenu(bar_frame, y_var, *sorted(parse.Var.b_vars + parse.Var.f_vars)).grid()
 
 tkinter.Label(bar_frame, text="vs.", font="Helvetica 12 bold").grid()
 
 x_var = tkinter.StringVar(value="X Variable")
-tkinter.OptionMenu(bar_frame, x_var, *sorted(parse.Var.x_vars)).grid()
+tkinter.OptionMenu(bar_frame, x_var, *sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars)).grid()
 
 tkinter.Label(bar_frame, text="Specify minimum instances", font="Helvetica 10").grid()
 threshold_var = tkinter.StringVar(value=5)
@@ -437,39 +438,30 @@ tkinter.Label(bar_frame, text="Choose Confidence Interval\n(For Error Bars)").gr
 ci_var = tkinter.StringVar(value="68%")
 tkinter.OptionMenu(bar_frame, ci_var, *sorted(list(plot_fns.z_scores.keys()))).grid()
 
+tkinter.Label(bar_frame, text="Number of Bins (For Histograms)", font="Helvetica 10").grid()
+h_bins = tkinter.StringVar(value=10)
+tkinter.Entry(bar_frame, textvariable=h_bins, width=5).grid()
+
 custom_plot_button = tkinter.Button(bar_frame, text="Make Your Plot")
-custom_plot_button.config(font="Helvetica 12 bold", command=bar_plotter, bd=5, state="active")
+custom_plot_button.config(font="Helvetica 12 bold", command=xy_plotter, bd=5, state="active")
 custom_plot_button.grid()
 
 hist_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 hist_frame.grid(row=0, column=1)
 
-tkinter.Label(hist_frame, text="Histograms", font="Helvetica 14 bold", fg="Green").grid()
+tkinter.Label(hist_frame, text="Special Variables", font="Helvetica 14 bold", fg="Green").grid()
 tkinter.Label(hist_frame, text="Choose Variable", font="Helvetica 12 bold").grid()
 
-h_var = tkinter.StringVar(value="Histogram Variable")
-tkinter.OptionMenu(hist_frame, h_var, *sorted(parse.Var.h_vars)).grid()
+h_var = tkinter.StringVar(value="Special Variable")
+tkinter.OptionMenu(hist_frame, h_var, *sorted(parse.Var.p_vars)).grid()
 
-tkinter.Label(hist_frame, text="Number of Bins", font="Helvetica 10").grid()
-h_bins = tkinter.StringVar(value=7)
-tkinter.Entry(hist_frame, textvariable=h_bins, width=5).grid()
-
-histogram_button = tkinter.Button(hist_frame, text="Make Histogram")
-histogram_button.config(font="Helvetica 12 bold", command=histogram_plotter, bd=5, state="active")
+histogram_button = tkinter.Button(hist_frame, text="Get Result")
+histogram_button.config(font="Helvetica 12 bold", command=special_plotter, bd=5, state="active")
 histogram_button.grid()
-
 
 # TODO: wr/time
 # TODO: game frequency played vs. time
 
-
-# Refresh everything, setting it for first-run
+# Refresh everything, setting it for first-run, then start the GUI mainloop
 refresh()
-Params.status_string.set(value="App started; loaded " + str(len(Params.match_data)) + " matches")
-root.update_idletasks()
-
-# TODO: Move config stuff out of PlotMaker and into the Params class?
-# print(Params.config_info)
-
-# Start the mainloop of the GUI
 root.mainloop()
