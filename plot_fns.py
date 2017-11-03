@@ -153,7 +153,7 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
 
     bar_labels = []
     for ii in range(len(plot_dict["var_list"])):
-        bar_labels += [plot_dict["var_list"][ii] + " (" + str(plot_dict["n_by_var"][ii]) + " games)"]
+        bar_labels += [str(plot_dict["var_list"][ii]) + " (" + str(plot_dict["n_by_var"][ii]) + " games)"]
 
     ax.set_xticks(locs)
     ax.set_xticklabels(bar_labels, rotation=35, ha="right")
