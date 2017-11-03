@@ -123,7 +123,7 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     n_of_things_to_plot = len(plot_dict["var_list"])
 
     fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.8, bottom=0.25)
+    fig.subplots_adjust(top=0.75, bottom=0.25)
 
     # prepare basics
     locs = range(n_of_things_to_plot)
@@ -151,25 +151,23 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     if title_string != "":
         ax.set_title(title_string)
 
+    bar_labels = []
+    for ii in range(len(plot_dict["var_list"])):
+        bar_labels += [plot_dict["var_list"][ii] + " (" + str(plot_dict["n_by_var"][ii]) + " games)"]
+
     ax.set_xticks(locs)
-    ax.set_xticklabels(plot_dict["var_list"], rotation=35, ha="right")
+    ax.set_xticklabels(bar_labels, rotation=35, ha="right")
     plt.xlim([startx, endx])
-    plt.ylim([plot_dict["min_y"]*1.1, plot_dict["max_y"]*1.15])
+    plt.ylim([plot_dict["min_y"]*1.15, plot_dict["max_y"]*1.15])
 
     leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(leg)
 
-    def label_bars(bars):
-        """ Attach a text label above each bar displaying its height """
-        rr = 0
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2., height*1.1,
-                    'n=%d' % plot_dict["n_by_var"][rr],
-                    ha='center', va='top')
-            rr += 1
-
-    label_bars(bars1)
+    for ii in range(len(plot_dict["avg_by_var"])):
+        ax.text(int(ii), plot_dict["avg_by_var"][ii] * 1.1,
+                str(round(plot_dict["avg_by_var"][ii], 2)),
+                ha='center', va='top')
+    plt.show()
 
 
 def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_label=""):
@@ -219,11 +217,6 @@ def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_labe
         ax.set_xlabel(x_label)
     if title_string != "":
         ax.set_title(title_string)
-
-    # ax.set_xticks(locs)
-    # ax.set_xticklabels(plot_dict["var_list"], rotation=35, ha="right")
-    # plt.xlim([startx, endx])
-    # plt.ylim([plot_dict["min_y"]*1.1, plot_dict["max_y"]*1.15])
 
     leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(leg)
@@ -287,7 +280,6 @@ def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y
     )
 
     make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
-    plt.show()
 
 
 def wr_time(parsed_data, box=0, addtl_text=""):

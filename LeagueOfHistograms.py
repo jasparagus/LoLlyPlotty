@@ -160,7 +160,6 @@ def xy_plotter():
 
 
             Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-            print("plot was made?")
 
         else:
             Params.status_string.set(value="Not enough matches (" + str(len(y_list)) + " remain after filtering)")
