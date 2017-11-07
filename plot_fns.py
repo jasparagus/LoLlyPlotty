@@ -401,13 +401,13 @@ def compute_error(data_list, z_scores, conf_interval="90%"):
             continuous += 1
 
     if continuous:
-        n = float(len(data_list) + 1)  # can never be 0
+        n = float(len(data_list) + 0.01)  # can never be 0
         u = sum(data_list) / n
         s = math.sqrt(sum((x - u) ** 2 for x in data_list) / len(data_list))
         ci = z_score * s / math.sqrt(len(data_list))
 
     else:
-        n = float(len(data_list) + 1)  # can never be zero
+        n = float(len(data_list) + 0.01)  # can never be zero
         u = sum(data_list) / n
         ci = z_score * math.sqrt(u * (1 - u) / n)
 
