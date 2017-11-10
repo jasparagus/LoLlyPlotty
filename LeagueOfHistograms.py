@@ -10,10 +10,9 @@ import tkinter
 import webbrowser
 import time
 import pathlib
-# LEGACY IMPORTS - DELTE LATER?
-# import matplotlib
-# matplotlib.use("TkAgg")
-# import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
 
 def refresh():
@@ -127,9 +126,9 @@ def get_data():
     return
 
 
-def xy_plotter():
+def plot_generation():
     # Check that valid variables have been selected
-    if y_var.get() in (parse.Var.b_vars + parse.Var.f_vars
+    if y_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars
                        ) and x_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars):
         Params.status_string.set(value="Parsing data...")
         y_list, x_list, n_kept = parse.Var.create_list(
@@ -148,18 +147,36 @@ def xy_plotter():
                 plot_fns.simple_bar_plotter(x_list, y_list, threshold=int(threshold_var.get()),
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
+                plt.show()
+                Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
+
+            # If the x variable isn't countable and the y variable is cumulative, use "cumulative" bar chart
+            elif (x_var.get() in parse.Var.s_vars or x_var.get() in parse.Var.b_vars
+                ) and y_var.get() in parse.Var.c_vars:
+                plot_fns.simple_bar_plotter(x_list, y_list, h_bins.get(),
+                                            x_label=x_var.get(), y_label=y_var.get(),
+                                            dict_type="Cumulative")
+
+                Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
+                plt.show()
 
             # If the x variable and y variable are numeric (e.g. "Damage" vs. "CS"), use a scatter plot
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.f_vars:
                 plot_fns.make_scatterplot(x_list, y_list, y_var.get(),
                                           x_label=x_var.get(), y_label=y_var.get())
 
+                Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
+                plt.show()
+
+            # If the x is a float and y is discrete, use two stacked histograms
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
                 plot_fns.make_hist(x_list, y_list, h_bins.get(),
                                    x_label=x_var.get(), y_label=y_var.get())
+                Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
+                plt.show()
+            else:
+                Params.status_string.set(value="Can't make a useful plot. Try swapping the variables.")
 
-
-            Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
 
         else:
             Params.status_string.set(value="Not enough matches (" + str(len(y_list)) + " remain after filtering)")
@@ -288,6 +305,7 @@ class Filter:
 
             if self.sort_list is True:
                 local_list = sorted(local_list)
+                # TODO: replace this with sorting by the key (e.g. for seasons so they aren't alphabetical)
 
             self.filter_options.set(local_list)
             self.filter_choices.set([])
@@ -422,7 +440,7 @@ tkinter.Label(bar_frame, text="Custom Plots", font="Helvetica 14 bold", fg="Gree
 tkinter.Label(bar_frame, text="Choose Variables:", font="Helvetica 12 bold").grid()
 
 y_var = tkinter.StringVar(value="Y Variable")
-tkinter.OptionMenu(bar_frame, y_var, *sorted(parse.Var.b_vars + parse.Var.f_vars)).grid()
+tkinter.OptionMenu(bar_frame, y_var, *sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars)).grid()
 
 tkinter.Label(bar_frame, text="vs.", font="Helvetica 12 bold").grid()
 
@@ -442,7 +460,7 @@ h_bins = tkinter.StringVar(value=10)
 tkinter.Entry(bar_frame, textvariable=h_bins, width=5).grid()
 
 custom_plot_button = tkinter.Button(bar_frame, text="Make Your Plot")
-custom_plot_button.config(font="Helvetica 12 bold", command=xy_plotter, bd=5, state="active")
+custom_plot_button.config(font="Helvetica 12 bold", command=plot_generation, bd=5, state="active")
 custom_plot_button.grid()
 
 hist_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)

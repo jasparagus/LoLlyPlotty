@@ -4,30 +4,7 @@ matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering work
 import matplotlib.pyplot as plt  # This is for making plots
 
 
-def make_wr_dictionary(key_ls, win_ls, store_dict):
-    """
-    Find winrate, wins, losses for a given variable (key_ls) from list of total
-    wins/losses (win_ls)
-    stored as: {"variable": [matches, wins, winrate, 95% confidence interval]}
-    NOTE: DICTIONARY MUST EXIST BEFORE YOU CALL THIS FUNCTION
-    """
-    ls_length = len(key_ls)
-    for i in range(ls_length):
-        if key_ls[i] not in store_dict:
-            # Check if key already exists store_dict
-            store_dict[key_ls[i]] = [0, 0, 0, 0]
-        # update matches
-        store_dict[key_ls[i]][0] += 1
-        # update wins (note: these are bools)
-        store_dict[key_ls[i]][1] += win_ls[i]
-    # 1st, update win rate
-    # 2nd, calculate the uncertainty (95% confidence interval) via err = 1.96 * sqrt( 1/n * mean * (1 - mean) )
-    for k in store_dict:
-        store_dict[k][2] = store_dict[k][1] / store_dict[k][0]
-        store_dict[k][3] = 1.96 * math.sqrt(1 / store_dict[k][0] * store_dict[k][2] * (1 - store_dict[k][2]))
-
-
-def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval="90%"):
+def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval="90%", dict_type="Bar"):
     """
     Makes a dictionary that is ready to be fed to make_barchart for plotting
     :param x_list: a list of the variable to cross-reference with y_list
@@ -43,6 +20,7 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
     """
 
     plot_dict = {
+        "type": str(dict_type),
         "overall_avg": 0,
         "var_list": [],
         "n_by_var": [],
@@ -67,8 +45,6 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
     # Sort by x_list using a Schwartzian transform (thanks, Ignacio Vazquez-Abrams from stackoverflow)
     x_list_clean, y_list_clean = zip(*sorted(zip(x_list_clean, y_list_clean)))
 
-    plot_dict["overall_avg"] = sum(y_list_clean) / float(len(y_list_clean))
-
     ls_length = len(x_list_clean)
     for ii in range(ls_length):
         # Check to see if the given x variable has been seen yet
@@ -85,12 +61,11 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
             plot_dict["n_by_var"][idx] += 1
             plot_dict["y_cumul_by_var"][idx] += float(y_list_clean[ii])
 
-
     # Calculate winrate (wins/n), then the 95% confidence (err = 1.96 * sqrt[ 1/n * mean * (1 - mean)])
     var_length = len(plot_dict["var_list"])
     n_deleted = 0
     for ii in range(var_length):
-        if plot_dict["n_by_var"][ii - n_deleted] >= threshold:
+        if plot_dict["n_by_var"][ii - n_deleted] >= int(threshold):
             curr_var = plot_dict["var_list"][ii - n_deleted]
             curr_list = plot_dict["y_list_by_var"][curr_var]
             curr_ave, curr_error = compute_error(curr_list, z_scores, conf_inverval)
@@ -102,15 +77,24 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
             del plot_dict["y_cumul_by_var"][ii - n_deleted]
             n_deleted += 1
 
-    plot_dict["min_y"] = sorted(plot_dict["avg_by_var"])[0]
+    # Calculate the overall variables from the remaining data
+    if plot_dict["type"] is "Cumulative":
+        plot_dict["overall_avg"] = sum(plot_dict["y_cumul_by_var"]) / float(len(plot_dict["n_by_var"]))
+        plot_dict["min_y"] = sorted(plot_dict["y_cumul_by_var"])[0]
+        plot_dict["max_y"] = sorted(plot_dict["y_cumul_by_var"])[-1]
+        plot_dict["half_max"] = float(plot_dict["max_y"] * 0.5)
+    else:
+        plot_dict["overall_avg"] = sum(y_list_clean) / float(len(y_list_clean))
+        plot_dict["min_y"] = sorted(plot_dict["avg_by_var"])[0]
+        plot_dict["max_y"] = sorted(plot_dict["avg_by_var"])[-1]
+        plot_dict["half_max"] = float(sorted(y_list_clean)[-1] * 0.5)
+
+    # Make sure you get a plot that includes 0 (whether its at the top or the bottom)
     if plot_dict["min_y"] > 0:
         plot_dict["min_y"] = 0
 
-    plot_dict["max_y"] = sorted(plot_dict["avg_by_var"])[-1]
     if plot_dict["max_y"] < 0:
         plot_dict["max_y"] = 0
-
-    plot_dict["half_max"] = float(sorted(y_list_clean)[-1] * 0.5)
 
     return plot_dict
 
@@ -123,7 +107,7 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     n_of_things_to_plot = len(plot_dict["var_list"])
 
     fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.75, bottom=0.25)
+    fig.subplots_adjust(top=0.77, bottom=0.3)
 
     # prepare basics
     locs = range(n_of_things_to_plot)
@@ -131,21 +115,28 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     startx = -width - 0.25  # where the x axis starts
     endx = n_of_things_to_plot - 1 + width + 0.25  # where the x axis ends
 
-    # create objects to plot
-    bars1 = ax.bar(locs, plot_dict["avg_by_var"], width, color='r', yerr=plot_dict["error_by_var"])
+    # create plot objects
+    if plot_dict["type"] == "Cumulative":
+        ax.bar(locs, plot_dict["y_cumul_by_var"], width, color='r')
+    else:
+        ax.bar(locs, plot_dict["avg_by_var"], width, color='r', yerr=plot_dict["error_by_var"])
+
     pl_avg, = plt.plot([startx, endx], [plot_dict["overall_avg"], plot_dict["overall_avg"]],
                        label="Overall Average For \"" + y_label + "\" = " + str(round(plot_dict["overall_avg"], 2)),
                        linestyle="--", color="b")
 
     pl_hlf, = plt.plot([startx, endx], [plot_dict["half_max"], plot_dict["half_max"]],
-                       label="Half-Max = " + str(round(plot_dict["half_max"], 2)) + " " +  y_label,
+                       label="Half-Max = " + str(round(plot_dict["half_max"], 2)) + " " + y_label,
                        linestyle=":", color="k")
 
     plt.plot([startx, endx], [0, 0], label="Zero", linestyle="-", color="k")
 
-    # add some text for labels, title and axes ticks
-    if y_label != "":
+    # add text for labels, title and axes ticks
+    if y_label != "" and plot_dict["type"] is "Cumulative":
+        ax.set_ylabel("Cumulative " + y_label)
+    elif y_label != "" and plot_dict["type"] is not "Cumulative":
         ax.set_ylabel("Average " + y_label)
+
     if x_label != "":
         ax.set_xlabel(x_label)
     if title_string != "":
@@ -155,19 +146,29 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
     for ii in range(len(plot_dict["var_list"])):
         bar_labels += [str(plot_dict["var_list"][ii]) + " (" + str(plot_dict["n_by_var"][ii]) + " games)"]
 
+    # tidy up the plot
     ax.set_xticks(locs)
     ax.set_xticklabels(bar_labels, rotation=35, ha="right")
     plt.xlim([startx, endx])
-    plt.ylim([plot_dict["min_y"]*1.15, plot_dict["max_y"]*1.15])
+    if plot_dict["type"] is "Cumulative":
+        plt.ylim([0, sorted(plot_dict["y_cumul_by_var"])[-1] * 1.15])
+    else:
+        plt.ylim([plot_dict["min_y"] * 1.15, plot_dict["max_y"] * 1.15])
 
     leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(leg)
 
-    for ii in range(len(plot_dict["avg_by_var"])):
-        ax.text(int(ii), plot_dict["avg_by_var"][ii] * 1.1,
-                str(round(plot_dict["avg_by_var"][ii], 2)),
-                ha='center', va='top')
-    plt.show()
+    # For a non-cumulative plot, label the top with its average value
+    if plot_dict["type"] is "Cumulative":
+        for ii in range(len(plot_dict["y_cumul_by_var"])):
+            ax.text(int(ii), plot_dict["y_cumul_by_var"][ii] * 1.1,
+                    str(round(plot_dict["y_cumul_by_var"][ii], 0)),
+                    ha='center', va='top')
+    else:
+        for ii in range(len(plot_dict["avg_by_var"])):
+            ax.text(int(ii), plot_dict["avg_by_var"][ii] * 1.1,
+                    str(round(plot_dict["avg_by_var"][ii], 2)),
+                    ha='center', va='top')
 
 
 def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_label=""):
@@ -221,8 +222,6 @@ def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_labe
     leg = plt.legend(handles=(pl_avg, pl_hlf), loc=(0, 1.1), ncol=1)
     plt.gca().add_artist(leg)
 
-    plt.show()
-
 
 def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
 
@@ -265,11 +264,9 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
         plt.title(title)
     ax.legend(handles=(p1[0], p2[0], m_g, m_r), loc=(0, 1.07), ncol=1)
 
-    plt.show()
-
 
 def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
-                       z_scores={"68%": 0.99}, conf_interval="68%"):
+                       z_scores={"68%": 0.99}, conf_interval="68%", dict_type="Bar"):
 
     plot_dict = make_plottable_dictionary(
         x_var,
@@ -277,6 +274,7 @@ def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y
         threshold,
         z_scores,
         conf_interval,
+        dict_type,
     )
 
     make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
