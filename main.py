@@ -191,7 +191,7 @@ def special_plotter():
 
 root = tkinter.Tk()  # prepare a widget to hold the UI
 root.configure(background="white")
-root.title("League of Histograms")
+root.title("LoLlyPlotty")
 root.iconbitmap('icon.ico')
 root.resizable(width=True, height=True)
 
