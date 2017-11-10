@@ -215,6 +215,10 @@ def get_oid(config_info, match):
     return oid
 
 
+def get_count(config_info, match):
+    return 1
+
+
 def get_teammates(config_info, match):
     teammates = []
     pid = get_pid(config_info, match)
@@ -328,7 +332,7 @@ def yvar_vs_count_in_lists(list_of_lists, y_var_list):
 
 
 def clean_game_duration(config_info, game_duration):
-    match_length = round(float(game_duration) / 3600, 2)
+    match_length = round(float(game_duration) / 60, 2)  # match length in minutes
     return match_length
 
 
@@ -410,6 +414,7 @@ class Var:
     f_vars = []  # A list of instances for which the variable is best-suited to "float" type (e.g. Gold or Damage)
     s_vars = []  # A list of instances for which the variable is best stored as a string (e.g. Role))
     p_vars = []  # A list of instances (like x instances) but for which plotting requires special attention
+    c_vars = []  # A list of incrementing variables (e.g. games played or time played)  # TODO: is this doable?
 
     def __init__(self, name, types, path, cleanup=None):
         self.name = name
@@ -429,6 +434,8 @@ class Var:
             self.s_vars.append(self.name)
         if "p" in str(types).lower():
             self.p_vars.append(self.name)
+        if "c" in str(types).lower():
+            self.c_vars.append(self.name)
 
         return
 
@@ -541,12 +548,14 @@ Vars = [
     Var("Game ID", "", ["gameId"]),
     Var("Matches Played", "p", []),
     Var("Total Time Played", "p", []),
-    Var("Timestamp", "p", ["gameCreation"]),
+    Var("Timestamp", "f", ["gameCreation"]),
     Var("Queue Type", "s", ["queueId", clean_queue]),
     Var("Map", "s", ["mapId", clean_map]),
     Var("Game Mode", "", ["gameMode"]),
+    Var("Games Played", "c", [get_count]),  # TODO make this work
 
-    Var("Match Length", "f", ["gameDuration", clean_game_duration]),
+    Var("Game Length", "f", ["gameDuration", clean_game_duration]),
+    Var("Time Played", "c", ["gameDuration", clean_game_duration]),
     Var("Season", "s", ["seasonId", clean_season]),
 
     Var("Map Side", "s", ["participants", get_pid, "teamId", clean_team]),
@@ -560,6 +569,7 @@ Vars = [
     Var("Deaths", "f", ["participants", get_pid, "stats", "deaths"]),
     Var("Assists", "f", ["participants", get_pid, "stats", "assists"]),
     Var("Win/Loss", "b", ["participants", get_pid, "stats", "win", clean_binary]),
+
     Var("Wards Placed", "f", ["participants", get_pid, "stats", "wardsPlaced"]),
     Var("Wards Killed", "f", ["participants", get_pid, "stats", "wardsKilled"]),
     Var("Vision Wards Bought", "f", ["participants", get_pid, "stats", "visionWardsBoughtInGame"]),
@@ -582,7 +592,7 @@ Vars = [
     Var("Damage Mitigated (Self)", "f", ["participants", get_pid, "stats", "damageSelfMitigated"]),
     Var("Longest Time Alive", "f", ["participants", get_pid, "stats", "longestTimeSpentLiving"]),
     Var("Vision Score", "f", ["participants", get_pid, "stats", "visionScore"]),
-    Var("Healing (Total)", "f", ["participants", get_pid, "stats", "totalHeal"]),
+    Var("Healing Done", "f", ["participants", get_pid, "stats", "totalHeal"]),
     Var("Healing (Units Healed)", "f", ["participants", get_pid, "stats", "totalUnitsHealed"]),
 
     Var("Role", "s", [get_role_pretty]),
@@ -592,25 +602,26 @@ Vars = [
     Var("CS/min (0 min \u2192 10 min)", "f", ["participants", get_pid, "timeline", "creepsPerMinDeltas", "0-10"]),
     Var("CS/min (10 min \u2192 20 min)", "f", ["participants", get_pid, "timeline", "creepsPerMinDeltas", "10-20"]),
     Var("CS/min (20 min \u2192 30 min)", "f", ["participants", get_pid, "timeline", "creepsPerMinDeltas", "20-30"]),
-    Var("CS/min (30 min \u2192 Game End)", "f", ["participants", get_pid, "timeline", "creepsPerMinDeltas", "30-end"]),
+    Var("CS/min (30 min \u2192 End)", "f", ["participants", get_pid, "timeline", "creepsPerMinDeltas", "30-end"]),
     Var("CS/m Diff. (0 min \u2192 10 min)", "f", ["participants", get_pid, "timeline", "csDiffPerMinDeltas", "0-10"]),
     Var("CS/m Diff. (10 min \u2192 20 min)", "f", ["participants", get_pid, "timeline", "csDiffPerMinDeltas", "10-20"]),
     Var("CS/m Diff. (20 min \u2192 30 min)", "f", ["participants", get_pid, "timeline", "csDiffPerMinDeltas", "20-30"]),
-    Var("CS/m Diff. (30 min \u2192 Game End)", "f", ["participants", get_pid, "timeline", "csDiffPerMinDeltas", "30-end"]),
+    Var("CS/m Diff. (30 min \u2192 End)", "f", ["participants", get_pid, "timeline", "csDiffPerMinDeltas", "30-end"]),
 
     Var("Gold/min (0 min \u2192 10 min)", "f", ["participants", get_pid, "timeline", "goldPerMinDeltas", "0-10"]),
     Var("Gold/min (10 min \u2192 20 min)", "f", ["participants", get_pid, "timeline", "goldPerMinDeltas", "10-20"]),
     Var("Gold/min (20 min \u2192 30 min)", "f", ["participants", get_pid, "timeline", "goldPerMinDeltas", "20-30"]),
-    Var("Gold/min (30 min \u2192 Game End)", "f", ["participants", get_pid, "timeline", "goldPerMinDeltas", "30-end"]),
+    Var("Gold/min (30 min \u2192 End)", "f", ["participants", get_pid, "timeline", "goldPerMinDeltas", "30-end"]),
+    # TODO: add gold differential
 
     Var("XP/min (0 min \u2192 10 min)", "f", ["participants", get_pid, "timeline", "xpPerMinDeltas", "0-10"]),
     Var("XP/min (10 min \u2192 20 min)", "f", ["participants", get_pid, "timeline", "xpPerMinDeltas", "10-20"]),
     Var("XP/min (20 min \u2192 30 min)", "f", ["participants", get_pid, "timeline", "xpPerMinDeltas", "20-30"]),
-    Var("XP/min (30 min \u2192 Game End)", "f", ["participants", get_pid, "timeline", "xpPerMinDeltas", "30-end"]),
+    Var("XP/min (30 min \u2192 End)", "f", ["participants", get_pid, "timeline", "xpPerMinDeltas", "30-end"]),
     Var("XP/m Diff. (0 min \u2192 10 min)", "f", ["participants", get_pid, "timeline", "xpDiffPerMinDeltas", "0-10"]),
     Var("XP/m Diff. (10 min \u2192 20 min)", "f", ["participants", get_pid, "timeline", "xpDiffPerMinDeltas", "10-20"]),
     Var("XP/m Diff. (20 min \u2192 30 min)", "f", ["participants", get_pid, "timeline", "xpDiffPerMinDeltas", "20-30"]),
-    Var("XP/m Diff. (30 min \u2192 Game End)", "f", ["participants", get_pid, "timeline", "xpDiffPerMinDeltas", "30-end"]),
+    Var("XP/m Diff. (30 min \u2192 End)", "f", ["participants", get_pid, "timeline", "xpDiffPerMinDeltas", "30-end"]),
 
     Var("Lane Opponent Champion", "s", ["participants", get_oid, "championId", clean_champion]),
     Var("Lane Opponent First Blood", "b", ["participants", get_oid, "stats", "firstBloodKill"]),
@@ -627,7 +638,6 @@ Vars = [
 # This isn't actually a thing, but I need to make it one... gotta compute stuff like total time played, etc.!
 Not_Made_Yet = {
     # TODO: generate all of these secondary functions
-    "Vision Score": "",
     "Total Hours Played": [sum, []],
     "Unique Champions": [],
     "Damage Fraction AND OTHERS": [],
