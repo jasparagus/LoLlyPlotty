@@ -1,3 +1,24 @@
+#    LICENSE INFORMATION
+#    LoLlyPlotty: league of legends statistics and plots.
+#    Copyright (C) 2017 Jasper Cook, league_plots@outlook.com
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    This program comes with ABSOLUTELY NO WARRANTY.
+#    This is free software, and you are welcome to redistribute it
+#    under certain conditions. See license.txt for details.
+
 def find_player_id(config_info, match_data, game_id, parsed_data):
     player_id = 999
     teamId = 999
@@ -408,6 +429,14 @@ def clean_item(config_info, item_id):
     return item_name
 
 
+def clean_timestamp(config_info, timestamp):
+    try:
+        age_days = (float(time.time()) - (float(timestamp) / 1000)) / 86400  # convert seconds to days
+    except ValueError:
+        age_days = "Unknown"
+    return age_days
+
+
 class Var:
     names = []  # A list of all instance names
     b_vars = []  # A list of instances for which the variable is a boolean (True/False)
@@ -548,11 +577,11 @@ Vars = [
     Var("Game ID", "", ["gameId"]),
     Var("Matches Played", "p", []),
     Var("Total Time Played", "p", []),
-    Var("Timestamp", "f", ["gameCreation"]),
+    Var("Time (Days Ago)", "f", ["gameCreation", clean_timestamp]),
     Var("Queue Type", "s", ["queueId", clean_queue]),
     Var("Map", "s", ["mapId", clean_map]),
     Var("Game Mode", "", ["gameMode"]),
-    Var("Games Played", "c", [get_count]),  # TODO make this work
+    Var("Number of Games", "c", [get_count]),
 
     Var("Game Length", "f", ["gameDuration", clean_game_duration]),
     Var("Time Played", "c", ["gameDuration", clean_game_duration]),
