@@ -1,3 +1,24 @@
+#    LICENSE INFORMATION
+#    LoLlyPlotty: league of legends statistics and plots.
+#    Copyright (C) 2017 Jasper Cook, league_plots@outlook.com
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    This program comes with ABSOLUTELY NO WARRANTY.
+#    This is free software, and you are welcome to redistribute it
+#    under certain conditions. See license.txt for details.
+
 import math  # This is for various math functions (ceiling, sqrt, etc.)
 import matplotlib  # This is for editing the plot renderer
 matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering works on MacOS
@@ -28,6 +49,9 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
         "y_list_by_var": {},
         "avg_by_var": [],
         "error_by_var": [],
+        "min_y": 0,
+        "max_y": 1,
+        "half_max": 0,
     }
 
     x_list_clean = []
@@ -78,23 +102,24 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
             n_deleted += 1
 
     # Calculate the overall variables from the remaining data
-    if plot_dict["type"] is "Cumulative":
-        plot_dict["overall_avg"] = sum(plot_dict["y_cumul_by_var"]) / float(len(plot_dict["n_by_var"]))
-        plot_dict["min_y"] = sorted(plot_dict["y_cumul_by_var"])[0]
-        plot_dict["max_y"] = sorted(plot_dict["y_cumul_by_var"])[-1]
-        plot_dict["half_max"] = float(plot_dict["max_y"] * 0.5)
-    else:
-        plot_dict["overall_avg"] = sum(y_list_clean) / float(len(y_list_clean))
-        plot_dict["min_y"] = sorted(plot_dict["avg_by_var"])[0]
-        plot_dict["max_y"] = sorted(plot_dict["avg_by_var"])[-1]
-        plot_dict["half_max"] = float(sorted(y_list_clean)[-1] * 0.5)
+    if len(plot_dict["var_list"]) > 0:
+        if plot_dict["type"] is "Cumulative":
+            plot_dict["overall_avg"] = sum(plot_dict["y_cumul_by_var"]) / float(len(plot_dict["n_by_var"]))
+            plot_dict["min_y"] = sorted(plot_dict["y_cumul_by_var"])[0]
+            plot_dict["max_y"] = sorted(plot_dict["y_cumul_by_var"])[-1]
+            plot_dict["half_max"] = float(plot_dict["max_y"] * 0.5)
+        else:
+            plot_dict["overall_avg"] = sum(y_list_clean) / float(len(y_list_clean))
+            plot_dict["min_y"] = sorted(plot_dict["avg_by_var"])[0]
+            plot_dict["max_y"] = sorted(plot_dict["avg_by_var"])[-1]
+            plot_dict["half_max"] = float(sorted(y_list_clean)[-1] * 0.5)
 
-    # Make sure you get a plot that includes 0 (whether its at the top or the bottom)
-    if plot_dict["min_y"] > 0:
-        plot_dict["min_y"] = 0
+        # Make sure you get a plot that includes 0 (whether its at the top or the bottom)
+        if plot_dict["min_y"] > 0:
+            plot_dict["min_y"] = 0
 
-    if plot_dict["max_y"] < 0:
-        plot_dict["max_y"] = 0
+        if plot_dict["max_y"] < 0:
+            plot_dict["max_y"] = 0
 
     return plot_dict
 
@@ -240,16 +265,22 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
         except ValueError:
             pass
 
-    print(green_list," \n",red_list)
-
-    green_mean = sum(green_list) / len(green_list)
-    red_mean = sum(red_list) / len(red_list)
+    if len(green_list) > 0:
+        green_mean = sum(green_list) / len(green_list)
+    else:
+        green_mean = 1
+    if len(red_list) > 0:
+        red_mean = sum(red_list) / len(red_list)
+    else:
+        red_mean = 0
+    b_min = sorted(red_list + green_list)[0]
+    b_max = sorted(red_list + green_list)[-1]
 
     fig, ax = plt.subplots()
     fig.subplots_adjust(top=0.75, bottom=0.1)
-    (_, _, p1) = plt.hist(green_list, n_bins,
+    (_, _, p1) = plt.hist(green_list, bins=n_bins, range=[b_min, b_max],
                           label= y_label + " True", histtype="bar", normed=0, color="green", alpha=0.5)
-    (_, _, p2) = plt.hist(red_list, n_bins,
+    (_, _, p2) = plt.hist(red_list, bins=n_bins, range=[b_min, b_max],
                           label= y_label + " False", histtype="bar", normed=0, color="red", alpha=0.5)
     m_g = plt.axvline(green_mean, color="green", linestyle="dashed", label="Average, " + y_label + " True")
     m_r = plt.axvline(red_mean, color="red", linestyle="dashed", label="Average, " + y_label + " False")
@@ -343,13 +374,6 @@ def wr_partysize(parsed_data, n_played_with, z_scores={"68%": 0.99}, conf_interv
 
     make_barchart(wr_partysize_dict, title_string, parsed_data["winrate"])
     plt.show()
-
-
-def games_vs_time(parsed_data, addtl_text=""):
-    """ frequency  of games played over time NOT WRITTEN YET"""
-    print("I Don't exist yet...")
-    # TODO: make this function
-    # plt.show()
 
 
 def moving_avg(ls, box):

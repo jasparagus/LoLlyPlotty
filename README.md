@@ -1,52 +1,72 @@
-# LeagueOfHistograms
-## League of legends statistics analyzer
-### Begun 2017-03-07 for League API v2
-### By jasparagus, cjc77, and PVisnRT
-![LeagueOfHistograms](https://github.com/jasparagus/LeagueOfHistograms/blob/master/icon.png "LeagueOfHistograms")
+![LoLlyPlotty](icon.png)
+# LoLlyPlotty
+## League of Legends Statistics and Plots
+### Begun March 2017 by jasparagus, cjc77, and PVisnRT
 
-**Requires an API key, obtained for free from:**
-[https://developer.riotgames.com/api-keys.html]
+
+**IMPORTANT: Requires an API key, obtained for free from [Riot's API Site](https://developer.riotgames.com "Riot API Site")**
 
 Uses Riot Games API to download complete match data for a summoner (normals, ranked, etc.), parses and analyzes that data, and generates plots for data visualization given the user's preferences (e.g. champions played, friends played with, etc.).
 
 
-## Required Modules:
-+ matplotlib
-+ urllib3
+## Required Python Modules:
+(See also directions for [installing packages in Python](https://packaging.python.org/tutorials/installing-packages/))
++ [Matplotlib](https://matplotlib.org/)
++ [NumPy](http://www.numpy.org/)
++ [urllib3](https://urllib3.readthedocs.io/en/latest/)
 
 
 ## Notes:
-+ Will run in-place (wherever the master file is located) to create a (rather large) json data file for each summoner
++ Runs in-place to create a (rather large) json data file for each summoner analyzed
 + Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches the first time it is run (matches are saved to disk for later use)
 + This is a work in progress, and features will be added over time
++ LoLlyPlotty makes use of the (awesome) Matplotlib library, available for free at
 
 
 ## To-Do:
 + Re-implement fractional variables (for histograms): percentage of team's (VARIABLE) that the player did/earned/etc. (e.g. damage or gold)
-  2. Damage stats
-  3. Gold stats
-  4. XP stats
-  5. Wards placed
-  6. Kills/Deaths/Assists?
+  + Damage
+  + Gold
+  + XP
+  + Wards placed
+  + Kills/Deaths/Assists?
+  
   
 + Identify starting item(s) on a per-match basis - this may require "timeline" data api calls, which are not currently implemented
 
 + GUI Update
-  0. Make it not look hideous
-  1. Switch to ttk for theming
-  2. Add tabbed navigation? Or a scrollbar for more filters
+  + Make it not look hideous
+  + Switch to ttk for theming
+  + Add tabbed navigation? Or a scrollbar for more filters
   
-+ Add mean/median to histograms?
++ Add gold differentials
 
-+ Incorporate KDA somehow (probably through a histogram)
++ Re-implement party size plot
 
-+ Switch GUI filter panes to trade entries rather than reproducing them
-  1. read queues, etc. as dictionaries
-  2. add them to the appropriate filtering dropdowns
-  3. Replace the dropdowns with multiselect boxes
-  
-+ Add CS and CS differential data
++ Plot for what champions are in the game (enemy or ally) but not played by you); use overlaid red(enemy team)/green(ally team) bars with winrates, with n_games printed below each bar
 
-+ Winrate by lane opponent's champion
+## License
+LoLlyPlotty: league of legends statistics and plots.
+Copyright (C) 2017, Jasper Cook, league_plots@outlook.com
 
-+ Winrate for when every champion is on the enemy or on your team (not including when you play them); use overlaid red(enemy team)/green(ally team) bars with winrates, with n_games printed below each bar
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it
+under certain conditions. See license.txt for details.
+
+## Major Changelog
+#### 2017-10-31: Rebuilt plotting to work with custom plots via dropdown
+#### 2017-10-26: Updated for Riot API v3 with new filtering method and file format
+#### 2017-03-25: Working for Riot API v2

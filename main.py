@@ -1,3 +1,24 @@
+#    LICENSE INFORMATION
+#    LoLlyPlotty: league of legends statistics and plots.
+#    Copyright (C) 2017 Jasper Cook, league_plots@outlook.com
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    This program comes with ABSOLUTELY NO WARRANTY.
+#    This is free software, and you are welcome to redistribute it
+#    under certain conditions. See license.txt for details.
+
 # IMPORT CUSTOM MODULES
 import api_fns
 import parse
@@ -142,8 +163,8 @@ def plot_generation():
             Params.status_string.set(value="Preparing " + str(n_kept) + " matches for plotting")
 
             # If the x variable isn't countable (e.g. if it's "Champion" or "Win/Loss"), use a bar chart
-            if (x_var.get() in parse.Var.s_vars or x_var.get() in parse.Var.b_vars
-                ) and (y_var.get() in parse.Var.b_vars or y_var.get() in parse.Var.f_vars):
+            if (x_var.get() in parse.Var.s_vars + parse.Var.b_vars) and (
+                        y_var.get() in parse.Var.b_vars + parse.Var.f_vars):
                 plot_fns.simple_bar_plotter(x_list, y_list, threshold=int(threshold_var.get()),
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
@@ -151,8 +172,7 @@ def plot_generation():
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
 
             # If the x variable isn't countable and the y variable is cumulative, use "cumulative" bar chart
-            elif (x_var.get() in parse.Var.s_vars or x_var.get() in parse.Var.b_vars
-                ) and y_var.get() in parse.Var.c_vars:
+            elif x_var.get() in parse.Var.s_vars + parse.Var.b_vars and y_var.get() in parse.Var.c_vars:
                 plot_fns.simple_bar_plotter(x_list, y_list, h_bins.get(),
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             dict_type="Cumulative")
@@ -169,11 +189,12 @@ def plot_generation():
                 plt.show()
 
             # If the x is a float and y is discrete, use two stacked histograms
-            elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
+            elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars + parse.Var.c_vars:
                 plot_fns.make_hist(x_list, y_list, h_bins.get(),
                                    x_label=x_var.get(), y_label=y_var.get())
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
                 plt.show()
+
             else:
                 Params.status_string.set(value="Can't make a useful plot. Try swapping the variables.")
 
