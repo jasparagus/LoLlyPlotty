@@ -157,7 +157,8 @@ def plot_generation():
             y_var.get(), x_var.get(), Filters, recency_filter.get()
         )
 
-        print(y_list, "\n", x_list)
+        print("Y: ", y_list)
+        print("X: ", x_list)
 
         if len(y_list) == len(x_list) and n_kept > int(threshold_var.get()) and len(y_list) > 2:
             Params.status_string.set(value="Preparing " + str(n_kept) + " matches for plotting")
@@ -189,14 +190,14 @@ def plot_generation():
                 plt.show()
 
             # If the x is a float and y is discrete, use two stacked histograms
-            elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars + parse.Var.c_vars:
+            elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
                 plot_fns.make_hist(x_list, y_list, h_bins.get(),
                                    x_label=x_var.get(), y_label=y_var.get())
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
                 plt.show()
 
             else:
-                Params.status_string.set(value="Can't make a useful plot. Try swapping the variables.")
+                Params.status_string.set(value="Can't make a useful plot. Try swapping the variables if possible.")
 
 
         else:
@@ -484,18 +485,18 @@ custom_plot_button = tkinter.Button(bar_frame, text="Make Your Plot")
 custom_plot_button.config(font="Helvetica 12 bold", command=plot_generation, bd=5, state="active")
 custom_plot_button.grid()
 
-hist_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-hist_frame.grid(row=0, column=1)
-
-tkinter.Label(hist_frame, text="Special Variables", font="Helvetica 14 bold", fg="Green").grid()
-tkinter.Label(hist_frame, text="Choose Variable", font="Helvetica 12 bold").grid()
-
-h_var = tkinter.StringVar(value="Special Variable")
-tkinter.OptionMenu(hist_frame, h_var, *sorted(parse.Var.p_vars)).grid()
-
-histogram_button = tkinter.Button(hist_frame, text="Get Result")
-histogram_button.config(font="Helvetica 12 bold", command=special_plotter, bd=5, state="active")
-histogram_button.grid()
+# hist_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+# hist_frame.grid(row=0, column=1)
+#
+# tkinter.Label(hist_frame, text="Special Variables", font="Helvetica 14 bold", fg="Green").grid()
+# tkinter.Label(hist_frame, text="Choose Variable", font="Helvetica 12 bold").grid()
+#
+# h_var = tkinter.StringVar(value="Special Variable")
+# tkinter.OptionMenu(hist_frame, h_var, *sorted(parse.Var.q_vars)).grid()
+#
+# histogram_button = tkinter.Button(hist_frame, text="Get Result")
+# histogram_button.config(font="Helvetica 12 bold", command=special_plotter, bd=5, state="active")
+# histogram_button.grid()
 
 # TODO: wr/time
 # TODO: game frequency played vs. time
