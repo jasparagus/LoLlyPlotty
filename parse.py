@@ -155,8 +155,6 @@ def get_non_player_champs(config_info, match):
     if len(non_player_champs) == 0:
         non_player_champs = ["Unknown"]
 
-    non_player_champs = sorted(non_player_champs)
-
     return non_player_champs
 
 
@@ -169,8 +167,37 @@ def get_num_teammates(config_info, match_data):
 testing=0
 
 
+def get_teammate_champs(config_info, match):
+    # TODO: check this and enemy version
+    teammate_champs = []
+    pid = get_pid(config_info, match)
+    n_players = len(match["participantIdentities"])
+
+    for ii in range(n_players):
+        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
+            champ_id = match["participants"][ii]["championId"]
+            champ = clean_champion(config_info, champ_id)
+            teammate_champs.append(champ)
+
+    if len(teammate_champs) == 0:
+        teammate_champs = ["Unknown"]
+    return teammate_champs
 
 
+def get_enemy_champs(config_info, match):
+    enemy_champs = []
+    pid = get_pid(config_info, match)
+    n_players = len(match["participantIdentities"])
+
+    for ii in range(n_players):
+        if str(match["participants"][ii]["teamId"]) != str(match["participants"][pid]["teamId"]):
+            champ_id = match["participants"][ii]["championId"]
+            champ = clean_champion(config_info, champ_id)
+            enemy_champs.append(champ)
+
+    if len(enemy_champs) == 0:
+        enemy_champs = ["Unknown"]
+    return enemy_champs
 
 
 
@@ -524,9 +551,15 @@ Vars = [
     Var("Map Side", "s", ["participants", get_pid, "teamId", clean_team]),
     Var("Rank", "s", ["participants", get_pid, "highestAchievedSeasonTier"]),
     Var("Champion", "s", ["participants", get_pid, "championId", clean_champion]),
-    Var("Champion In Game (Played By Teammate or Enemy)", "s", [get_non_player_champs]),
+    Var("Champion (Played By Teammate or Enemy)", "s", [get_non_player_champs]),
+    Var("Champion (Played by Teammate)", "s", [get_teammate_champs]),
+    Var("Champion (Played by Enemy)", "s", [get_enemy_champs]),
     Var("Summoner Spell 1", "s", ["participants", get_pid, "spell1Id", clean_summoner_spell]),
     Var("Summoner Spell 2", "s", ["participants", get_pid, "spell2Id", clean_summoner_spell]),
+
+    Var("Champion (Lane Opponent's)", "s", ["participants", get_oid, "championId", clean_champion]),
+    Var("Lane Opponent First Blood", "b", ["participants", get_oid, "stats", "firstBloodKill"]),
+    Var("Lane Opponent Rank", "s", ["participants", get_oid, "highestAchievedSeasonTier"]),
 
     Var("KDA", "f", [get_kda]),
     Var("Kills", "f", ["participants", get_pid, "stats", "kills"]),
@@ -609,10 +642,6 @@ Vars = [
     Var("Fraction of Team Damage (Taken)", "f", [get_fractions, "totalDamageTaken"]),
     Var("Fraction of Team Damage (Mitigated)", "f", [get_fractions, "damageSelfMitigated"]),
     Var("Fraction of Team Damage (Taken + Mitigated)", "f", [get_fractions, "damageReceivedTotal"]),
-
-    Var("Lane Opponent Champion", "s", ["participants", get_oid, "championId", clean_champion]),
-    Var("Lane Opponent First Blood", "b", ["participants", get_oid, "stats", "firstBloodKill"]),
-    Var("Lane Opponent Rank", "s", ["participants", get_oid, "highestAchievedSeasonTier"]),
 
     Var("Teammates (Number of)", "S", [get_num_teammates]),
     Var("Teammate (By Name)", "s", [get_teammates]),
