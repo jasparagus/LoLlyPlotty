@@ -1,111 +1,8 @@
 from parse.clean import *
 
 
-def get_pid(config_info, match):
-    # Gets the player's ID for the match
-    pid = "Unknown"
-    n_players = len(match["participantIdentities"])
-    for ii in range(n_players):
-        if (str(match["participantIdentities"][ii]["player"]["accountId"]) == str(config_info["AccountID"])):
-            pid = ii
-    return pid
-
-
-def get_oid(config_info, match):
-    # Gets the player's ID for the match
-    pid = get_pid(config_info, match)
-    oid = "Unknown"
-    n_players = len(match["participantIdentities"])
-
-    lane = str(match["participants"][pid]["timeline"]["lane"])
-    role = str(match["participants"][pid]["timeline"]["role"])
-
-    for ii in range(n_players):
-        if (str(match["participants"][ii]["timeline"]["lane"]) == str(lane) and
-                    str(match["participants"][ii]["timeline"]["role"]) == str(role) and ii != pid):
-            oid = ii
-
-    return oid
-
-
 def get_count(config_info, match):
     return 1
-
-
-def get_teammates(config_info, match):
-    teammates = []
-    pid = get_pid(config_info, match)
-
-    n_players = len(match["participantIdentities"])
-    for ii in range(n_players):
-        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
-            teammates.append(
-                match["participantIdentities"][ii]["player"]["summonerName"]
-            )
-
-    if len(teammates) == 0:
-        teammates = ["Unknown"]
-    teammates = sorted(teammates)
-
-    return teammates
-
-
-def get_opponents(config_info, match):
-    opponents = []
-    pid = get_pid(config_info, match)
-
-    n_players = len(match["participantIdentities"])
-    for ii in range(n_players):
-        if str(match["participants"][ii]["teamId"]) != str(match["participants"][pid]["teamId"]):
-            opponents.append(
-                match["participantIdentities"][ii]["player"]["summonerName"]
-            )
-
-    if len(opponents) == 0:
-        opponents = ["Unknown"]
-    opponents = sorted(opponents)
-
-    return opponents
-
-
-def get_non_player_champs(config_info, match):
-    non_player_champs = []
-    pid = get_pid(config_info, match)
-    n_players = len(match["participantIdentities"])
-
-    for ii in range(n_players):
-        if ii != pid:
-            champ_id = match["participants"][ii]["championId"]
-            champ = clean_champion(config_info, champ_id)
-            non_player_champs.append(champ)
-
-    if len(non_player_champs) == 0:
-        non_player_champs = ["Unknown"]
-
-    return non_player_champs
-
-
-def get_num_teammates(config_info, match_data):
-    num_teammates_list = []
-
-    return num_teammates_list
-
-
-def get_teammate_champs(config_info, match):
-    # TODO: check this and enemy version
-    teammate_champs = []
-    pid = get_pid(config_info, match)
-    n_players = len(match["participantIdentities"])
-
-    for ii in range(n_players):
-        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
-            champ_id = match["participants"][ii]["championId"]
-            champ = clean_champion(config_info, champ_id)
-            teammate_champs.append(champ)
-
-    if len(teammate_champs) == 0:
-        teammate_champs = ["Unknown"]
-    return teammate_champs
 
 
 def get_enemy_champs(config_info, match):
@@ -122,38 +19,6 @@ def get_enemy_champs(config_info, match):
     if len(enemy_champs) == 0:
         enemy_champs = ["Unknown"]
     return enemy_champs
-
-
-def get_items(config_info, match):
-    items = []
-    pid = get_pid(config_info, match)
-
-    for ii in range(7):
-        new_item = match["participants"][pid]["stats"]["item" + str(ii)]
-        if new_item != 0:
-            items += [clean_item(config_info, new_item)]
-
-    items = list(set(items))  # dump duplicate purchases
-
-    return items
-
-
-def get_gold_diffs(config_info, match):
-    gold_diffs_dict = {}
-    pid = get_pid(config_info, match)
-    oid = get_oid(config_info, match)
-
-    try:
-        player_gold_deltas = match["participants"][pid]["timeline"]["goldPerMinDeltas"]
-        opponent_gold_deltas = match["participants"][oid]["timeline"]["goldPerMinDeltas"]
-        gold_diff_keys = list(player_gold_deltas.keys())
-        for kk in gold_diff_keys:
-            gold_diffs_dict[kk] = float(player_gold_deltas[kk]) - float(opponent_gold_deltas[kk])
-
-    except (KeyError, ValueError):
-        pass
-
-    return gold_diffs_dict
 
 
 def get_fractions(config_info, match):
@@ -204,6 +69,131 @@ def get_fractions(config_info, match):
     return fractions_dict
 
 
+def get_gold_diffs(config_info, match):
+    gold_diffs_dict = {}
+    pid = get_pid(config_info, match)
+    oid = get_oid(config_info, match)
+
+    try:
+        player_gold_deltas = match["participants"][pid]["timeline"]["goldPerMinDeltas"]
+        opponent_gold_deltas = match["participants"][oid]["timeline"]["goldPerMinDeltas"]
+        gold_diff_keys = list(player_gold_deltas.keys())
+        for kk in gold_diff_keys:
+            gold_diffs_dict[kk] = float(player_gold_deltas[kk]) - float(opponent_gold_deltas[kk])
+
+    except (KeyError, ValueError):
+        pass
+
+    return gold_diffs_dict
+
+
+def get_items(config_info, match):
+    items = []
+    pid = get_pid(config_info, match)
+
+    for ii in range(7):
+        new_item = match["participants"][pid]["stats"]["item" + str(ii)]
+        if new_item != 0:
+            items += [clean_item(config_info, new_item)]
+
+    items = list(set(items))  # dump duplicate purchases
+
+    return items
+
+
+def get_kda(config_info, match):
+    pid = get_pid(config_info, match)
+
+    kills = match["participants"][pid]["stats"]["kills"]
+    deaths = match["participants"][pid]["stats"]["deaths"]
+    assists = match["participants"][pid]["stats"]["assists"]
+
+    try:
+        kda = str(round(
+            (int(kills) + int(assists))
+            / int(deaths)
+        , 1))
+    except ZeroDivisionError:
+        kda = "Perfect"
+    except TypeError:
+        kda = "Unknown"
+
+    return kda
+
+
+def get_non_player_champs(config_info, match):
+    non_player_champs = []
+    pid = get_pid(config_info, match)
+    n_players = len(match["participantIdentities"])
+
+    for ii in range(n_players):
+        if ii != pid:
+            champ_id = match["participants"][ii]["championId"]
+            champ = clean_champion(config_info, champ_id)
+            non_player_champs.append(champ)
+
+    if len(non_player_champs) == 0:
+        non_player_champs = ["Unknown"]
+
+    return non_player_champs
+
+
+def get_num_teammates(config_info, match):
+    num_teammates_list = []
+    # TODO Fix this function... after adding Teammates value to config info
+    print(config_info["Teammates"])
+    for ii in range(10):
+        if match["players"][ii] in config_info["Teammates"]:
+            num_teammates_list += 1
+
+    return num_teammates_list
+
+
+def get_oid(config_info, match):
+    # Gets the player's ID for the match
+    pid = get_pid(config_info, match)
+    oid = "Unknown"
+    n_players = len(match["participantIdentities"])
+
+    lane = str(match["participants"][pid]["timeline"]["lane"])
+    role = str(match["participants"][pid]["timeline"]["role"])
+
+    for ii in range(n_players):
+        if (str(match["participants"][ii]["timeline"]["lane"]) == str(lane) and
+                    str(match["participants"][ii]["timeline"]["role"]) == str(role) and ii != pid):
+            oid = ii
+
+    return oid
+
+
+def get_opponents(config_info, match):
+    opponents = []
+    pid = get_pid(config_info, match)
+
+    n_players = len(match["participantIdentities"])
+    for ii in range(n_players):
+        if str(match["participants"][ii]["teamId"]) != str(match["participants"][pid]["teamId"]):
+            opponents.append(
+                match["participantIdentities"][ii]["player"]["summonerName"]
+            )
+
+    if len(opponents) == 0:
+        opponents = ["Unknown"]
+    opponents = sorted(opponents)
+
+    return opponents
+
+
+def get_pid(config_info, match):
+    # Gets the player's ID for the match
+    pid = "Unknown"
+    n_players = len(match["participantIdentities"])
+    for ii in range(n_players):
+        if str(match["participantIdentities"][ii]["player"]["accountId"]) == str(config_info["AccountID"]):
+            pid = ii
+    return pid
+
+
 def get_role_pretty(config_info, match):
 
     pid = get_pid(config_info, match)
@@ -211,7 +201,7 @@ def get_role_pretty(config_info, match):
     try:
         role = str(match["participants"][pid]["timeline"]["role"])
         lane = str(match["participants"][pid]["timeline"]["lane"])
-    except:
+    except (KeyError, NameError):
         role = "Unknown"
         lane = "Unknown"
 
@@ -234,21 +224,37 @@ def get_role_pretty(config_info, match):
     return role_pretty
 
 
-def get_kda(config_info, match):
+def get_teammates(config_info, match):
+    teammates = []
     pid = get_pid(config_info, match)
 
-    kills = match["participants"][pid]["stats"]["kills"]
-    deaths = match["participants"][pid]["stats"]["deaths"]
-    assists = match["participants"][pid]["stats"]["assists"]
+    n_players = len(match["participantIdentities"])
+    for ii in range(n_players):
+        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
+            teammates.append(
+                match["participantIdentities"][ii]["player"]["summonerName"]
+            )
 
-    try:
-        kda = str(round(
-            (int(kills) + int(assists))
-            / int(deaths)
-        , 1))
-    except ZeroDivisionError:
-        kda = "Perfect"
-    except TypeError:
-        kda = "Unknown"
+    if len(teammates) == 0:
+        teammates = ["Unknown"]
+    teammates = sorted(teammates)
 
-    return kda
+    return teammates
+
+
+def get_teammate_champs(config_info, match):
+    # TODO: check this and enemy version
+    teammate_champs = []
+    pid = get_pid(config_info, match)
+    n_players = len(match["participantIdentities"])
+
+    for ii in range(n_players):
+        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
+            champ_id = match["participants"][ii]["championId"]
+            champ = clean_champion(config_info, champ_id)
+            teammate_champs.append(champ)
+
+    if len(teammate_champs) == 0:
+        teammate_champs = ["Unknown"]
+    return teammate_champs
+

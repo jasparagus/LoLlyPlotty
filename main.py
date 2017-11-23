@@ -266,7 +266,6 @@ class Filter:
         self.rb.grid(row=1, column=2, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
         self.rb.bind("<Double-Button-1>", self.update_r2l)
 
-
         # Add arrow button to middle pane
         self.add_button = tkinter.Button(self.sub_frame, text="\u2192", command=self.update_l2r)
         self.add_button.config(font="Helvetica 16 bold", width=5, height=1, bd=3)
@@ -495,6 +494,7 @@ x_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Hel
 x_box.grid(sticky="nsew")
 x_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=x_var))
 
+# TODO: make these two columns
 tkinter.Label(plotter_frame, text="Specify minimum instances", font="Helvetica 10").grid()
 threshold_var = tkinter.StringVar(value=5)
 tkinter.Entry(plotter_frame, textvariable=threshold_var, width=5).grid()
