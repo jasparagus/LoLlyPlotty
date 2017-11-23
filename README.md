@@ -41,8 +41,8 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
   + Make it not look hideous
   + Switch to ttk for theming
   + Add tabbed navigation? Or a scrollbar for more filters
-  
-+ Plot for what champions are in the game (enemy or ally) but not played by you); use overlaid red(enemy team)/green(ally team) bars with winrates, with n_games printed below each bar
+
++ Implement hist2d in matplotlib - really convenient replacement for scatter plots
 
 ## License
 LoLlyPlotty: league of legends statistics and plots.

@@ -236,6 +236,8 @@ def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_labe
 
     plt.plot(x_list_clean, y_list_clean, "r.", label=y_name)
 
+    # See also: https: // matplotlib.org / examples / pylab_examples / hist2d_log_demo.html
+
     # add some text for labels, title and axes ticks
     if y_label != "":
         ax.set_ylabel(y_label)
