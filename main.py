@@ -67,17 +67,15 @@ def refresh():
     except (NameError, ValueError):
         api_key.set("Key Not Found")
 
-
     # Update region filtering options
     dropdown_region["menu"].delete(0, "end")
     try:
         region_list = list(Params.config_info["regions.gameconstants"].copy().keys())
-        for choice in region_list:
-            dropdown_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
-    except:
-        region_list = ["Unable to find regions.gameconstants file"]
-        for choice in region_list:
-            dropdown_region["menu"].add_command(label=choice, command=tkinter._setit(reg, choice))
+        for region in sorted(region_list):
+            dropdown_region["menu"].add_command(label=region, command=tkinter._setit(reg, region))
+    except (NameError, KeyError):
+        oops = "Unable to find regions.gameconstants file"
+        dropdown_region["menu"].add_command(label=oops, command=tkinter._setit(reg, oops))
         pass
 
     # Update filter options
@@ -254,6 +252,7 @@ class Filter:
         self.lb.config(bd=2, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
         self.lb.config(font="Helvetica 9", width=self.longest_filter_item)
         self.lb.grid(row=1, column=0, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
+        self.lb.bind("<Double-Button-1>", self.update_l2r)
 
         # Label the right pane
         self.pane_label_right = tkinter.Label(self.sub_frame, text="Selected " + self.title_string + ":")
@@ -265,6 +264,8 @@ class Filter:
         self.rb.config(bd=2, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
         self.rb.config(font="Helvetica 9", width=self.longest_filter_item)
         self.rb.grid(row=1, column=2, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
+        self.rb.bind("<Double-Button-1>", self.update_r2l)
+
 
         # Add arrow button to middle pane
         self.add_button = tkinter.Button(self.sub_frame, text="\u2192", command=self.update_l2r)
@@ -281,7 +282,7 @@ class Filter:
         self.clear_button.config(font="Helvetica 11 bold", width=5, height=1, bd=3)
         self.clear_button.grid(row=3, column=1, sticky="ew")
 
-    def update_l2r(self):
+    def update_l2r(self, event=None):
         lb_selections = [self.lb.get(ii) for ii in self.lb.curselection()]
 
         lb_contents = [self.lb.get(ii) for ii in range(self.lb.size())]
@@ -301,7 +302,7 @@ class Filter:
         self.choices_list = [self.rb.get(ii) for ii in range(self.rb.size())]
         return
 
-    def update_r2l(self):
+    def update_r2l(self, event=None):
         rb_selections = [self.rb.get(ii) for ii in self.rb.curselection()]
 
         lb_contents = [self.lb.get(ii) for ii in range(self.lb.size())]
@@ -401,8 +402,7 @@ tkinter.Entry(config_frame, width=wid, justify="center", textvariable=summname).
 
 reg = tkinter.StringVar(value="Choose")
 tkinter.Label(config_frame, text="\nRegion:", font="Helvetica 12 bold", width=8, anchor="s").grid()
-region_list = ["Choose"]
-dropdown_region = tkinter.OptionMenu(config_frame, reg, *region_list)
+dropdown_region = tkinter.OptionMenu(config_frame, reg, *["Choose"])
 dropdown_region.grid()
 
 
@@ -431,15 +431,15 @@ b_get_data.grid(sticky="nsew")
 filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 filter_frame.grid(row=0, column=1, rowspan=2)
 filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
-filter_frame_label.config(font="Helvetica 14 bold", width=30, anchor="s")
+filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
 filter_frame_label.grid(columnspan=1)
 
 # Add the filters to the middle frame
 Filters = [
-    Filter("Champion(s)", filter_frame, 0, 8, "champion", ["Champion"], sort_list=True),
+    Filter("Champion(s)", filter_frame, 0, 6, "champion", ["Champion"], sort_list=True),
     Filter("Season(s)", filter_frame, 0, 6, "seasons.gameconstants", ["Season"], sort_list=True),
     Filter("Role(s)", filter_frame, 0, 7, "roles.gameconstants", ["Role"], sort_list=True),
-    Filter("Queue(s)", filter_frame, 0, 12, "queues.gameconstants", ["Queue Type"], sort_list=True)
+    Filter("Queue(s)", filter_frame, 0, 10, "queues.gameconstants", ["Queue Type"], sort_list=True)
     ]
 
 # Number of matches filter
@@ -455,51 +455,61 @@ tkinter.Label(recency_filter_subframe, text=" days worth of games (0 = include a
 plotter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
 plotter_frame.grid(row=1, column=0)
 
-bar_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-bar_frame.grid(row=0, column=0)
+tkinter.Label(plotter_frame, text="Plots", font="Helvetica 12 bold", fg="Black").grid()
 
-tkinter.Label(bar_frame, text="Custom Plots", font="Helvetica 14 bold", fg="Green").grid()
-tkinter.Label(bar_frame, text="Choose Variables:", font="Helvetica 12 bold").grid()
 
-y_var = tkinter.StringVar(value="Y Variable")
-tkinter.OptionMenu(bar_frame, y_var, *sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars)).grid()
+def assign(event, string_var=None):
+    curr_box = event.widget
 
-tkinter.Label(bar_frame, text="vs.", font="Helvetica 12 bold").grid()
+    for selection in curr_box.curselection():
+        # Only use the last selection; handles
+        value = curr_box.get(int(selection))
+        curr_box.selection_set(int(selection))
+        if string_var is not None:
+            string_var.set(value)
 
-x_var = tkinter.StringVar(value="X Variable")
-tkinter.OptionMenu(bar_frame, x_var, *sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars)).grid()
+    plot_button.config(text="Make Plot:\n" + y_var.get() + "\nvs.\n" + x_var.get())
 
-tkinter.Label(bar_frame, text="Specify minimum instances", font="Helvetica 10").grid()
+    return
+
+
+y_var = tkinter.StringVar(value="Choose Y Variable")
+y_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars))
+
+tkinter.Label(plotter_frame, text="Select Y Variable:", font="Helvetica 10").grid()
+
+y_box = tkinter.Listbox(plotter_frame, listvariable=y_vars, selectmode=tkinter.SINGLE)
+y_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Helvetica 9", width=45,
+             exportselection=False)
+y_box.grid(sticky="nsew")
+y_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=y_var))
+
+x_var = tkinter.StringVar(value="Choose X Variable")
+x_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars))
+
+tkinter.Label(plotter_frame, text="Select X Variable:", font="Helvetica 10").grid()
+
+x_box = tkinter.Listbox(plotter_frame, listvariable=x_vars, selectmode=tkinter.SINGLE)
+x_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Helvetica 9", width=45,
+             exportselection=False)
+x_box.grid(sticky="nsew")
+x_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=x_var))
+
+tkinter.Label(plotter_frame, text="Specify minimum instances", font="Helvetica 10").grid()
 threshold_var = tkinter.StringVar(value=5)
-tkinter.Entry(bar_frame, textvariable=threshold_var, width=5).grid()
+tkinter.Entry(plotter_frame, textvariable=threshold_var, width=5).grid()
 
-tkinter.Label(bar_frame, text="Choose Confidence Interval\n(For Error Bars)").grid()
+tkinter.Label(plotter_frame, text="Choose Confidence Interval\n(For Error Bars)").grid()
 ci_var = tkinter.StringVar(value="68%")
-tkinter.OptionMenu(bar_frame, ci_var, *sorted(list(plot_fns.z_scores.keys()))).grid()
+tkinter.OptionMenu(plotter_frame, ci_var, *sorted(list(plot_fns.z_scores.keys()))).grid()
 
-tkinter.Label(bar_frame, text="Number of Bins (For Histograms)", font="Helvetica 10").grid()
+tkinter.Label(plotter_frame, text="Number of Bins (For Histograms)", font="Helvetica 10").grid()
 h_bins = tkinter.StringVar(value=10)
-tkinter.Entry(bar_frame, textvariable=h_bins, width=5).grid()
+tkinter.Entry(plotter_frame, textvariable=h_bins, width=5).grid()
 
-custom_plot_button = tkinter.Button(bar_frame, text="Make Your Plot")
-custom_plot_button.config(font="Helvetica 12 bold", command=plot_generation, bd=5, state="active")
-custom_plot_button.grid()
-
-# hist_frame = tkinter.Frame(plotter_frame, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-# hist_frame.grid(row=0, column=1)
-#
-# tkinter.Label(hist_frame, text="Special Variables", font="Helvetica 14 bold", fg="Green").grid()
-# tkinter.Label(hist_frame, text="Choose Variable", font="Helvetica 12 bold").grid()
-#
-# h_var = tkinter.StringVar(value="Special Variable")
-# tkinter.OptionMenu(hist_frame, h_var, *sorted(parse.Var.q_vars)).grid()
-#
-# histogram_button = tkinter.Button(hist_frame, text="Get Result")
-# histogram_button.config(font="Helvetica 12 bold", command=special_plotter, bd=5, state="active")
-# histogram_button.grid()
-
-# TODO: wr/time
-# TODO: game frequency played vs. time
+plot_button = tkinter.Button(plotter_frame, text="Please See Above To Select\nY Variable\nand\nX Variable")
+plot_button.config(font="Helvetica 9 bold", command=plot_generation, bd=5, state="active")
+plot_button.grid(sticky="nsew")
 
 # Refresh everything, setting it for first-run, then start the GUI mainloop
 refresh()
