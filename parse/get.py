@@ -139,14 +139,15 @@ def get_non_player_champs(config_info, match):
 
 
 def get_num_teammates(config_info, match):
-    num_teammates_list = []
-    # TODO Fix this function... after adding Teammates value to config info
-    print(config_info["Teammates"])
-    for ii in range(10):
-        if match["players"][ii] in config_info["Teammates"]:
-            num_teammates_list += 1
 
-    return num_teammates_list
+    teammates_game = get_teammates(config_info, match)
+    num_teammates = 0
+
+    for teammate in teammates_game:
+        if teammate in config_info["Teammates"]:
+            num_teammates += 1
+
+    return num_teammates
 
 
 def get_oid(config_info, match):
@@ -162,6 +163,7 @@ def get_oid(config_info, match):
         if (str(match["participants"][ii]["timeline"]["lane"]) == str(lane) and
                     str(match["participants"][ii]["timeline"]["role"]) == str(role) and ii != pid):
             oid = ii
+            break
 
     return oid
 
@@ -191,6 +193,7 @@ def get_pid(config_info, match):
     for ii in range(n_players):
         if str(match["participantIdentities"][ii]["player"]["accountId"]) == str(config_info["AccountID"]):
             pid = ii
+            break
     return pid
 
 
@@ -224,24 +227,6 @@ def get_role_pretty(config_info, match):
     return role_pretty
 
 
-def get_teammates(config_info, match):
-    teammates = []
-    pid = get_pid(config_info, match)
-
-    n_players = len(match["participantIdentities"])
-    for ii in range(n_players):
-        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
-            teammates.append(
-                match["participantIdentities"][ii]["player"]["summonerName"]
-            )
-
-    if len(teammates) == 0:
-        teammates = ["Unknown"]
-    teammates = sorted(teammates)
-
-    return teammates
-
-
 def get_teammate_champs(config_info, match):
     # TODO: check this and enemy version
     teammate_champs = []
@@ -257,4 +242,21 @@ def get_teammate_champs(config_info, match):
     if len(teammate_champs) == 0:
         teammate_champs = ["Unknown"]
     return teammate_champs
+
+
+def get_teammates(config_info, match):
+    teammates = []
+    pid = get_pid(config_info, match)
+
+    n_players = len(match["participantIdentities"])
+    for ii in range(n_players):
+        if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
+            teammates.append(
+                match["participantIdentities"][ii]["player"]["summonerName"]
+            )
+
+    if len(teammates) == 0:
+        teammates = ["Unknown"]
+
+    return teammates
 

@@ -26,8 +26,6 @@ from parse.clean import *
 from parse.get import *
 from parse.prep import *
 
-
-
 # TODO: remove testing code
 testing=0
 if testing:
@@ -51,7 +49,7 @@ class Var:
     f_vars = []  # A list of instances for which the variable is best-suited to "float" type (e.g. Gold or Damage)
     s_vars = []  # A list of instances for which the variable is best stored as a string (e.g. Role))
     c_vars = []  # A list of incrementing variables (e.g. games played or time played)
-    q_vars = []  # A list of quirky variables; can be any type, but getting the value requires a special function
+    q_vars = []  # Variables that aren't plotted using a normal plot function (e.g. "Most Kills")
 
     def __init__(self, name, types, path, cleanup=None):
         self.name = name
@@ -85,22 +83,22 @@ class Var:
             try:
                 if type(step) is types.FunctionType:
                     # if you have a function, carry it out correctly...
-                    if len(self.path) == 1:
-                        # if there is only one step, run the appropriate function
-                        self.value = step(config_info, match)
-                    elif step == self.path[-1] and len(self.path) != 1:
-                        # If it's the last of many steps, run it as a cleanup function
+                    if step.__name__[0:6] == "clean_":
+                        # clean functions take config_info and the previous step's result (the value to be cleaned)
                         self.value = step(config_info, self.value)
-                    elif step != self.path[-1]:
-                        # if it is not the last step, run the appropriate function
+                    elif step.__name__[0:4] == "get_":
+                        # get functions take config_info and the match, from which they get the appropriate value
                         temp_step = step(config_info, match)
                         if type(temp_step) is dict:
                             # If the output is a dictionary, it's time for the next step
                             self.value = temp_step
                         else:
                             # if the output is not a dictionary, extract the value using the appropriate key
-                            self.value = self.value[temp_step]
-
+                            try:
+                                self.value = self.value[temp_step]
+                            except KeyError as e:
+                                print(e)
+                                self.value = temp_step
                 else:
                     # otherwise, it is a normal key and should be used to access the next dictionary entry
                     self.value = self.value[step]
@@ -147,11 +145,12 @@ class Var:
         x_list = []
         n_kept = 0
 
-        # if y var is a quirky variable, handle it now
-        if vars_list[cls.names.index(y_var_name)] in cls.q_vars:
-            print("It's a quirky variable")
-
-            # somehow track these for removal as well...
+        # Handle prep steps in x and y if necessary
+        for step in vars_list[cls.names.index(y_var_name)].path + vars_list[cls.names.index(x_var_name)].path:
+            if type(step) is types.FunctionType:
+                if step.__name__[0:5] == "prep_":
+                    # prep functions go through all matches, updating config info for subsequent steps
+                    config_info = step(config_info, match_data)
 
 
         for game_id in game_ids:
@@ -267,7 +266,7 @@ Vars = [
     Var("Gold/min (30 min \u2192 End)", "f", ["participants", get_pid, "timeline", "goldPerMinDeltas", "30-end"]),
     Var("Gold/m Diff. (0 min \u2192 10 min)", "f", [get_gold_diffs, "0-10"]),
     Var("Gold/m Diff. (10 min \u2192 20 min)", "f", [get_gold_diffs, "10-20"]),
-    Var("Gold/m Diff. (20 min \u2192 310 min)", "f", [get_gold_diffs, "20-30"]),
+    Var("Gold/m Diff. (20 min \u2192 30 min)", "f", [get_gold_diffs, "20-30"]),
     Var("Gold/m Diff. (30 min \u2192 End)", "f", [get_gold_diffs, "30-end"]),
 
     Var("XP/min (0 min \u2192 10 min)", "f", ["participants", get_pid, "timeline", "xpPerMinDeltas", "0-10"]),
@@ -293,143 +292,17 @@ Vars = [
     Var("Fraction of Team Damage (Mitigated)", "f", [get_fractions, "damageSelfMitigated"]),
     Var("Fraction of Team Damage (Taken + Mitigated)", "f", [get_fractions, "damageReceivedTotal"]),
 
-    Var("Teammates (Number of)", "S", [get_num_teammates]),
+    Var("Teammates (Number of)", "s", [prep_teammates, get_num_teammates, clean_num_teammates]),
     Var("Teammate (By Name)", "s", [get_teammates]),
     Var("Opponent (By Name)", "s", [get_opponents]),
     Var("Item", "s", [get_items]),
 ]
 
-
-# This isn't actually a thing, but I need to make it one... gotta compute stuff like total time played, etc.!
-Not_Made_Yet = {
-    # TODO: generate all of these secondary functions
-    "Total Hours Played": [sum, []],
-    "Unique Champions": [],
-    "Damage Fraction AND OTHERS": [],
-    "Friends": [],
-    "Premade Party Size": [],
-    "Most Kills": "",
-    "Most Deaths": "",
-    "Most Assists": "",
-    "Fractions of damage-total/champs/taken, gold, xp": "",
+GeneralStats = {
+    # TODO: generate prep functions for all of these general stats
+    "Total Hours Played": [],
+    "Number of Unique Champions": [],
+    "Most Kills (All Time)": "",
+    "Most Deaths (All Time)": "",
+    "Most Assists (All Time)": "",
 }
-
-# def parse_match_data(config_info, match_data, parsed_data):
-#
-#     for match_index in range(n_matches):
-#         print(match_index)
-#         ii = str(match_index+1)
-#         season.append(match_data[ii]["seasonId"])
-#         queue_type.append(match_data[ii]["queueId"])
-#         timestamp.append(match_data[ii]["gameCreation"])
-#         match_lengths.append(match_data[ii]["gameDuration"]/60)
-#         other_players = []
-#         others_damage_total = []
-#         others_damage_to_champs = []
-#         others_gold = []
-#         others_damage_taken = []
-#         # loop over the players in the game and look for the target player
-#         for pp in range(10):
-#             if (str(match_data[ii]["participantIdentities"][pp]["player"]["accountId"])
-#                     == config_info["AccountID"]):
-#                 """ This case gathers data for the summoner using the app. """
-#                 summ_num.append(pp)
-#                 damage_total.append(
-#                     match_data[ii]["participants"][pp]["stats"]["totalDamageDealt"])
-#                 damage_to_champs.append(
-#                     match_data[ii]["participants"][pp]["stats"]["totalDamageDealtToChampions"])
-#                 damage_taken.append(
-#                     match_data[ii]["participants"][pp]["stats"]["totalDamageTaken"])
-#                 gold.append(match_data[ii]["participants"][pp]["stats"]["goldEarned"])
-#                 win_lose.append(match_data[ii]["participants"][pp]["stats"]["win"])
-#                 """ Some quick parsing of the lanes and roles to make it look nicer"""
-#
-#                 # match_data[ii]["participants"][pp]["timeline"]["creepsPerMinDeltas"]["zeroToTen"]
-#                 wards.append(match_data[ii]["participants"][pp]["stats"]["wardsPlaced"])
-#                 wards_killed.append(match_data[ii]["participants"][pp]["stats"]["wardsKilled"])
-#                 try:
-#                     kda.append((kills[match_index]+assists[match_index])/deaths[match_index])
-#                 except:
-#                     kda.append("perfect")
-#             else:
-#                 """ This case builds temporary teammate variables that are overwritten for each new match. """
-#                 other_players.append(match_data[ii]["participantIdentities"][pp]["player"]["summonerName"])
-#                 others_damage_total.append(
-#                     match_data[ii]["participants"][pp]["stats"]["totalDamageDealt"])
-#                 others_damage_to_champs.append(
-#                     match_data[ii]["participants"][pp]["stats"]["totalDamageDealtToChampions"])
-#                 others_damage_taken.append(
-#                     match_data[ii]["participants"][pp]["stats"]["totalDamageTaken"])
-#                 others_gold.append(match_data[ii]["participants"][pp]["stats"]["goldEarned"])
-#         # Team 1
-#         if pp <= 4:
-#             teammates[ii] = other_players[0:4]
-#             enemies[ii] = other_players[4:9]
-#             damage_total_frac.append(damage_total[match_index]/(damage_total[match_index]
-#                                                        + 1 + sum(others_damage_total[0:4])))
-#             damage_to_champs_frac.append(damage_to_champs[match_index]/(damage_to_champs[match_index]
-#                                                                + 1 + sum(others_damage_to_champs[0:4])))
-#             damage_taken_frac.append(damage_taken[match_index]/(damage_taken[match_index]
-#                                                        + 1 + sum(others_damage_taken[0:4])))
-#             gold_frac.append(gold[match_index]/(gold[match_index] + 1 + sum(others_gold[0:4])))
-#         # Team 2
-#         elif pp >= 5:
-#             teammates[ii] = other_players[5:9]
-#             enemies[ii] = other_players[0:5]
-#             damage_total_frac.append(damage_total[match_index]/(damage_total[match_index]
-#                                                        + 1 + sum(others_damage_total[5:9])))
-#             damage_to_champs_frac.append(damage_to_champs[match_index]/(damage_to_champs[match_index]
-#                                                                + 1 + sum(others_damage_to_champs[5:9])))
-#             damage_taken_frac.append(damage_taken[match_index]/(damage_taken[match_index]
-#                                                        + 1 + sum(others_damage_taken[5:9])))
-#             gold_frac.append(gold[match_index]/(gold[match_index] + 1 + sum(others_gold[5:9])))
-#         champ.append(
-#             config_info["ChampionDictionary"][str(match_data[ii]["participants"][pp]["championId"])]
-#         )
-#     season_unique = sorted(list(set(season)))
-#     queue_types = sorted(list(set(queue_type)))
-#     avg_wr = sum(win_lose) / len(win_lose)
-#     champs_played = sorted(list(set(champ)))
-#     roles = sorted(list(set(role)))
-#
-#     return {
-#         "summoner_name": summoner_name,
-#         "season_unique": season_unique,
-#         "season": season,
-#         "queue_type": queue_type,
-#         "queue_types": queue_types,
-#         "win_lose": win_lose,
-#         "avg_wr": avg_wr,
-#         "timestamp": timestamp,
-#         "match_lengths": match_lengths,
-#         "teammates": teammates,
-#         "enemies": enemies,
-#         "champ": champ,
-#         "champs_played": champs_played,
-#         "role": role,
-#         "roles": roles,
-#         "map_side": map_side,
-#         "kills": kills,
-#         "deaths": deaths,
-#         "assists": assists,
-#         "kda": kda,
-#         "damage_total": damage_total,
-#         "damage_to_champs": damage_to_champs,
-#         "damage_total_frac": damage_total_frac,
-#         "damage_to_champs_frac": damage_to_champs_frac,
-#         "damage_taken": damage_taken,
-#         "damage_taken_frac": damage_taken_frac,
-#         "gold": gold,
-#         "gold_frac": gold_frac,
-#         "cs": cs,
-#         "csm_at_10": csm_at_10,
-#         "csmd_at_10": csmd_at_10,
-#         "csm_at_20": csm_at_20,
-#         "csmd_at_20": csmd_at_20,
-#         "csm_at_30": csm_at_30,
-#         "csmd_at_30": csmd_at_30,
-#         "csm_aft_30": csm_aft_30,
-#         "csmd_aft_30": csmd_aft_30,
-#         "wards": wards,
-#         "wards_killed": wards_killed,
-#     }

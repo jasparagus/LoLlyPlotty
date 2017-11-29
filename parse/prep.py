@@ -1,18 +1,34 @@
-#TODO: make a function to "prep" teammate names - puts a list of teammate names into config_info. Inputs are config_in
+def prep_teammates(config_info, match_data):
 
-def prep_teammates(config_info, match_data, int):
+    match_ids = sorted(list(match_data.keys()))
     teammates = []
 
-    # TODO: implement this function
-    for match in match_data:
-        new_teammates = []
+    for match_id in match_ids:
+        match = match_data[match_id]
+        n_players = len(match["participantIdentities"])
+        pid = ["Unknown"]
+        tid = ["Unknown"]
+        for ii in range(n_players):
+            if str(match["participantIdentities"][ii]["player"]["accountId"]) == str(config_info["AccountID"]):
+                pid = ii
+                tid = match["participants"][ii]["teamId"]
+                break
 
-        teammates += match["Teammates"]
+        for ii in range(n_players):
+            if str(match["participants"][ii]["teamId"]) == str(tid) and ii != pid:
+                teammates += [match["participantIdentities"][ii]["player"]["summonerName"]]
 
-    unique_teammates = list(set(teammates))
+    teammates_unique = sorted(list(set(teammates)))
+    teammates_games_played = []
 
-    for teammate in unique_teammates:
-        print(teammate)
-        # find instances, and compare with "int" param
+    for teammate in teammates_unique.copy():
+        times_played_with = teammates.count(teammate)
+        if int(times_played_with) < int(config_info["Threshold"]):
+            teammates_unique.remove(teammate)
+        else:
+            teammates_games_played += [times_played_with]
 
-    return teammates
+    config_info["Teammates"] = teammates_unique
+    config_info["TeammatesGamesPlayed"] = teammates_games_played
+
+    return config_info
