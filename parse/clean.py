@@ -40,6 +40,11 @@ def clean_map(config_info, map_id):
     return map_clean
 
 
+def clean_num_teammates(config_info, num_teammates):
+    num_teammates_clean = str(num_teammates)
+    return num_teammates_clean
+
+
 def clean_queue(config_info, queue_id):
     queue_clean = "Unknown"
     try:

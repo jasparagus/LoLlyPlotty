@@ -68,14 +68,14 @@ def refresh():
         api_key.set("Key Not Found")
 
     # Update region filtering options
-    dropdown_region["menu"].delete(0, "end")
+    region_dropdown["menu"].delete(0, "end")
     try:
         region_list = list(Params.config_info["regions.gameconstants"].copy().keys())
         for region in sorted(region_list):
-            dropdown_region["menu"].add_command(label=region, command=tkinter._setit(reg, region))
+            region_dropdown["menu"].add_command(label=region, command=tkinter._setit(reg, region))
     except (NameError, KeyError):
         oops = "Unable to find regions.gameconstants file"
-        dropdown_region["menu"].add_command(label=oops, command=tkinter._setit(reg, oops))
+        region_dropdown["menu"].add_command(label=oops, command=tkinter._setit(reg, oops))
         pass
 
     # Update filter options
@@ -146,6 +146,8 @@ def get_data():
 
 
 def plot_generation():
+    Params.config_info["Threshold"] = int(threshold_var.get())
+
     # Check that valid variables have been selected
     if y_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars
                        ) and x_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars):
@@ -158,13 +160,13 @@ def plot_generation():
         print("Y: ", y_list)
         print("X: ", x_list)
 
-        if len(y_list) == len(x_list) and n_kept > int(threshold_var.get()) and len(y_list) > 2:
+        if len(y_list) == len(x_list) and n_kept > Params.config_info["Threshold"] and len(y_list) > 2:
             Params.status_string.set(value="Preparing " + str(n_kept) + " matches for plotting")
 
             # If the x variable isn't countable (e.g. if it's "Champion" or "Win/Loss"), use a bar chart
             if (x_var.get() in parse.Var.s_vars + parse.Var.b_vars) and (
                         y_var.get() in parse.Var.b_vars + parse.Var.f_vars):
-                plot_fns.simple_bar_plotter(x_list, y_list, threshold=int(threshold_var.get()),
+                plot_fns.simple_bar_plotter(x_list, y_list, threshold=Params.config_info["Threshold"],
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
                 plt.show()
@@ -172,7 +174,7 @@ def plot_generation():
 
             # If the x variable isn't countable and the y variable is cumulative, use "cumulative" bar chart
             elif x_var.get() in parse.Var.s_vars + parse.Var.b_vars and y_var.get() in parse.Var.c_vars:
-                plot_fns.simple_bar_plotter(x_list, y_list, h_bins.get(),
+                plot_fns.simple_bar_plotter(x_list, y_list, bins_var.get(),
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             dict_type="Cumulative")
 
@@ -189,7 +191,7 @@ def plot_generation():
 
             # If the x is a float and y is discrete, use two stacked histograms
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
-                plot_fns.make_hist(x_list, y_list, h_bins.get(),
+                plot_fns.make_hist(x_list, y_list, bins_var.get(),
                                    x_label=x_var.get(), y_label=y_var.get())
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
                 plt.show()
@@ -236,7 +238,7 @@ class Filter:
         # Build the subframe to hold the filter panes
         self.sub_frame = tkinter.Frame(self.curr_frame)
         self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=self.pad_amt, pady=self.pad_amt)
-        self.sub_frame.grid(column=self.subcolumn)
+        self.sub_frame.grid(column=self.subcolumn, sticky="NSEW")
 
         # Add the variables to hold the options
         self.filter_options = tkinter.StringVar(value="")  # a string of choices to populate things
@@ -265,7 +267,6 @@ class Filter:
         self.rb.config(font="Helvetica 9", width=self.longest_filter_item)
         self.rb.grid(row=1, column=2, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
         self.rb.bind("<Double-Button-1>", self.update_r2l)
-
 
         # Add arrow button to middle pane
         self.add_button = tkinter.Button(self.sub_frame, text="\u2192", command=self.update_l2r)
@@ -378,32 +379,33 @@ class Params:
             cls.match_data = {}
 
 
-# Finalize the UI
+# Make the UI
 pad = 10  # padding before frame borders
-bwid = 3  # border width for frames
+bwid = 5  # border width for frames
 wid = 20
-style = tkinter.GROOVE
+style = tkinter.RIDGE
 
 # TODO: Put tkinter frames (the root-level frames) into ttk.Notebook pages, after switching over to ttk...
 
 # FRAME 1 - CONFIGURATION OPTIONS
 config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-config_frame.grid(row=0, column=0)
-
-# Build a status label at the bottom of the UI to keep the user informed using the status string
-status_label = tkinter.Label(root, textvariable=Params.status_string)
-status_label.config(height=2, font="Helvetica 14 bold", foreground="blue", bg="white")
-status_label.grid(row=99, column=0, columnspan=3, sticky="s")
-
+config_frame.grid(row=0, column=0, sticky="NSEW")
 
 summname = tkinter.StringVar()
-tkinter.Label(config_frame, text="Summoner Name:", font="Helvetica 12 bold").grid()
-tkinter.Entry(config_frame, width=wid, justify="center", textvariable=summname).grid(sticky="nsew")
+
+summ_name_label = tkinter.Label(config_frame, text="Summoner", font="Helvetica 12 bold", anchor="w")
+summ_name_label.grid(row=0, column=0, sticky="NSEW")
+
+summ_name_entry = tkinter.Entry(config_frame, justify="center", textvariable=summname)
+summ_name_entry.grid(row=1, column=0, sticky="NSEW")
 
 reg = tkinter.StringVar(value="Choose")
-tkinter.Label(config_frame, text="\nRegion:", font="Helvetica 12 bold", width=8, anchor="s").grid()
-dropdown_region = tkinter.OptionMenu(config_frame, reg, *["Choose"])
-dropdown_region.grid()
+
+region_label = tkinter.Label(config_frame, text="Region", font="Helvetica 12 bold", anchor="e")
+region_label.grid(row=0, column=1, sticky="NSEW")
+
+region_dropdown = tkinter.OptionMenu(config_frame, reg, *["Choose"])
+region_dropdown.grid(row=1, column=1, sticky="NSEW")
 
 
 def open_dev_site(event):
@@ -412,29 +414,35 @@ def open_dev_site(event):
 
 
 api_key = tkinter.StringVar()
-tkinter.Label(config_frame, text="\nYour API Key:", font="Helvetica 12 bold", width=28).grid()
+api_key_label = tkinter.Label(config_frame, text="\nYour API Key:", font="Helvetica 12 bold")
+api_key_label.grid(columnspan=2, sticky="NSEW")
+
 riot_link = tkinter.Label(config_frame, text="Get free key at developer.riotgames.com",
                           font="Helvetica 10 underline", fg="blue", cursor="hand2")
-riot_link.grid()
-key_box = tkinter.Entry(config_frame, width=wid, justify="center", textvariable=api_key)
-key_box.config(fg="black")
-key_box.grid(sticky="nsew")
+riot_link.grid(columnspan=2, sticky="NSEW")
 riot_link.bind("<Button-1>", open_dev_site)
 
-tkinter.Label(config_frame, text="", font="Helvetica 12 bold").grid(columnspan=2)
+key_box = tkinter.Entry(config_frame, width=wid, justify="center", textvariable=api_key)
+key_box.config(fg="black")
+key_box.grid(columnspan=2, sticky="NSEW")
+
+
+
+tkinter.Label(config_frame, text="", font="Helvetica 6").grid(columnspan=2)
 
 b_get_data = tkinter.Button(config_frame, text="Get Game Data")
-b_get_data.config(font="Helvetica 12 bold", width=wid, command=get_data, bd=5)
-b_get_data.grid(sticky="nsew")
+b_get_data.config(font="Helvetica 12 bold", command=get_data, bd=5)
+b_get_data.grid(columnspan=2, sticky="NSEW")
 
 # Make the middle frame to contain the filtering options
 filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-filter_frame.grid(row=0, column=1, rowspan=2)
-filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
-filter_frame_label.config(font="Helvetica 12 bold", width=30, anchor="s")
-filter_frame_label.grid(columnspan=1)
+filter_frame.grid(row=0, column=1, rowspan=2, sticky="NSEW")
 
-# Add the filters to the middle frame
+filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
+filter_frame_label.config(font="Helvetica 12 bold")
+filter_frame_label.grid(sticky="NSEW")
+
+# Add the filters to the middle of the filter frame
 Filters = [
     Filter("Champion(s)", filter_frame, 0, 6, "champion", ["Champion"], sort_list=True),
     Filter("Season(s)", filter_frame, 0, 6, "seasons.gameconstants", ["Season"], sort_list=True),
@@ -443,19 +451,25 @@ Filters = [
     ]
 
 # Number of matches filter
-recency_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=10, pady=10)
-recency_filter_subframe.grid(row=5, column=0, sticky="ew")
+recency_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=pad, pady=pad)
+recency_filter_subframe.grid(sticky="NSEW")
+
 recency_filter = tkinter.IntVar(value=0)
-tkinter.Label(recency_filter_subframe, text="Include last ").grid(row=0, column=0)
-recency_entry = tkinter.Entry(recency_filter_subframe, width=8, justify="center",
-                              textvariable=recency_filter)
+recency_filter_label = tkinter.Label(recency_filter_subframe, text="Include last ", font="Helvetica 10")
+recency_filter_label.grid(row=0, column=0, sticky="e")
+
+recency_entry = tkinter.Entry(recency_filter_subframe, width=8, justify="center", textvariable=recency_filter)
 recency_entry.grid(row=0, column=1, sticky="ew")
-tkinter.Label(recency_filter_subframe, text=" days worth of games (0 = include all games)").grid(row=0, column=2)
 
+recency_entry_label =  tkinter.Label(recency_filter_subframe, text=" days worth of games (0 = include all)", font="Helvetica 10")
+recency_entry_label.grid(row=0, column=2, sticky="w")
+
+# Plots
 plotter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
-plotter_frame.grid(row=1, column=0)
+plotter_frame.grid(row=1, column=0, sticky="NSEW")
 
-tkinter.Label(plotter_frame, text="Plots", font="Helvetica 12 bold", fg="Black").grid()
+plotter_frame_label = tkinter.Label(plotter_frame, text="Plots", font="Helvetica 12 bold", fg="Black")
+plotter_frame_label.grid()
 
 
 def assign(event, string_var=None):
@@ -495,21 +509,62 @@ x_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Hel
 x_box.grid(sticky="nsew")
 x_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=x_var))
 
-tkinter.Label(plotter_frame, text="Specify minimum instances", font="Helvetica 10").grid()
+# TODO: make these two columns
+plotter_options_frame = tkinter.Frame(plotter_frame, borderwidth=0, relief=None, padx=2, pady=2)
+plotter_options_frame.grid(sticky="NSEW")
+
+instances_label = tkinter.Label(plotter_options_frame, text="Specify minimum instances:", font="Helvetica 10", anchor="w")
+instances_label.grid(row=0, column=0, sticky="NSEW")
 threshold_var = tkinter.StringVar(value=5)
-tkinter.Entry(plotter_frame, textvariable=threshold_var, width=5).grid()
+threshold_entry = tkinter.Entry(plotter_options_frame, textvariable=threshold_var, width=5)
+threshold_entry.grid(row=0, column=1, sticky="NSEW")
 
-tkinter.Label(plotter_frame, text="Choose Confidence Interval\n(For Error Bars)").grid()
+ci_label = tkinter.Label(plotter_options_frame, text="Confidence Interval (Error Bars)", font="Helvetica 10", anchor="w")
+ci_label.grid(row=1, column=0, sticky="NSEW")
 ci_var = tkinter.StringVar(value="68%")
-tkinter.OptionMenu(plotter_frame, ci_var, *sorted(list(plot_fns.z_scores.keys()))).grid()
+ci_menu = tkinter.OptionMenu(plotter_options_frame, ci_var, *sorted(list(plot_fns.z_scores.keys())))
+ci_menu.grid(row=1, column=1, sticky="NSEW")
 
-tkinter.Label(plotter_frame, text="Number of Bins (For Histograms)", font="Helvetica 10").grid()
-h_bins = tkinter.StringVar(value=10)
-tkinter.Entry(plotter_frame, textvariable=h_bins, width=5).grid()
+bins_label = tkinter.Label(plotter_options_frame, text="Number of Bins (For Histograms)", font="Helvetica 10", anchor="w")
+bins_label.grid(row=2, column=0, sticky="NSEW")
+bins_var = tkinter.StringVar(value=10)
+bins_entry = tkinter.Entry(plotter_options_frame, textvariable=bins_var, width=5)
+bins_entry.grid(row=2, column=1, sticky="NSEW")
 
 plot_button = tkinter.Button(plotter_frame, text="Please See Above To Select\nY Variable\nand\nX Variable")
 plot_button.config(font="Helvetica 9 bold", command=plot_generation, bd=5, state="active")
-plot_button.grid(sticky="nsew")
+plot_button.grid(sticky="NSEW")
+
+
+# Build a status label at the bottom of the UI to keep the user informed using the status string
+status_label = tkinter.Label(root, textvariable=Params.status_string)
+status_label.config(height=1, font="Helvetica 14 bold", foreground="blue")
+status_label.grid(columnspan=2, sticky="NSEW")
+
+
+def make_resizable(frame):
+    for ii in range(frame.grid_size()[0]):
+        frame.columnconfigure(ii, weight=1)
+    for ii in range(frame.grid_size()[1]):
+        if frame.winfo_class() == "Label":
+            frame.rowconfigure(ii, weight=1)
+        else:
+            frame.rowconfigure(ii, weight=1)
+
+    slaves = frame.grid_slaves()
+    if len(slaves) == 0:
+        return
+    else:
+        for slave in slaves:
+            make_resizable(slave)
+        return
+
+
+for widget in [summ_name_label, region_label, api_key_label, filter_frame_label, plotter_frame_label, status_label]:
+    widget.rowconfigure(0, weight=0)
+
+
+make_resizable(root)
 
 # Refresh everything, setting it for first-run, then start the GUI mainloop
 refresh()
