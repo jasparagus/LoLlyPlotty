@@ -278,16 +278,16 @@ def append_match(config_info, match, match_key):
     :param match: dictionary containing match data
     :param match_key: key to which the match will be linked in the file, e.g. the gameId for a game
     """
-    f_path = "MatchData_" + str(config_info["SummonerName"]) + ".json"
+    fp = "MatchData_" + str(config_info["SummonerName"]) + "_" + str(config_info["Region"]) + ".json"
 
-    if pathlib.Path(f_path).is_file():
-        with open(f_path, mode="r+") as file:
+    if pathlib.Path(fp).is_file():
+        with open(fp, mode="r+") as file:
             file.seek(0, 2)  # find the end of the file
             position = file.tell() - 1  # find the position of the 2nd-to-last character
             file.seek(position)  # go to the 2nd-to-last character
             file.write(", \"" + str(match_key) + "\": " + json.dumps(match) + "}")
     else:
-        with open(f_path, "w") as file:
+        with open(fp, "w") as file:
             json.dump({str(match_key): match}, file)
     return
 
@@ -311,7 +311,8 @@ def verify_matches(config_info, match_data):
             print("Match file had an error with match " + str(game_id) + ". Removing it and updating file.")
             match_data.pop(game_id, None)
             # Overwrite the entire file with the corrected file
-            with open("MatchData_" + str(config_info["SummonerName"]) + ".json", "w") as file:
+            fp = "MatchData_" + str(config_info["SummonerName"]) + "_" + str(config_info["Region"]) + ".json"
+            with open(fp, "w") as file:
                 json.dump(match_data, file)
 
     return match_data
