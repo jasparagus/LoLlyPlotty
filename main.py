@@ -37,9 +37,8 @@ import matplotlib.pyplot as plt
 
 
 def refresh():
-    """
-    Updates variables from files on disk; updates GUI from variables
-    """
+    # Updates variables from files on disk; updates GUI from variables
+
     try:
         reg.set(Params.config_info["Region"]) if Params.config_info["Region"] is not "" else reg.set("Choose")
     except (NameError, KeyError):
@@ -49,7 +48,8 @@ def refresh():
     except (NameError, KeyError):
         summname.set("")
     try:
-        with open("MatchData_" + str(Params.config_info["SummonerName"]) + ".json", "r") as file:
+        fp = "MatchData_" + str(Params.config_info["SummonerName"]) + "_" + str(Params.config_info["Region"]) + ".json"
+        with open(fp, "r") as file:
             Params.match_data = json.loads(file.read())
         Params.match_data = api_fns.verify_matches(Params.config_info, Params.match_data)
         Params.status_string.set(value="Loaded " + str(len(Params.match_data)) + " games")
@@ -102,7 +102,7 @@ def get_data():
         refresh()
 
         if Params.config_info["AccountID"] == "" or Params.config_info["SummonerID"] == "":
-            Params.status_string.set("Double-check summoner name, selected region, and API key")
+            Params.status_string.set("Check summoner, region, and API key. New keys often don't work immediately.")
             b_get_data.config(relief="raised", text="Get Game Data")
             return
 
@@ -199,16 +199,10 @@ def plot_generation():
             else:
                 Params.status_string.set(value="Can't make a useful plot. Try swapping the variables if possible.")
 
-
         else:
             Params.status_string.set(value="Not enough matches (" + str(len(y_list)) + " remain after filtering)")
     else:
         Params.status_string.set(value="Check that X and Y variables are valid")
-
-
-def special_plotter():
-    print("Sorry, I don't exist yet.")
-    return
 
 
 root = tkinter.Tk()  # prepare a widget to hold the UI
@@ -225,14 +219,14 @@ class Filter:
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, title_string, curr_frame, subcolumn, box_height,
-                 config_key, filter_keys, sort_list=False):
+                 config_key, filter_keys, sort_by="values"):
         self.title_string = title_string  # name of the filter boxes
         self.curr_frame = curr_frame  # which frame to put the filter inside of
         self.subcolumn = subcolumn
         self.box_height = box_height  # how long to make the list of filters
         self.config_key = config_key  # the filter's source from the config file
         self.filter_keys = filter_keys  # list of key names in parsed_data to check through
-        self.sort_list = sort_list  # whether or not to sort the filter list alphabetically
+        self.sort_by = sort_by  # whether or not to sort the filter list alphabetically
         self.choices_list = []  # a list of the stored choices for the filter, extracted from listboxes
 
         # Build the subframe to hold the filter panes
@@ -283,6 +277,24 @@ class Filter:
         self.clear_button.config(font="Helvetica 11 bold", width=5, height=1, bd=3)
         self.clear_button.grid(row=3, column=1, sticky="ew")
 
+    def sort_my_list(self, my_list):
+        my_list_sorted = []
+        if self.sort_by == "keys":
+            keys = list(Params.config_info[str(self.config_key)].copy().keys())
+            vals = list(Params.config_info[str(self.config_key)].copy().values())
+            try:
+                sort_inds = [int(keys[vals.index(vv)]) for vv in my_list]  # sort by number if they're numbers
+            except ValueError:
+                sort_inds = [keys[vals.index(vv)] for vv in my_list]  # otherwise sort by string
+            try:
+                sort_inds, my_list_sorted = zip(*sorted(zip(sort_inds, my_list)))  # sort by Schwarzian if possible
+            except ValueError:
+                my_list_sorted = my_list  # if the list is empty or Schwarzian fails, just don't sort the list
+        elif self.sort_by == "values":
+            my_list_sorted = sorted(list(set(my_list)))  # sort the list alphabetically otherwise
+
+        return my_list_sorted
+
     def update_l2r(self, event=None):
         lb_selections = [self.lb.get(ii) for ii in self.lb.curselection()]
 
@@ -292,8 +304,8 @@ class Filter:
         new_lb = [selection for selection in lb_contents if selection not in lb_selections]
         new_rb = rb_contents + lb_selections
 
-        new_lb = sorted(list(set(new_lb)))
-        new_rb = sorted(list(set(new_rb)))
+        new_lb = self.sort_my_list(new_lb)
+        new_rb = self.sort_my_list(new_rb)
 
         self.filter_options.set(new_lb)
         self.filter_choices.set(new_rb)
@@ -312,8 +324,8 @@ class Filter:
         new_lb = lb_contents + rb_selections
         new_rb = [selection for selection in rb_contents if selection not in rb_selections]
 
-        new_lb = sorted(list(set(new_lb)))
-        new_rb = sorted(list(set(new_rb)))
+        new_lb = self.sort_my_list(new_lb)
+        new_rb = self.sort_my_list(new_rb)
 
         self.filter_options.set(new_lb)
         self.filter_choices.set(new_rb)
@@ -325,25 +337,20 @@ class Filter:
 
     def reset_box(self):
         try:
-            local_list = list(Params.config_info[str(self.config_key)].copy().values())
-
-            if self.sort_list is True:
-                local_list = sorted(local_list)
-                # TODO: replace this with sorting by the key (e.g. for seasons so they aren't alphabetical)
-
-            self.filter_options.set(local_list)
+            options_list = list(Params.config_info[str(self.config_key)].copy().values())
+            options_list = self.sort_my_list(options_list)
+            # Populate the left and right panes with their initial values
+            self.filter_options.set(options_list)
             self.filter_choices.set([])
-
-        except:
+        except KeyError:
             self.filter_options.set("Error Getting " + str(self.config_key) + " Data")
             Params.status_string.set("Unable to find " + str(self.config_key) + " Data")
 
-        # clear out selections on the left pane
+        # clear out residual mouse selections on both panes and update the choices list (empty at this point)
         self.lb.selection_clear(0, tkinter.END)
         self.rb.selection_clear(0, tkinter.END)
-        # clear the choices from the right pane
-
         self.choices_list = [self.rb.get(ii) for ii in range(self.rb.size())]
+
         return
 
 
@@ -358,7 +365,8 @@ class Params:
         pass
 
     try:
-        with open("MatchData_" + str(config_info["SummonerName"]) + ".json", "r") as file:
+        fp = "MatchData_" + str(config_info["SummonerName"]) + "_" + str(config_info["Region"]) + ".json"
+        with open(fp, "r") as file:
             match_data = json.loads(file.read())
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         match_data = {}
@@ -426,8 +434,6 @@ key_box = tkinter.Entry(config_frame, width=wid, justify="center", textvariable=
 key_box.config(fg="black")
 key_box.grid(columnspan=2, sticky="NSEW")
 
-
-
 tkinter.Label(config_frame, text="", font="Helvetica 6").grid(columnspan=2)
 
 b_get_data = tkinter.Button(config_frame, text="Get Game Data")
@@ -444,10 +450,10 @@ filter_frame_label.grid(sticky="NSEW")
 
 # Add the filters to the middle of the filter frame
 Filters = [
-    Filter("Champion(s)", filter_frame, 0, 6, "champion", ["Champion"], sort_list=True),
-    Filter("Season(s)", filter_frame, 0, 6, "seasons.gameconstants", ["Season"], sort_list=True),
-    Filter("Role(s)", filter_frame, 0, 7, "roles.gameconstants", ["Role"], sort_list=True),
-    Filter("Queue(s)", filter_frame, 0, 10, "queues.gameconstants", ["Queue Type"], sort_list=True)
+    Filter("Champion(s)", filter_frame, 0, 6, "champion", ["Champion"], sort_by="values"),
+    Filter("Season(s)", filter_frame, 0, 6, "seasons.gameconstants", ["Season"], sort_by="keys"),
+    Filter("Role(s)", filter_frame, 0, 7, "roles.gameconstants", ["Role"], sort_by="keys"),
+    Filter("Queue(s)", filter_frame, 0, 10, "queues.gameconstants", ["Queue Type"], sort_by="values")
     ]
 
 # Number of matches filter
@@ -509,12 +515,11 @@ x_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Hel
 x_box.grid(sticky="nsew")
 x_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=x_var))
 
-# TODO: make these two columns
 plotter_options_frame = tkinter.Frame(plotter_frame, borderwidth=0, relief=None, padx=2, pady=2)
 plotter_options_frame.grid(sticky="NSEW")
 
-instances_label = tkinter.Label(plotter_options_frame, text="Specify minimum instances:", font="Helvetica 10", anchor="w")
-instances_label.grid(row=0, column=0, sticky="NSEW")
+threshold_label = tkinter.Label(plotter_options_frame, text="Specify minimum instances:", font="Helvetica 10", anchor="w")
+threshold_label.grid(row=0, column=0, sticky="NSEW")
 threshold_var = tkinter.StringVar(value=5)
 threshold_entry = tkinter.Entry(plotter_options_frame, textvariable=threshold_var, width=5)
 threshold_entry.grid(row=0, column=1, sticky="NSEW")
@@ -543,13 +548,24 @@ status_label.grid(columnspan=2, sticky="NSEW")
 
 
 def make_resizable(frame):
+    # print("Frame is", frame.winfo_class())
+    if frame.winfo_class() in ["Label", "Button", "Menubutton"]:
+        frame.columnconfigure(0, weight=0)
+        frame.rowconfigure(0, weight=0)
+    else:
+        frame.columnconfigure(0, weight=10)
+        frame.rowconfigure(0, weight=10)
+
     for ii in range(frame.grid_size()[0]):
-        frame.columnconfigure(ii, weight=1)
-    for ii in range(frame.grid_size()[1]):
-        if frame.winfo_class() == "Label":
-            frame.rowconfigure(ii, weight=1)
+        if frame.winfo_class() in ["Label", "Button", "Menubutton"]:
+            frame.columnconfigure(ii, weight=0)
         else:
-            frame.rowconfigure(ii, weight=1)
+            frame.columnconfigure(ii, weight=10)
+    for ii in range(frame.grid_size()[1]):
+        if frame.winfo_class() in ["Label", "Button", "Menubutton"]:
+            frame.rowconfigure(ii, weight=0)
+        else:
+            frame.rowconfigure(ii, weight=10)
 
     slaves = frame.grid_slaves()
     if len(slaves) == 0:
@@ -559,12 +575,12 @@ def make_resizable(frame):
             make_resizable(slave)
         return
 
-
-for widget in [summ_name_label, region_label, api_key_label, filter_frame_label, plotter_frame_label, status_label]:
-    widget.rowconfigure(0, weight=0)
-
-
 make_resizable(root)
+
+# for widget in []:
+#     widget.rowconfigure(0, weight=1)
+# for widget in [region_dropdown]:
+#     widget.columnconfigure(0, weight=1)
 
 # Refresh everything, setting it for first-run, then start the GUI mainloop
 refresh()

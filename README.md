@@ -24,9 +24,6 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 
 
 ## To-Do:
-+ Re-implement party size plot
-
-+ Plot for what champions are in the game (enemy or ally) but not played by you); use overlaid red(enemy team)/green(ally team) bars with winrates, with n_games printed below each bar
 
 + Add new fractional variables (for histograms): percentage of team's (VARIABLE) that the player did/earned/etc. (e.g. damage or gold)
   + XP
@@ -66,6 +63,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions. See license.txt for details.
 
 ## Major Changelog
+#### 2017-11-30: Updated GUI for resizability
 #### 2017-11-21: Implemented fractional plots (e.g. fraction of team damage, etc.)
 #### 2017-10-31: Rebuilt plotting to work with custom plots via dropdown
 #### 2017-10-26: Updated for Riot API v3 with new filtering method and file format

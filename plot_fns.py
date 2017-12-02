@@ -31,7 +31,8 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
     :param x_list: a list of the variable to cross-reference with y_list
     :param y_list: a list of, e.g. wins and losses whose indices match those of key_ls
     :param threshold: a cutoff for number of matches to exclude (e.g. exclude data with n<3 matches)
-    :param conf_interval: confidence interval (e.g. 0.9) in which conf_interval fraction of measurements will reside
+    :param z_scores: a dictionary of z scores for various confidence intervals
+    :param conf_inverval: confidence interval (e.g. 0.9) in which conf_interval fraction of measurements will reside
     :return: plot_dict: a dictionary of:
             var_list: list of unique variable strings (e.g. champion names or roles)
             n_by_var: instances of each unique variable (e.g. number of matches played on each champion in var_list)
@@ -196,6 +197,23 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
                     ha='center', va='top')
 
 
+def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
+                       z_scores={"68%": 0.99}, conf_interval="68%", dict_type="Bar"):
+
+    plot_dict = make_plottable_dictionary(
+        x_var,
+        y_var,
+        threshold,
+        z_scores,
+        conf_interval,
+        dict_type,
+    )
+
+    make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
+
+    return
+
+
 def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_label=""):
     """
     Make a bar chart from data. Inputs: list of data to be plotted in bar form (a list of numbers
@@ -298,119 +316,6 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
     ax.legend(handles=(p1[0], p2[0], m_g, m_r), loc=(0, 1.07), ncol=1)
 
 
-def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
-                       z_scores={"68%": 0.99}, conf_interval="68%", dict_type="Bar"):
-
-    plot_dict = make_plottable_dictionary(
-        x_var,
-        y_var,
-        threshold,
-        z_scores,
-        conf_interval,
-        dict_type,
-    )
-
-    make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
-
-
-def wr_time(parsed_data, box=0, addtl_text=""):
-    """
-    Plots winrate trend over time using a moving average with average with width "box"
-    """
-
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(top=0.7, bottom=0.1)
-
-    win_lose_chrono = [x for y, x in sorted(zip(parsed_data["timestamp"], parsed_data["Win/Loss Rate"]))]
-
-    p1, = plt.plot(
-            moving_avg(win_lose_chrono, box), label="Moving Avg.", linestyle="-", color="r")
-    p2, = plt.plot([0, parsed_data["n_matches"]], [parsed_data["winrate"], parsed_data["winrate"]], label="Avg. WR", linestyle="--", color="b")
-    p3, = plt.plot([0, parsed_data["n_matches"]], [0.5, 0.5], label="50% WR", linestyle=":", color="k")
-
-    ax.legend(handles=(p1, p2, p3), loc=(0, 1.1), ncol=1)
-
-    ax.set_xlabel("Match Number (Chronological)")
-    ax.set_ylabel("Win Rate")
-    ax.set_title("Winrate Over Time \n" + addtl_text)
-    plt.xlim([0, parsed_data["n_matches"]])
-    plt.ylim([0, 1])
-
-    plt.show()
-
-
-def wr_partysize(parsed_data, n_played_with, z_scores={"68%": 0.99}, conf_interval="68%", addtl_text=""):
-    """
-    Winrates by number of recurring teammates (with an N game cutoff for "teammates")
-    n_played_with is threshold # of games with teammate to be considered part of a a "premade"
-    """
-    all_teammates = []
-
-    # Get a list of every teammate
-    for ii in range(parsed_data["n_matches"]):
-        all_teammates += parsed_data["ally_stats"][ii]["names"]
-    # Get rid of duplicates
-
-    # Filter out the teammates with whom you played too few games
-    teammates = []
-    for teammate in parsed_data["teammates_unique"]:
-        if all_teammates.count(teammate) >= n_played_with:
-            teammates.append(teammate)
-
-    # Go through each game and count number of teammates, storing the result in a dictionary
-    party_size = []
-    for ii in range(parsed_data["n_matches"]):
-        party_size.append(
-            len(set(teammates) & set(parsed_data["ally_stats"][ii]["names"]))
-        )
-
-    wr_partysize_dict = make_plottable_dictionary(
-        party_size,
-        parsed_data["Win/Loss Rate"],
-        1,
-        z_scores,
-        conf_interval,
-    )
-
-    title_string = "Winrate by Number of Friends\n(" + str(n_played_with) + "+ Games Together)\n" + addtl_text
-
-    make_barchart(wr_partysize_dict, title_string, parsed_data["winrate"])
-    plt.show()
-
-
-def moving_avg(ls, box):
-    """
-    Creates a list with the same shape as ls composed of moving average of ls at each point.
-    If box is odd, the moving average is centered at the data point in question
-    If box is even, the moving average is centered after the data point in question
-    :param ls: list for which to compute moving average
-    :param box: box size for box average. Coerced to be at most the length of ls.
-    :return:
-    """
-
-    if box > len(ls):
-        box = len(ls)
-
-    length = len(ls)
-
-    b_fwd = int(math.ceil((box - 1) / 2))  # points to grab after -3 in test
-    b_rev = int(math.floor((box - 1) / 2))  # points to grab before -2 in test
-
-    # prepare a list to hold the moving average
-    mov_avg = [0 for ii in ls]
-    # populate the points before the box size (not enough points to left of box)
-    for ii in range(0, b_rev):
-        mov_avg[ii] = sum(ls[0:ii + b_fwd + 1]) / len(ls[0:ii + b_fwd + 1])
-    # populate the points in the region where the box fits around the current point
-    for ii in range(b_rev, length - b_fwd):
-        mov_avg[ii] = sum(ls[ii - b_rev:ii + b_fwd + 1]) / box
-    # populate the points in the region approaching the end (not enough points to right of box)
-    for ii in range(length - b_fwd, length):
-        mov_avg[ii] = sum(ls[(ii - b_rev):]) / len(ls[(ii - b_rev):])
-
-    return mov_avg
-
-
 def compute_error(data_list, z_scores, conf_interval="90%"):
 
     if conf_interval in list(z_scores.keys()):
@@ -447,3 +352,35 @@ z_scores = {
         "98%": 2.33,
         "99%": 2.58,
 }
+
+# def moving_avg(ls, box):
+#     """
+#     Creates a list with the same shape as ls composed of moving average of ls at each point.
+#     If box is odd, the moving average is centered at the data point in question
+#     If box is even, the moving average is centered after the data point in question
+#     :param ls: list for which to compute moving average
+#     :param box: box size for box average. Coerced to be at most the length of ls.
+#     :return:
+#     """
+#
+#     if box > len(ls):
+#         box = len(ls)
+#
+#     length = len(ls)
+#
+#     b_fwd = int(math.ceil((box - 1) / 2))  # points to grab after -3 in test
+#     b_rev = int(math.floor((box - 1) / 2))  # points to grab before -2 in test
+#
+#     # prepare a list to hold the moving average
+#     mov_avg = [0 for ii in ls]
+#     # populate the points before the box size (not enough points to left of box)
+#     for ii in range(0, b_rev):
+#         mov_avg[ii] = sum(ls[0:ii + b_fwd + 1]) / len(ls[0:ii + b_fwd + 1])
+#     # populate the points in the region where the box fits around the current point
+#     for ii in range(b_rev, length - b_fwd):
+#         mov_avg[ii] = sum(ls[ii - b_rev:ii + b_fwd + 1]) / box
+#     # populate the points in the region approaching the end (not enough points to right of box)
+#     for ii in range(length - b_fwd, length):
+#         mov_avg[ii] = sum(ls[(ii - b_rev):]) / len(ls[(ii - b_rev):])
+#
+#     return mov_avg
