@@ -249,7 +249,7 @@ class Filter:
         self.lb.bind("<Double-Button-1>", self.update_l2r)
 
         # Label the right pane
-        self.pane_label_right = tkinter.Label(self.sub_frame, text="Selected " + self.title_string + ":")
+        self.pane_label_right = tkinter.Label(self.sub_frame, text="Selected " + self.title_string + " (Blank = All):")
         self.pane_label_right.config(font="Helvetica 10")
         self.pane_label_right.grid(row=0, column=2)
 

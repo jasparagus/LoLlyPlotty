@@ -8,20 +8,27 @@
 
 Uses Riot Games API to download complete match data for a summoner (normals, ranked, etc.), parses and analyzes that data, and generates plots for data visualization given the user's preferences (e.g. champions played, friends played with, etc.).
 
-## Installation Instructions (Windows x64)
+## Instructions (.exe for Windows x64)
 + Follow directions above (or click link in-app) to get an API key:
   + Go to https://developer.riotgames.com
   + Choose "SIGN UP NOW"
   + Log in and refresh your API key if necessary
-+ Download Zip File located [here] (LoLlyPlotty_v1.zip)
-+ Extract downloaded zip and run "main.exe"
-+ Enter summoner info for desired summoner and download your data. Note that this will take a long time on first run.
++ Download [LoLlyPlotty_Win_x64_v1.0.zip](LoLlyPlotty_Win_x64_v1.0.zip) directly or download the source code via GitHub and locate it
++ Extract downloaded zip and run "main.exe" (for executable) or "main.py" (for python)
++ Enter summoner info for desired summoner
++ Enter your API key (note that freshly generated API keys may take a few moments to activate)
++ Get your data! Note that this will take a long time on first run
++ Choose your y and x variables, then make a plot from them!
++ If desired, filter to include/exclude specific options (e.g. roles or champions played) and re-make your plot(s)
+  + Try Win/Loss vs. Champion to see your wintrate on various champions
+  + Try Gold/Min Diff. (0 -> 10 Min) vs. Champion (Lane Opponent's) to see your gold defecit when laning against various champions
++ Note that all data is limited by what the Riot API knows (e.g. sometimes it can't reliably figure out what lane you were in)
   
 
 
-## Required Python 3 Modules for running from source:
+## Required Python 3 Modules to Run From Source
 (See also directions for [installing packages in Python](https://packaging.python.org/tutorials/installing-packages/))
-+ [Matplotlib](https://matplotlib.org/) (free and awesome)
++ [Matplotlib](https://matplotlib.org/)
 + [NumPy](http://www.numpy.org/)
 
 
@@ -30,6 +37,8 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 + Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches the first time it is run (matches are saved to disk for later use)
 + This is a work in progress, and features will be added over time
 
+## Known Issues:
++ First Blood Assist Doesn't work
 
 ## To-Do:
 + Add a progress bar beneath the bottom status text for long tasks (e.g. firstrun getting of match data)
@@ -52,7 +61,7 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 
 ## License
 LoLlyPlotty: league of legends statistics and plots.
-Copyright (C) 2017, Jasper Cook, league_plots@outlook.com
+Copyright (C) 2017, league_plots@outlook.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -70,6 +79,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
 under certain conditions. See license.txt for details.
+
+
+## Notes
+Thanks to [PVisnRT](https://github.com/PVisnRT) for working together on the original version of this (written in Matlab... lol) and for contributing to adapting this for Python. Thanks to [cjc77](https://github.com/cjc77) for extensive help with Python data structures and tons of Python advice.
+
 
 ## Major Changelog
 #### 2017-12-10: First executable version (for Windows x64); made using the excellent [pyinstaller tool](http://www.pyinstaller.org/)
