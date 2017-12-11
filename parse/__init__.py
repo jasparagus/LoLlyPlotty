@@ -38,10 +38,6 @@ if testing:
     # print(json.dumps(match["participants"][pid], indent=4))
 # testing = 1
 
-# def yvar_vs_count_in_lists(list_of_lists, y_var_list):
-#     # total_count = sum(sublist.count("TEAMMATENAME") for sublist in listoflists)
-#     return
-
 
 class Var:
     names = []  # A list of all instance names
@@ -85,19 +81,26 @@ class Var:
                     # if you have a function, carry it out correctly...
                     if step.__name__[0:6] == "clean_":
                         # clean functions take config_info and the previous step's result (the value to be cleaned)
-                        self.value = step(config_info, self.value)
+                        if type(self.value) is list:
+                            # if cleaning a list, clean each item one by one
+                            vals = []
+                            for vv in self.value:
+                                vals += [step(config_info, vv)]
+                            self.value = vals
+                        else:
+                            # if cleaning a single item, clean the single item...
+                            self.value = step(config_info, self.value)
                     elif step.__name__[0:4] == "get_":
                         # get functions take config_info and the match, from which they get the appropriate value
                         temp_step = step(config_info, match)
-                        if type(temp_step) is dict:
-                            # If the output is a dictionary, it's time for the next step
+                        if type(temp_step) in [dict, list]:
+                            # If the output is a dictionary or list, the step is done; move on
                             self.value = temp_step
                         else:
                             # if the output is not a dictionary, extract the value using the appropriate key
                             try:
                                 self.value = self.value[temp_step]
                             except KeyError as e:
-                                print(e)
                                 self.value = temp_step
                 else:
                     # otherwise, it is a normal key and should be used to access the next dictionary entry
@@ -200,9 +203,9 @@ Vars = [
     Var("Map Side", "s", ["participants", get_pid, "teamId", clean_team]),
     Var("Rank", "s", ["participants", get_pid, "highestAchievedSeasonTier"]),
     Var("Champion", "s", ["participants", get_pid, "championId", clean_champion]),
-    Var("Champion (Played By Teammate or Enemy)", "s", [get_non_player_champs]),
-    Var("Champion (Played by Teammate)", "s", [get_teammate_champs]),
-    Var("Champion (Played by Enemy)", "s", [get_enemy_champs]),
+    Var("Champion (Played By Teammate or Enemy)", "s", [get_non_player_champs, clean_champion]),
+    Var("Champion (Played by Teammate)", "s", [get_teammate_champs, clean_champion]),
+    Var("Champion (Played by Enemy)", "s", [get_enemy_champs, clean_champion]),
     Var("Summoner Spell 1", "s", ["participants", get_pid, "spell1Id", clean_summoner_spell]),
     Var("Summoner Spell 2", "s", ["participants", get_pid, "spell2Id", clean_summoner_spell]),
 
@@ -295,7 +298,7 @@ Vars = [
     Var("Teammates (Number of)", "s", [prep_teammates, get_num_teammates, clean_num_teammates]),
     Var("Teammate (By Name)", "s", [get_teammates]),
     Var("Opponent (By Name)", "s", [get_opponents]),
-    Var("Item", "s", [get_items]),
+    Var("Item", "s", [get_items, clean_item]),
 ]
 
 GeneralStats = {

@@ -153,12 +153,10 @@ def plot_generation():
                        ) and x_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars):
         Params.status_string.set(value="Parsing data...")
         y_list, x_list, n_kept = parse.Var.create_list(
-            Params.config_info, Params.match_data, parse.Vars,
-            y_var.get(), x_var.get(), Filters, recency_filter.get()
+            Params.config_info, Params.match_data, parse.Vars, y_var.get(), x_var.get(), Filters, recency_filter.get()
         )
 
-        print("Y: ", y_list)
-        print("X: ", x_list)
+        print("Lists to plot:\n", "Y: ", y_list, "\n", "X: ", x_list)
 
         if len(y_list) == len(x_list) and n_kept > Params.config_info["Threshold"] and len(y_list) > 2:
             Params.status_string.set(value="Preparing " + str(n_kept) + " matches for plotting")
@@ -579,7 +577,7 @@ make_resizable(root)
 
 # for widget in []:
 #     widget.rowconfigure(0, weight=1)
-# for widget in [region_dropdown]:
+# for widget in []:
 #     widget.columnconfigure(0, weight=1)
 
 # Refresh everything, setting it for first-run, then start the GUI mainloop
