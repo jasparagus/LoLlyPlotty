@@ -13,7 +13,7 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
   + Go to https://developer.riotgames.com
   + Choose "SIGN UP NOW"
   + Log in and refresh your API key if necessary
-+ Download Zip File located [here] ()
++ Download Zip File located [here] (LoLlyPlotty_v1.zip)
 + Extract downloaded zip and run "main.exe"
 + Enter summoner info for desired summoner and download your data. Note that this will take a long time on first run.
   
