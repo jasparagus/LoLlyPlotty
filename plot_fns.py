@@ -211,8 +211,6 @@ def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y
 
     make_barchart(plot_dict, title_string=title_string, x_label=x_label, y_label=y_label)
 
-    return
-
 
 def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_label=""):
     """

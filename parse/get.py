@@ -1,6 +1,3 @@
-from parse.clean import *
-
-
 def get_count(config_info, match):
     return 1
 
@@ -13,8 +10,7 @@ def get_enemy_champs(config_info, match):
     for ii in range(n_players):
         if str(match["participants"][ii]["teamId"]) != str(match["participants"][pid]["teamId"]):
             champ_id = match["participants"][ii]["championId"]
-            champ = clean_champion(config_info, champ_id)
-            enemy_champs.append(champ)
+            enemy_champs.append(champ_id)
 
     if len(enemy_champs) == 0:
         enemy_champs = ["Unknown"]
@@ -94,7 +90,7 @@ def get_items(config_info, match):
     for ii in range(7):
         new_item = match["participants"][pid]["stats"]["item" + str(ii)]
         if new_item != 0:
-            items += [clean_item(config_info, new_item)]
+            items += [new_item]
 
     items = list(set(items))  # dump duplicate purchases
 
@@ -129,8 +125,7 @@ def get_non_player_champs(config_info, match):
     for ii in range(n_players):
         if ii != pid:
             champ_id = match["participants"][ii]["championId"]
-            champ = clean_champion(config_info, champ_id)
-            non_player_champs.append(champ)
+            non_player_champs.append(champ_id)
 
     if len(non_player_champs) == 0:
         non_player_champs = ["Unknown"]
@@ -236,11 +231,11 @@ def get_teammate_champs(config_info, match):
     for ii in range(n_players):
         if str(match["participants"][ii]["teamId"]) == str(match["participants"][pid]["teamId"]) and ii != pid:
             champ_id = match["participants"][ii]["championId"]
-            champ = clean_champion(config_info, champ_id)
-            teammate_champs.append(champ)
+            teammate_champs.append(champ_id)
 
     if len(teammate_champs) == 0:
         teammate_champs = ["Unknown"]
+
     return teammate_champs
 
 
