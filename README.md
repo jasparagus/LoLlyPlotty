@@ -41,6 +41,8 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 + First Blood Assist Doesn't work
 
 ## To-Do:
++ Add a Teammate filter (a filter for games that include specific teammate(s)), along the same lines as the Champion filter. This will require identifying "Teammates" on startup or via a button press. Best way will probably be to make a "settings" window and include a "# Games to be considered a 'Teammate'" option on that pane.
+
 + Add a progress bar beneath the bottom status text for long tasks (e.g. firstrun getting of match data)
 
 + Add new fractional variables (for histograms): percentage of team's (VARIABLE) that the player did/earned/etc. (e.g. damage or gold)
@@ -48,14 +50,14 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
   + Wards placed
   + Kills/Deaths/Assists?
 
-+ Figure out a better (e.g. scrollable) dropdown for selecting plots, since there are so many options now... maybe a listbox instead of a dropdown?
-  
 + Identify starting item(s) on a per-match basis - this requires "timeline" data api calls, which are not currently implemented
 
 + GUI Update
+  + Change resizing to allow for scrollbars
   + Make it not look hideous
   + Switch to ttk for theming
-  + Add tabbed navigation? Or a scrollbar for more filters
+  + Make a menu bar at the top for tabbed navigation (e.g., Options tab)
+  + Add a scrollbar for the list of filters (so that many more filters can be added)
 
 + Implement hist2d in matplotlib - really convenient replacement for scatter plots
 

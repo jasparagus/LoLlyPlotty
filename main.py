@@ -239,41 +239,47 @@ class Filter:
         # Label the left pane
         self.pane_label_left = tkinter.Label(self.sub_frame, text="Select " + self.title_string + ":")
         self.pane_label_left.config(font="Helvetica 10")
-        self.pane_label_left.grid(row=0, column=0)
+        self.pane_label_left.grid(row=0, column=0, columnspan=2)
 
         # Add left pane contents
-        self.lb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_options, selectmode=tkinter.MULTIPLE)
+        self.lsb = tkinter.Scrollbar(self.sub_frame)  # create a scrollbar
+        self.lb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_options, selectmode=tkinter.EXTENDED)
         self.lb.config(bd=2, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
-        self.lb.config(font="Helvetica 9", width=self.longest_filter_item)
-        self.lb.grid(row=1, column=0, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
+        self.lb.config(font="Helvetica 9", width=self.longest_filter_item, yscrollcommand=self.lsb.set)
+        self.lb.grid(row=1, column=0, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 3
         self.lb.bind("<Double-Button-1>", self.update_l2r)
+        self.lsb.config(command=self.lb.yview)
+        self.lsb.grid(row=1, column=1, rowspan=3, sticky="nsew")
 
         # Label the right pane
         self.pane_label_right = tkinter.Label(self.sub_frame, text="Selected " + self.title_string + " (Blank = All):")
         self.pane_label_right.config(font="Helvetica 10")
-        self.pane_label_right.grid(row=0, column=2)
+        self.pane_label_right.grid(row=0, column=3, columnspan=2)
 
         # Add right pane contents
-        self.rb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_choices, selectmode=tkinter.MULTIPLE)
+        self.rsb = tkinter.Scrollbar(self.sub_frame)  # create a scrollbar
+        self.rb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_choices, selectmode=tkinter.EXTENDED)
         self.rb.config(bd=2, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
-        self.rb.config(font="Helvetica 9", width=self.longest_filter_item)
-        self.rb.grid(row=1, column=2, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
+        self.rb.config(font="Helvetica 9", width=self.longest_filter_item, yscrollcommand=self.rsb.set)
+        self.rb.grid(row=1, column=3, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
         self.rb.bind("<Double-Button-1>", self.update_r2l)
+        self.rsb.config(command=self.rb.yview)
+        self.rsb.grid(row=1, column=4, rowspan=3, sticky="nsew")
 
         # Add arrow button to middle pane
         self.add_button = tkinter.Button(self.sub_frame, text="\u2192", command=self.update_l2r)
         self.add_button.config(font="Helvetica 16 bold", width=5, height=1, bd=3)
-        self.add_button.grid(row=1, column=1, sticky="sew")  # this was "sew"
+        self.add_button.grid(row=1, column=2, sticky="sew")  # this was "sew"
 
         # Add 2nd arrow button to middle pane for moving things in the other direction
         self.remove_button = tkinter.Button(self.sub_frame, text="\u2190", command=self.update_r2l)
         self.remove_button.config(font="Helvetica 14 bold", width=5, height=1, bd=3)
-        self.remove_button.grid(row=2, column=1, sticky="new")
+        self.remove_button.grid(row=2, column=2, sticky="new")
 
         # Add clear button to middle pane
         self.clear_button = tkinter.Button(self.sub_frame, text="Reset", command=self.reset_box)
         self.clear_button.config(font="Helvetica 11 bold", width=5, height=1, bd=3)
-        self.clear_button.grid(row=3, column=1, sticky="ew")
+        self.clear_button.grid(row=3, column=2, sticky="ew")
 
     def sort_my_list(self, my_list):
         my_list_sorted = []
@@ -473,7 +479,7 @@ plotter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pa
 plotter_frame.grid(row=1, column=0, sticky="NSEW")
 
 plotter_frame_label = tkinter.Label(plotter_frame, text="Plots", font="Helvetica 12 bold", fg="Black")
-plotter_frame_label.grid()
+plotter_frame_label.grid(row=0, column=0, columnspan=2)
 
 
 def assign(event, string_var=None):
@@ -494,24 +500,31 @@ def assign(event, string_var=None):
 y_var = tkinter.StringVar(value="Choose Y Variable")
 y_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars))
 
-tkinter.Label(plotter_frame, text="Select Y Variable:", font="Helvetica 10").grid()
+tkinter.Label(plotter_frame, text="Select Y Variable:", font="Helvetica 10").grid(row=1, column=0, columnspan=2)
 
+
+y_sb=tkinter.Scrollbar(plotter_frame)
 y_box = tkinter.Listbox(plotter_frame, listvariable=y_vars, selectmode=tkinter.SINGLE)
 y_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Helvetica 9", width=45,
-             exportselection=False)
-y_box.grid(sticky="nsew")
+             exportselection=False, yscrollcommand=y_sb.set)
+y_box.grid(row=2, column=0, sticky="nsew")
 y_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=y_var))
+y_sb.config(command=y_box.yview)
+y_sb.grid(row=2, column=1, sticky="nsew")
 
 x_var = tkinter.StringVar(value="Choose X Variable")
 x_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars))
 
-tkinter.Label(plotter_frame, text="Select X Variable:", font="Helvetica 10").grid()
+tkinter.Label(plotter_frame, text="Select X Variable:", font="Helvetica 10").grid(row=3, column=0, columnspan=2)
 
+x_sb=tkinter.Scrollbar(plotter_frame)
 x_box = tkinter.Listbox(plotter_frame, listvariable=x_vars, selectmode=tkinter.SINGLE)
 x_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Helvetica 9", width=45,
-             exportselection=False)
-x_box.grid(sticky="nsew")
+             exportselection=False, yscrollcommand=x_sb.set)
+x_box.grid(row=4, column=0, sticky="nsew")
 x_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=x_var))
+x_sb.config(command=x_box.yview)
+x_sb.grid(row=4, column=1, sticky="nsew")
 
 plotter_options_frame = tkinter.Frame(plotter_frame, borderwidth=0, relief=None, padx=2, pady=2)
 plotter_options_frame.grid(sticky="NSEW")
