@@ -9,3 +9,8 @@ debug.py
 # Don't track stored application data
 apikey.txt
 *.json
+
+# Build files and directories
+*.spec
+dist/**
+build/**

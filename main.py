@@ -19,21 +19,21 @@
 #    This is free software, and you are welcome to redistribute it
 #    under certain conditions. See license.txt for details.
 
-# IMPORT CUSTOM MODULES
+# Module-level import(s)
+from webbrowser import open_new as webbrowser_open_new
+from matplotlib.pyplot import show as pyplot_show
+
+# Custom module/ imports
 import api_fns
 import parse
 import plot_fns
+
 # IMPORT STANDARD MODULES
 import threading
 import json
-import tkinter
-# import tkinter.ttk
-import webbrowser
 import time
 import pathlib
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
+import tkinter  # future: import tkinter.ttk
 
 
 def refresh():
@@ -55,15 +55,15 @@ def refresh():
         Params.status_string.set(value="Loaded " + str(len(Params.match_data)) + " games")
     except (FileNotFoundError, NameError, KeyError):
         Params.match_data = {}
-        Params.status_string.set(value="Game data not found. Try getting data.")
+        Params.status_string.set(value="Game data not found - check options, then try \"Get Game Data\" button")
 
     try:
         key, expiry = api_fns.get_api_key()
         api_key.set(key)
         if float(expiry) < float(time.time()):
-            key_box.config(fg="red")
+            key_entry.config(fg="red")
         else:
-            key_box.config(fg="black")
+            key_entry.config(fg="black")
     except (NameError, ValueError):
         api_key.set("Key Not Found")
 
@@ -93,7 +93,7 @@ def get_data():
         api_fns.get_api_key(write_mode=True, key_in=api_key.get())
 
         Params.status_string.set("Updating settings...")
-        b_get_data.config(relief="sunken", text="Please Wait...")  # update the button's appearance
+        b_get_data.config(relief="sunken", text="Please Wait...", bg=Filter.bg_HL)  # update the button's appearance
 
         # Update app information from the GUI, then refresh the app
         Params.config_info = api_fns.config(reg.get(), summname.get())  # update the configuration info from the GUI
@@ -102,8 +102,8 @@ def get_data():
         refresh()
 
         if Params.config_info["AccountID"] == "" or Params.config_info["SummonerID"] == "":
-            Params.status_string.set("Check summoner, region, and API key. New keys often don't work immediately.")
-            b_get_data.config(relief="raised", text="Get Game Data")
+            Params.status_string.set("Check summoner name, region, and API key. New keys often don't work immediately.")
+            b_get_data.config(relief="raised", text="Get Game Data", bg=Filter.bg_CT)
             return
 
         Params.status_string.set("Getting match list from Riot servers...")
@@ -167,7 +167,7 @@ def plot_generation():
                 plot_fns.simple_bar_plotter(x_list, y_list, threshold=Params.config_info["Threshold"],
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
-                plt.show()
+                pyplot_show()
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
 
             # If the x variable isn't countable and the y variable is cumulative, use "cumulative" bar chart
@@ -177,7 +177,7 @@ def plot_generation():
                                             dict_type="Cumulative")
 
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-                plt.show()
+                pyplot_show()
 
             # If the x variable and y variable are numeric (e.g. "Damage" vs. "CS"), use a scatter plot
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.f_vars:
@@ -185,14 +185,14 @@ def plot_generation():
                                           x_label=x_var.get(), y_label=y_var.get())
 
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-                plt.show()
+                pyplot_show()
 
             # If the x is a float and y is discrete, use two stacked histograms
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
                 plot_fns.make_hist(x_list, y_list, bins_var.get(),
                                    x_label=x_var.get(), y_label=y_var.get())
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-                plt.show()
+                pyplot_show()
 
             else:
                 Params.status_string.set(value="Can't make a useful plot. Try swapping the variables if possible.")
@@ -211,9 +211,23 @@ root.resizable(width=True, height=True)
 
 
 class Filter:
-    pad_amt = 3
+    pad_amt = 4
     longest_filter_item = 47
     games_to_remove = []  # an empty list to eventually hold game_ids for removal
+
+    # Colors: dark blue #15232b; darker blue #04090c; gold-ish #b0863e; light gold #cdbe91; near-white #f0e6d2
+    bg_BG = "#15232b"  # the primary background color         "light slate gray"   "SteelBLue4"  "gray40"
+    bg_CT = "#b0863e"  # the contrasting color (for buttons, dropdowns, etc.)
+    bg_HL = "#cdbe91"  # the highlight color
+    fg_txt = "#f0e6d2"  # the foreground (text) color - contrasts w/ BG color
+    fg_btn = "#04090c"  # the foreground (text) color on buttons - contrasts with CT color
+    bd_btn = 3  # Border for buttons
+    bd_pad = 1  # Border for padding (e.g. inside listboxes) - ends up being internal padding
+    bd_SB = 3  # Border width for frames (e.g. the seasons list with its scrollbar)
+    bd_ssxn = 3  # border width for subsections (e.g. seasons filter)
+    rel_ssxn = tkinter.FLAT  # relief for sub-sections (e.g. a specific filter)
+    rel_btn = tkinter.RAISED  # Relief for buttons
+    rel_SB = tkinter.SUNKEN  # relief for scrollboxes (e.g. season list with its scrollbar)
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, title_string, curr_frame, subcolumn, box_height,
@@ -228,58 +242,75 @@ class Filter:
         self.choices_list = []  # a list of the stored choices for the filter, extracted from listboxes
 
         # Build the subframe to hold the filter panes
-        self.sub_frame = tkinter.Frame(self.curr_frame)
-        self.sub_frame.config(borderwidth=2, relief=tkinter.GROOVE, padx=self.pad_amt, pady=self.pad_amt)
-        self.sub_frame.grid(column=self.subcolumn, sticky="NSEW")
+        self.outer_frame = tkinter.Frame(self.curr_frame, bg=self.bg_BG)
+        self.outer_frame.config(borderwidth=self.bd_ssxn, relief=self.rel_ssxn, padx=self.pad_amt, pady=self.pad_amt)
+        self.outer_frame.grid(column=self.subcolumn, sticky="NSEW")
 
         # Add the variables to hold the options
         self.filter_options = tkinter.StringVar(value="")  # a string of choices to populate things
         self.filter_choices = tkinter.StringVar(value="")  # a string of choices to populate the selections
 
-        # Label the left pane
-        self.pane_label_left = tkinter.Label(self.sub_frame, text="Select " + self.title_string + ":")
-        self.pane_label_left.config(font="Helvetica 10")
-        self.pane_label_left.grid(row=0, column=0, columnspan=2)
+        # Label left frame
+        self.left_label = tkinter.Label(self.outer_frame, text="Select " + self.title_string + ":")
+        self.left_label.config(font="Helvetica 10", bg=self.bg_BG, fg=self.fg_txt)
+        self.left_label.grid(row=0, column=0)
 
-        # Add left pane contents
-        self.lsb = tkinter.Scrollbar(self.sub_frame)  # create a scrollbar
-        self.lb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_options, selectmode=tkinter.EXTENDED)
-        self.lb.config(bd=2, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
+        # Create left frame
+        self.left_frame = tkinter.Frame(self.outer_frame, relief=self.rel_SB, bg=self.bg_BG, bd=self.bd_SB)
+        self.left_frame.grid(row=1, column=0, sticky="NSEW")
+
+        # Add left frame contents
+        self.lsb = tkinter.Scrollbar(self.left_frame)  # create a scrollbar
+        self.lb = tkinter.Listbox(self.left_frame, listvariable=self.filter_options, selectmode=tkinter.EXTENDED)
+        self.lb.config(bd=self.bd_pad, height=self.box_height, relief=tkinter.FLAT, activestyle="none")
         self.lb.config(font="Helvetica 9", width=self.longest_filter_item, yscrollcommand=self.lsb.set)
-        self.lb.grid(row=1, column=0, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 3
+        self.lb.grid(row=0, column=0, sticky="NSEW")
         self.lb.bind("<Double-Button-1>", self.update_l2r)
         self.lsb.config(command=self.lb.yview)
-        self.lsb.grid(row=1, column=1, rowspan=3, sticky="nsew")
+        self.lsb.grid(row=0, column=1, sticky="NSEW")
+
+        # Create middle frame
+        self.middle_frame = tkinter.Frame(self.outer_frame, padx=self.pad_amt, pady=self.pad_amt,
+                                          relief=tkinter.FLAT, bg=self.bg_BG)
+        self.middle_frame.grid(row=1, column=1, sticky="NSEW")
+
+        # Add arrow button to middle frame
+        self.add_button = tkinter.Button(self.middle_frame, text="\u2192", command=self.update_l2r)
+        self.add_button.config(font="Helvetica 16 bold", width=5, relief=self.rel_btn)
+        self.add_button.config(fg=self.fg_btn, bd=Filter.bd_btn, bg=Filter.bg_CT, activebackground=Filter.bg_HL)
+        self.add_button.grid(row=0, column=0, sticky="sew")  # this was "sew"
+
+        # Add 2nd arrow button to middle frame for moving things in the other direction
+        self.remove_button = tkinter.Button(self.middle_frame, text="\u2190", command=self.update_r2l)
+        self.remove_button.config(font="Helvetica 16 bold", width=5, relief=self.rel_btn)
+        self.remove_button.config(fg=self.fg_btn, bd=Filter.bd_btn, bg=Filter.bg_CT, activebackground=Filter.bg_HL)
+        self.remove_button.grid(row=1, column=0, sticky="new")
+
+        # Add clear button to middle frame
+        self.clear_button = tkinter.Button(self.middle_frame, text="Reset", command=self.reset_box)
+        self.clear_button.config(font="Helvetica 11 bold", width=5, relief=self.rel_btn)
+        self.clear_button.config(fg=self.fg_btn, bd=Filter.bd_btn, bg=Filter.bg_CT, activebackground=Filter.bg_HL)
+        self.clear_button.grid(row=2, column=0, sticky="ew")
 
         # Label the right pane
-        self.pane_label_right = tkinter.Label(self.sub_frame, text="Selected " + self.title_string + " (Blank = All):")
-        self.pane_label_right.config(font="Helvetica 10")
-        self.pane_label_right.grid(row=0, column=3, columnspan=2)
+        self.right_label = tkinter.Label(self.outer_frame, text="Selected " + self.title_string + " (Blank = All):")
+        self.right_label.config(font="Helvetica 10", bg=self.bg_BG, fg=self.fg_txt)
+        self.right_label.grid(row=0, column=2)
+
+        # Create right frame
+        self.right_frame = tkinter.Frame(self.outer_frame, relief=self.rel_SB, bg=self.bg_BG, bd=self.bd_SB)
+        self.right_frame.grid(row=1, column=2, sticky="NSEW")
 
         # Add right pane contents
-        self.rsb = tkinter.Scrollbar(self.sub_frame)  # create a scrollbar
-        self.rb = tkinter.Listbox(self.sub_frame, listvariable=self.filter_choices, selectmode=tkinter.EXTENDED)
-        self.rb.config(bd=2, height=self.box_height, relief=tkinter.RIDGE, activestyle="none")
+        self.rsb = tkinter.Scrollbar(self.right_frame)  # create a scrollbar
+        self.rb = tkinter.Listbox(self.right_frame, listvariable=self.filter_choices, selectmode=tkinter.EXTENDED)
+        self.rb.config(bd=self.bd_pad, height=self.box_height, relief=tkinter.FLAT, activestyle="none")
         self.rb.config(font="Helvetica 9", width=self.longest_filter_item, yscrollcommand=self.rsb.set)
-        self.rb.grid(row=1, column=3, rowspan=3, sticky="nsew", padx=self.pad_amt, pady=self.pad_amt)  # rowspan was 2
+        self.rb.grid(row=0, column=0, sticky="NSEW")
         self.rb.bind("<Double-Button-1>", self.update_r2l)
         self.rsb.config(command=self.rb.yview)
-        self.rsb.grid(row=1, column=4, rowspan=3, sticky="nsew")
+        self.rsb.grid(row=0, column=1, sticky="NSEW")
 
-        # Add arrow button to middle pane
-        self.add_button = tkinter.Button(self.sub_frame, text="\u2192", command=self.update_l2r)
-        self.add_button.config(font="Helvetica 16 bold", width=5, height=1, bd=3)
-        self.add_button.grid(row=1, column=2, sticky="sew")  # this was "sew"
-
-        # Add 2nd arrow button to middle pane for moving things in the other direction
-        self.remove_button = tkinter.Button(self.sub_frame, text="\u2190", command=self.update_r2l)
-        self.remove_button.config(font="Helvetica 14 bold", width=5, height=1, bd=3)
-        self.remove_button.grid(row=2, column=2, sticky="new")
-
-        # Add clear button to middle pane
-        self.clear_button = tkinter.Button(self.sub_frame, text="Reset", command=self.reset_box)
-        self.clear_button.config(font="Helvetica 11 bold", width=5, height=1, bd=3)
-        self.clear_button.grid(row=3, column=2, sticky="ew")
 
     def sort_my_list(self, my_list):
         my_list_sorted = []
@@ -393,93 +424,110 @@ class Params:
 
 # Make the UI
 pad = 10  # padding before frame borders
-bwid = 5  # border width for frames
-wid = 20
-style = tkinter.RIDGE
+bd_root = 1  # border width for root-level frames
+rel_root = tkinter.GROOVE
 
 # TODO: Put tkinter frames (the root-level frames) into ttk.Notebook pages, after switching over to ttk...
 
 # FRAME 1 - CONFIGURATION OPTIONS
-config_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+config_frame = tkinter.Frame(root, borderwidth=bd_root, relief=rel_root, padx=pad, pady=pad, bg=Filter.bg_BG)
 config_frame.grid(row=0, column=0, sticky="NSEW")
 
 summname = tkinter.StringVar()
 
-summ_name_label = tkinter.Label(config_frame, text="Summoner", font="Helvetica 12 bold", anchor="w")
+summ_name_label = tkinter.Label(config_frame, text="Summoner", font="Helvetica 12 bold", anchor="w",
+                                bg=Filter.bg_BG, fg=Filter.fg_txt)
 summ_name_label.grid(row=0, column=0, sticky="NSEW")
 
-summ_name_entry = tkinter.Entry(config_frame, justify="center", textvariable=summname)
+summ_name_entry = tkinter.Entry(config_frame, justify="center", textvariable=summname, width=40)
 summ_name_entry.grid(row=1, column=0, sticky="NSEW")
 
 reg = tkinter.StringVar(value="Choose")
 
-region_label = tkinter.Label(config_frame, text="Region", font="Helvetica 12 bold", anchor="e")
+region_label = tkinter.Label(config_frame, text="Region", font="Helvetica 12 bold", anchor="e",
+                             bg=Filter.bg_BG, fg=Filter.fg_txt)
 region_label.grid(row=0, column=1, sticky="NSEW")
 
 region_dropdown = tkinter.OptionMenu(config_frame, reg, *["Choose"])
+region_dropdown["anchor"] = "w"
+region_dropdown["width"] = 4
+region_dropdown["relief"] = tkinter.FLAT
+region_dropdown["bd"] = 0
+region_dropdown["fg"] = Filter.fg_btn
+region_dropdown["borderwidth"] = 0
+region_dropdown["padx"] = 5
+region_dropdown["pady"] = 2
+region_dropdown["highlightthickness"] = 0
+region_dropdown["background"] = Filter.bg_CT
+region_dropdown["activebackground"] = Filter.bg_HL
+region_dropdown["activeforeground"] = Filter.fg_btn
 region_dropdown.grid(row=1, column=1, sticky="NSEW")
 
 
 def open_dev_site(event):
-    webbrowser.open_new(r"https://developer.riotgames.com/")
-    print(event)
+    webbrowser_open_new(r"https://developer.riotgames.com/")
 
 
 api_key = tkinter.StringVar()
-api_key_label = tkinter.Label(config_frame, text="\nYour API Key:", font="Helvetica 12 bold")
+api_key_label = tkinter.Label(config_frame, text="Your API Key:", font="Helvetica 12 bold",
+                              bg=Filter.bg_BG, fg=Filter.fg_txt)
 api_key_label.grid(columnspan=2, sticky="NSEW")
 
-riot_link = tkinter.Label(config_frame, text="Get free key at developer.riotgames.com",
-                          font="Helvetica 10 underline", fg="blue", cursor="hand2")
+key_entry = tkinter.Entry(config_frame, width=20, justify="center", textvariable=api_key)
+key_entry.config(fg="black", bg="white")
+key_entry.grid(columnspan=2, sticky="NSEW")
+
+riot_link = tkinter.Label(config_frame, text="Get API key (free) from developer.riotgames.com",
+                          font="Helvetica 10 underline", cursor="hand2", bg=Filter.bg_BG, fg=Filter.fg_txt)
 riot_link.grid(columnspan=2, sticky="NSEW")
 riot_link.bind("<Button-1>", open_dev_site)
 
-key_box = tkinter.Entry(config_frame, width=wid, justify="center", textvariable=api_key)
-key_box.config(fg="black")
-key_box.grid(columnspan=2, sticky="NSEW")
-
-tkinter.Label(config_frame, text="", font="Helvetica 6").grid(columnspan=2)
-
-b_get_data = tkinter.Button(config_frame, text="Get Game Data")
-b_get_data.config(font="Helvetica 12 bold", command=get_data, bd=5)
+b_get_data = tkinter.Button(config_frame, text="Get Game Data", command=get_data)
+b_get_data.config(font="Helvetica 12 bold", width=5, relief=Filter.rel_btn)
+b_get_data.config(fg=Filter.fg_btn, bd=Filter.bd_btn, bg=Filter.bg_CT, activebackground=Filter.bg_HL)
 b_get_data.grid(columnspan=2, sticky="NSEW")
 
 # Make the middle frame to contain the filtering options
-filter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+filter_frame = tkinter.Frame(root, borderwidth=bd_root, relief=rel_root, padx=pad, pady=pad, bg=Filter.bg_BG)
 filter_frame.grid(row=0, column=1, rowspan=2, sticky="NSEW")
 
-filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)")
+filter_frame_label = tkinter.Label(filter_frame, text="Select Desired Filter(s)", bg=Filter.bg_BG, fg=Filter.fg_txt)
 filter_frame_label.config(font="Helvetica 12 bold")
 filter_frame_label.grid(sticky="NSEW")
 
 # Add the filters to the middle of the filter frame
 Filters = [
-    Filter("Champion(s)", filter_frame, 0, 6, "champion", ["Champion"], sort_by="values"),
-    Filter("Season(s)", filter_frame, 0, 6, "seasons.gameconstants", ["Season"], sort_by="keys"),
+    Filter("Champion(s)", filter_frame, 0, 5, "champion", ["Champion"], sort_by="values"),
+    Filter("Season(s)", filter_frame, 0, 5, "seasons.gameconstants", ["Season"], sort_by="keys"),
     Filter("Role(s)", filter_frame, 0, 7, "roles.gameconstants", ["Role"], sort_by="keys"),
-    Filter("Queue(s)", filter_frame, 0, 10, "queues.gameconstants", ["Queue Type"], sort_by="values")
+    Filter("Queue(s)", filter_frame, 0, 8, "queues.gameconstants", ["Queue Type"], sort_by="values")
     ]
 
 # Number of matches filter
-recency_filter_subframe = tkinter.Frame(filter_frame, borderwidth=2, relief=tkinter.GROOVE, padx=pad, pady=pad)
+recency_filter_subframe = tkinter.Frame(filter_frame, borderwidth=Filter.bd_ssxn, relief=Filter.rel_ssxn)
+recency_filter_subframe.config(bg=Filter.bg_BG, padx=pad, pady=pad)
 recency_filter_subframe.grid(sticky="NSEW")
 
 recency_filter = tkinter.IntVar(value=0)
-recency_filter_label = tkinter.Label(recency_filter_subframe, text="Include last ", font="Helvetica 10")
-recency_filter_label.grid(row=0, column=0, sticky="e")
+recency_filter_label = tkinter.Label(recency_filter_subframe, text="Include last ", font="Helvetica 10", anchor="e",
+                                     bg=Filter.bg_BG, fg=Filter.fg_txt)
+recency_filter_label.grid(row=0, column=0, sticky="NSEW")
 
-recency_entry = tkinter.Entry(recency_filter_subframe, width=8, justify="center", textvariable=recency_filter)
-recency_entry.grid(row=0, column=1, sticky="ew")
+recency_entry = tkinter.Entry(recency_filter_subframe, width=4, justify="center", textvariable=recency_filter)
+recency_entry.grid(row=0, column=1, sticky="NSEW")
 
-recency_entry_label =  tkinter.Label(recency_filter_subframe, text=" days worth of games (0 = include all)", font="Helvetica 10")
-recency_entry_label.grid(row=0, column=2, sticky="w")
+recency_entry_label = tkinter.Label(recency_filter_subframe,
+                                    text=" days worth of games (0 = include all)", font="Helvetica 10", anchor="w",
+                                    bg=Filter.bg_BG, fg=Filter.fg_txt)
+recency_entry_label.grid(row=0, column=2, sticky="NSEW")
 
 # Plots
-plotter_frame = tkinter.Frame(root, borderwidth=bwid, relief=style, padx=pad, pady=pad)
+plotter_frame = tkinter.Frame(root, borderwidth=bd_root, relief=rel_root, padx=pad, pady=pad, bg=Filter.bg_BG)
 plotter_frame.grid(row=1, column=0, sticky="NSEW")
 
-plotter_frame_label = tkinter.Label(plotter_frame, text="Plots", font="Helvetica 12 bold", fg="Black")
-plotter_frame_label.grid(row=0, column=0, columnspan=2)
+plotter_frame_label = tkinter.Label(plotter_frame, text="Plots", font="Helvetica 12 bold",
+                                    bg=Filter.bg_BG, fg=Filter.fg_txt)
+plotter_frame_label.grid()
 
 
 def assign(event, string_var=None):
@@ -494,89 +542,118 @@ def assign(event, string_var=None):
 
     plot_button.config(text="Make Plot:\n" + y_var.get() + "\nvs.\n" + x_var.get())
 
-    return
 
+# Identify the longest variable to set the width of the x and y variable boxes
+long_var = sorted([len(var) for var in parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars + parse.Var.s_vars])[-1]
 
 y_var = tkinter.StringVar(value="Choose Y Variable")
 y_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars))
 
-tkinter.Label(plotter_frame, text="Select Y Variable:", font="Helvetica 10").grid(row=1, column=0, columnspan=2)
+y_var_label = tkinter.Label(plotter_frame, text="Select Y Variable:")
+y_var_label.config(font="Helvetica 10", bg=Filter.bg_BG, fg=Filter.fg_txt)
+y_var_label.grid()
 
+y_frame = tkinter.Frame(plotter_frame, relief=Filter.rel_SB, bg=Filter.bg_BG, bd=Filter.bd_SB)
+y_frame.grid(sticky="NSEW")
 
-y_sb=tkinter.Scrollbar(plotter_frame)
-y_box = tkinter.Listbox(plotter_frame, listvariable=y_vars, selectmode=tkinter.SINGLE)
-y_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Helvetica 9", width=45,
-             exportselection=False, yscrollcommand=y_sb.set)
-y_box.grid(row=2, column=0, sticky="nsew")
+y_sb = tkinter.Scrollbar(y_frame)
+y_box = tkinter.Listbox(y_frame, listvariable=y_vars, selectmode=tkinter.SINGLE)
+y_box.config(activestyle="none", exportselection=False, yscrollcommand=y_sb.set, width=long_var, height=7)
+y_box.config(font="Helvetica 9", relief=tkinter.FLAT, bd=Filter.bd_pad)
+y_box.grid(row=0, column=0, sticky="NSEW")
 y_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=y_var))
-y_sb.config(command=y_box.yview)
-y_sb.grid(row=2, column=1, sticky="nsew")
+y_sb.config(command=y_box.yview, relief=tkinter.GROOVE)
+y_sb.grid(row=0, column=1, sticky="NSEW")
+
+x_var_label = tkinter.Label(plotter_frame, text="Select X Variable:")
+x_var_label.config(font="Helvetica 10", bg=Filter.bg_BG, fg=Filter.fg_txt)
+x_var_label.grid()
 
 x_var = tkinter.StringVar(value="Choose X Variable")
 x_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars))
 
-tkinter.Label(plotter_frame, text="Select X Variable:", font="Helvetica 10").grid(row=3, column=0, columnspan=2)
+x_frame = tkinter.Frame(plotter_frame, relief=Filter.rel_SB, bg=Filter.bg_BG, bd=Filter.bd_SB)
+x_frame.grid(sticky="NSEW")
 
-x_sb=tkinter.Scrollbar(plotter_frame)
-x_box = tkinter.Listbox(plotter_frame, listvariable=x_vars, selectmode=tkinter.SINGLE)
-x_box.config(bd=3, height=7, relief=tkinter.RIDGE, activestyle="none", font="Helvetica 9", width=45,
-             exportselection=False, yscrollcommand=x_sb.set)
-x_box.grid(row=4, column=0, sticky="nsew")
+x_sb = tkinter.Scrollbar(x_frame)
+x_box = tkinter.Listbox(x_frame, listvariable=x_vars, selectmode=tkinter.SINGLE)
+x_box.config(activestyle="none", exportselection=False, yscrollcommand=x_sb.set, width=long_var, height=7)
+x_box.config(font="Helvetica 9", relief=tkinter.FLAT, bd=Filter.bd_pad)
+x_box.grid(row=0, column=0, sticky="NSEW")
 x_box.bind("<<ListboxSelect>>", lambda event: assign(event, string_var=x_var))
 x_sb.config(command=x_box.yview)
-x_sb.grid(row=4, column=1, sticky="nsew")
+x_sb.grid(row=0, column=1, sticky="NSEW")
 
-plotter_options_frame = tkinter.Frame(plotter_frame, borderwidth=0, relief=None, padx=2, pady=2)
-plotter_options_frame.grid(sticky="NSEW")
+plotter_opts_frame = tkinter.Frame(plotter_frame, borderwidth=0, relief=tkinter.FLAT, padx=0, pady=5, bg=Filter.bg_BG)
+plotter_opts_frame.grid(sticky="NSEW")
 
-threshold_label = tkinter.Label(plotter_options_frame, text="Specify minimum instances:", font="Helvetica 10", anchor="w")
+threshold_label = tkinter.Label(plotter_opts_frame, text="Specify minimum instances:", anchor="w")
+threshold_label.config(font="Helvetica 10", bg = Filter.bg_BG, fg = Filter.fg_txt)
 threshold_label.grid(row=0, column=0, sticky="NSEW")
 threshold_var = tkinter.StringVar(value=5)
-threshold_entry = tkinter.Entry(plotter_options_frame, textvariable=threshold_var, width=5)
+threshold_entry = tkinter.Entry(plotter_opts_frame, textvariable=threshold_var, width=3)
 threshold_entry.grid(row=0, column=1, sticky="NSEW")
 
-ci_label = tkinter.Label(plotter_options_frame, text="Confidence Interval (Error Bars)", font="Helvetica 10", anchor="w")
+ci_label = tkinter.Label(plotter_opts_frame, text="Confidence Interval (Error Bars):", anchor="w")
+ci_label.config(font="Helvetica 10", bg = Filter.bg_BG, fg = Filter.fg_txt)
 ci_label.grid(row=1, column=0, sticky="NSEW")
 ci_var = tkinter.StringVar(value="68%")
-ci_menu = tkinter.OptionMenu(plotter_options_frame, ci_var, *sorted(list(plot_fns.z_scores.keys())))
+ci_menu = tkinter.OptionMenu(plotter_opts_frame, ci_var, *sorted(list(plot_fns.z_scores.keys())))
+ci_menu["anchor"] = "w"
+ci_menu["width"] = 4
+ci_menu["relief"] = tkinter.FLAT
+ci_menu["bd"] = 0
+ci_menu["fg"] = Filter.fg_btn
+ci_menu["borderwidth"] = 0
+ci_menu["padx"] = 3
+ci_menu["pady"] = 2
+ci_menu["highlightthickness"] = 0
+ci_menu["background"] = Filter.bg_CT
+ci_menu["activebackground"] = Filter.bg_HL
+ci_menu["activeforeground"] = Filter.fg_btn
+
 ci_menu.grid(row=1, column=1, sticky="NSEW")
 
-bins_label = tkinter.Label(plotter_options_frame, text="Number of Bins (For Histograms)", font="Helvetica 10", anchor="w")
+bins_label = tkinter.Label(plotter_opts_frame, text="Number of Bins (For Histograms):", anchor="w")
+bins_label.config(font="Helvetica 10", bg=Filter.bg_BG, fg=Filter.fg_txt)
 bins_label.grid(row=2, column=0, sticky="NSEW")
 bins_var = tkinter.StringVar(value=10)
-bins_entry = tkinter.Entry(plotter_options_frame, textvariable=bins_var, width=5)
+bins_entry = tkinter.Entry(plotter_opts_frame, textvariable=bins_var, width=3)
 bins_entry.grid(row=2, column=1, sticky="NSEW")
 
-plot_button = tkinter.Button(plotter_frame, text="Please See Above To Select\nY Variable\nand\nX Variable")
-plot_button.config(font="Helvetica 9 bold", command=plot_generation, bd=5, state="active")
+plot_button = tkinter.Button(plotter_frame, text="Please See Above To Select\nY Variable\nand\nX Variable",
+                             command=plot_generation)
+plot_button.config(font="Helvetica 9 bold", width=5, relief=Filter.rel_btn)
+plot_button.config(fg=Filter.fg_btn, bd=Filter.bd_btn, bg=Filter.bg_CT, activebackground=Filter.bg_HL)
 plot_button.grid(sticky="NSEW")
 
-
 # Build a status label at the bottom of the UI to keep the user informed using the status string
-status_label = tkinter.Label(root, textvariable=Params.status_string)
-status_label.config(height=1, font="Helvetica 14 bold", foreground="blue")
+status_label = tkinter.Label(root, textvariable=Params.status_string, relief=rel_root, bd=bd_root)
+status_label.config(font="Helvetica 13 bold", foreground=Filter.bg_HL, bg=Filter.bg_BG, padx=pad, pady=pad)
 status_label.grid(columnspan=2, sticky="NSEW")
 
 
 def make_resizable(frame):
-    # print("Frame is", frame.winfo_class())
-    if frame.winfo_class() in ["Label", "Button", "Menubutton"]:
-        frame.columnconfigure(0, weight=0)
-        frame.rowconfigure(0, weight=0)
-    else:
-        frame.columnconfigure(0, weight=10)
-        frame.rowconfigure(0, weight=10)
+    non_resizing_column = ["Menubutton", "Scrollbar"]
+    non_resizing_row = ["Label", "Button"]
+    # non_resizing_column = []
+    # non_resizing_row = []
 
-    for ii in range(frame.grid_size()[0]):
-        if frame.winfo_class() in ["Label", "Button", "Menubutton"]:
-            frame.columnconfigure(ii, weight=0)
+    # print("Frame is", frame.winfo_class())
+    for ii in [0] + list(range(frame.grid_size()[0])):
+        if frame.winfo_class() not in non_resizing_column:
+            frame.grid_columnconfigure(ii, weight=10)
+            # print("  didit")
         else:
-            frame.columnconfigure(ii, weight=10)
-    for ii in range(frame.grid_size()[1]):
-        if frame.winfo_class() in ["Label", "Button", "Menubutton"]:
-            frame.rowconfigure(ii, weight=0)
+            frame.grid_columnconfigure(ii, weight=0)
+            # print("  didn't didit")
+    for ii in [0] + list(range(frame.grid_size()[1])):
+        if frame.winfo_class() not in non_resizing_row:
+            frame.grid_rowconfigure(ii, weight=10)
+            # print("  didit")
         else:
-            frame.rowconfigure(ii, weight=10)
+            frame.grid_rowconfigure(ii, weight=0)
+            # print("  didn't didit")
 
     slaves = frame.grid_slaves()
     if len(slaves) == 0:

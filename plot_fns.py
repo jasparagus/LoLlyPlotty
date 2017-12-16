@@ -19,10 +19,11 @@
 #    This is free software, and you are welcome to redistribute it
 #    under certain conditions. See license.txt for details.
 
+from matplotlib import use as matplotlib_use  # for setting the plot renderer backend
+import matplotlib.pyplot as plt  # for making plots
 import math  # This is for various math functions (ceiling, sqrt, etc.)
-import matplotlib  # This is for editing the plot renderer
-matplotlib.use("TkAgg")  # This goes before pyplot import so that rendering works on MacOS
-import matplotlib.pyplot as plt  # This is for making plots
+
+matplotlib_use("TkAgg")  # set the backend to use Agg rendering to a Tk canvas (requires TkInter)
 
 
 def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval="90%", dict_type="Bar"):
@@ -300,8 +301,10 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
                           label= y_label + " True", histtype="bar", normed=0, color="green", alpha=0.5)
     (_, _, p2) = plt.hist(red_list, bins=n_bins, range=[b_min, b_max],
                           label= y_label + " False", histtype="bar", normed=0, color="red", alpha=0.5)
-    m_g = plt.axvline(green_mean, color="green", linestyle="dashed", label="Average, " + y_label + " True")
-    m_r = plt.axvline(red_mean, color="red", linestyle="dashed", label="Average, " + y_label + " False")
+    m_g = plt.axvline(green_mean, color="green", linestyle="dashed",
+                      label="Average, " + y_label + " True = " + str(round(green_mean, 2)))
+    m_r = plt.axvline(red_mean, color="red", linestyle="dashed",
+                      label="Average, " + y_label + " False = " + str(round(red_mean, 2)))
 
     if x_label != "":
         plt.xlabel(x_label)

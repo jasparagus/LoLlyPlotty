@@ -8,40 +8,63 @@
 
 Uses Riot Games API to download complete match data for a summoner (normals, ranked, etc.), parses and analyzes that data, and generates plots for data visualization given the user's preferences (e.g. champions played, friends played with, etc.).
 
-## Instructions (.exe for Windows x64)
-+ Follow directions above (or click link in-app) to get an API key:
-  + Go to https://developer.riotgames.com
-  + Choose "SIGN UP NOW"
-  + Log in and refresh your API key if necessary
-+ Download [LoLlyPlotty_Win_x64_v1.0.zip](LoLlyPlotty_Win_x64_v1.0.zip) directly or download the source code via GitHub and locate it
-+ Extract downloaded zip and run "main.exe" (for executable) or "main.py" (for python)
+## Notice
+LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. League of Legends © Riot Games, Inc.
+
+## Instructions (Installation and Use)
+#### Getting an API Key
++ Go to [https://developer.riotgames.com](https://developer.riotgames.com)
++ Choose "SIGN UP NOW" (this is free and very easy to do)
++ Log in and refresh your API key if necessary
++ Copy your API key
+
+#### Running LoLlyPlotty as an Executable (Windows x64 Only)
++ Download the newest [LoLlyPlotty zip file](LoLlyPlotty_Win_x64_v1.1.zip) (choose "Download" after clicking the link)
++ Extract downloaded zip and run "main.exe" from the extracted files (.exe for Windows x64)
+
+*OR*
+#### Running LoLlyPlotty from Source
++ Download the latest version of Python from [python.org](https://www.python.org/downloads/)
++ Check that you have the required modules (see also [Tutorial: Installing Packages in Python](https://packaging.python.org/tutorials/installing-packages/))
+  + [Matplotlib](https://matplotlib.org/)
+  + [NumPy](http://www.numpy.org/)
++ Download the Python source code from [Github](https://github.com/jasparagus/LoLlyPlotty)
++ Run "main.py"
+
+#### Using LoLlyPlotty
 + Enter summoner info for desired summoner
-+ Enter your API key (note that freshly generated API keys may take a few moments to activate)
-+ Get your data! Note that this will take a long time on first run
-+ Choose your y and x variables, then make a plot from them!
-+ If desired, filter to include/exclude specific options (e.g. roles or champions played) and re-make your plot(s)
-  + Try Win/Loss vs. Champion to see your wintrate on various champions
-  + Try Gold/Min Diff. (0 -> 10 Min) vs. Champion (Lane Opponent's) to see your gold defecit when laning against various champions
-+ Note that all data is limited by what the Riot API knows (e.g. sometimes it can't reliably figure out what lane you were in)
++ Enter your API key (note that API keys may take a few moments to become active after they are created, so if things fail, try again in a few seconds)
++ Get your data! Note that this will take a long time on first run (can take >20 min. for 2000+ games; just let it run in the background)
++ Once data is downloaded, choose a y and an x variable (e.g. "Win/Loss" and "Teammate"), then make a plot from them!
+  + LoLlyPlotty will choose an appropriate plot type (histogram, bar chart, scatter plot) for the selected data types
+  + You often swap X and Y for a different way to visualize the data
+  + If desired, filters may be used to exclude/include only specific options (e.g. champions, roles, or seasons)
+  + You may filter by recency (e.g. only games in the last 30 days)
+  + You may exclude uncommon options from your plots (e.g. exclude champions on which you've played fewer than 10 games) using the appropriate box
+  + Choose the confidence interval you'd like shown on the plot (the black "error bar" line) using the appropriate dropdown; this is estimated from the data using
+   [z-scores](https://en.wikipedia.org/wiki/Standard_score) and [standard error](https://en.wikipedia.org/wiki/Standard_error). Only applies to bar charts.
++ Plots to try:
+  + "Win/Loss" vs. "Champion": your wintrate on various champions. Try filtering by ranked only, normals only, or ARAMs only and compare the results.
+  + "Win/Loss" vs. "Champion (Played by Enemy)": note what champions you often lose against and reconsider your typical bans.
+  + "Gold/Min Diff. (0 -> 10 Min)" vs. "Champion (Lane Opponent's)" to see your gold defecit when laning against various champions
+  + "Win/Loss" vs. "Fraction of Team Damage (Total, To Champs)": see how your damage shares stack up in wins and losses. Note that Win/Loss True is a win and Win/Loss False is a loss.
++ Note that data is limited by what the Riot API knows (e.g. sometimes it can't figure out what lane you were in, so that data may be unknown). Not all data is available for all matches (older matches, for example, do not contain "damage mitigated" data).
   
 
+## Notes
++ Creates a .json data file for each summoner analyzed. This file is saved in the directory where LoLlyPlotty runs. These may be tens of MB in size. Make sure to copy these files when changing versions so you don't have to re-download them.
++ Riot's API keys have associated rate limits. This means it takes a long time to get matches the first time the program is used on a new summoner. Matches are saved to your computer as they download, so you can stop and then resume downloading. Also, updates (e.g. grabbing 10-100 new matches) is fairly quick as it avoids this rate limit.
++ This is a work in progress, and features will be added over time.
 
-## Required Python 3 Modules to Run From Source
-(See also directions for [installing packages in Python](https://packaging.python.org/tutorials/installing-packages/))
-+ [Matplotlib](https://matplotlib.org/)
-+ [NumPy](http://www.numpy.org/)
+## Known Issues
++ First Blood Assist Doesn't work (Riot always records a 0 for this variable)
++ Newly generated API keys do not work immediately. Wait ~5s after creating an API key before trying to use it for an API call.
++ Riot's API sometimes returns an incorrect number of total matches from the MATCH-V3 Matchlist API. This may cause the total number displayed in-app to be incorrect. 
 
-
-## Notes:
-+ Runs in-place to create a (rather large) json data file for each summoner analyzed
-+ Riot's API servers have rate limits, so don't be alarmed if it takes a little while to get matches the first time it is run (matches are saved to disk for later use)
-+ This is a work in progress, and features will be added over time
-
-## Known Issues:
-+ First Blood Assist Doesn't work
-
-## To-Do:
+## To-Do
 + Add a Teammate filter (a filter for games that include specific teammate(s)), along the same lines as the Champion filter. This will require identifying "Teammates" on startup or via a button press. Best way will probably be to make a "settings" window and include a "# Games to be considered a 'Teammate'" option on that pane.
+
++ Add a summoner spell filter (a filter for games where summoner spell 1 or 2 was a specific spell, e.g. ignite)
 
 + Add a progress bar beneath the bottom status text for long tasks (e.g. firstrun getting of match data)
 
@@ -61,11 +84,19 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 
 + Implement hist2d in matplotlib - really convenient replacement for scatter plots
 
-## License
-LoLlyPlotty: league of legends statistics and plots.
-Copyright (C) 2017, league_plots@outlook.com
++ Consider using Pandas for handling (increasingly large) json data files
 
-This program is free software: you can redistribute it and/or modify
+
+## Thanks
+Thanks to [PVisnRT](https://github.com/PVisnRT) for working together on the original version of this (written in Matlab... lol) and for contributing to adapting this for Python and working on data visualization methods. Thanks to [cjc77](https://github.com/cjc77) for extensive help with Python data structures and tons of Python advice.
+
+
+## License
+LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. League of Legends © Riot Games, Inc.
+
+LoLlyPlotty: league of legends statistics and plots. Copyright (C) 2017, league_plots@outlook.com
+
+This program is free software: you can redistribute it and/or modify 
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -83,11 +114,8 @@ This is free software, and you are welcome to redistribute it
 under certain conditions. See license.txt for details.
 
 
-## Notes
-Thanks to [PVisnRT](https://github.com/PVisnRT) for working together on the original version of this (written in Matlab... lol) and for contributing to adapting this for Python. Thanks to [cjc77](https://github.com/cjc77) for extensive help with Python data structures and tons of Python advice.
-
-
-## Major Changelog
+## Changelog
+#### 2017-12-16: Major GUI overhaul (color scheme, added frames everywhere). Version bump to 1.1
 #### 2017-12-10: First executable version (for Windows x64); made using the excellent [pyinstaller tool](http://www.pyinstaller.org/)
 #### 2017-11-30: Updated GUI for resizability
 #### 2017-11-21: Implemented fractional plots (e.g. fraction of team damage, etc.)
