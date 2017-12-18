@@ -26,18 +26,6 @@ from parse.clean import *
 from parse.get import *
 from parse.prep import *
 
-# TODO: remove testing code
-testing=0
-if testing:
-    import json
-    with open("Configuration.json", "r") as file:
-        config_info = json.load(file)
-    with open("MatchData_jasparagus.json", "r") as file:
-        match_data = json.load(file)
-    match = match_data[sorted(list(match_data.keys()))[0]]
-    # print(json.dumps(match["participants"][pid], indent=4))
-# testing = 1
-
 
 class Var:
     names = []  # A list of all instance names
@@ -47,67 +35,66 @@ class Var:
     c_vars = []  # A list of incrementing variables (e.g. games played or time played)
     q_vars = []  # Variables that aren't plotted using a normal plot function (e.g. "Most Kills")
 
-    def __init__(self, name, types, path, cleanup=None):
+    def __init__(self, name, data_type, path, cleanup=None):
         self.name = name
-        self.types = types
+        self.data_type = data_type
         self.path = path
         self.cleaup = cleanup
 
-        # Update the lists of variables and their types as applicable
+        # Update the lists of variables and their data type as applicable
         self.names.append(self.name)
         self.names = sorted(self.names)
 
-        if "b" in str(types).lower():
+        if "b" in str(self.data_type):
             self.b_vars.append(self.name)
-        if "f" in str(types).lower():
+        if "f" in str(self.data_type):
             self.f_vars.append(self.name)
-        if "s" in str(types).lower():
+        if "s" in str(self.data_type):
             self.s_vars.append(self.name)
-        if "c" in str(types).lower():
+        if "c" in str(self.data_type):
             self.c_vars.append(self.name)
-        if "q" in str(types).lower():
+        if "q" in str(self.data_type):
             self.q_vars.append(self.name)
-
         return
 
     def extract(self, config_info, match):
         # call this once or twice (e.g. for win/loss and champion) per match to get the appropriate data from the match
-        self.value = match.copy()
+        value = match.copy()
 
         # Iteratively work through the list, taking the appropriate type of action as determined by the element
         for step in self.path:
             try:
-                if type(step) is types.FunctionType:
+                if isinstance(step, types.FunctionType):
                     # if you have a function, carry it out correctly...
                     if step.__name__[0:6] == "clean_":
                         # clean functions take config_info and the previous step's result (the value to be cleaned)
-                        if type(self.value) is list:
+                        if type(value) is list:
                             # if cleaning a list, clean each item one by one
                             vals = []
-                            for vv in self.value:
+                            for vv in value:
                                 vals += [step(config_info, vv)]
-                            self.value = vals
+                            value = vals
                         else:
                             # if cleaning a single item, clean the single item...
-                            self.value = step(config_info, self.value)
+                            value = step(config_info, value)
                     elif step.__name__[0:4] == "get_":
                         # get functions take config_info and the match, from which they get the appropriate value
                         temp_step = step(config_info, match)
                         if type(temp_step) in [dict, list]:
                             # If the output is a dictionary or list, the step is done; move on
-                            self.value = temp_step
+                            value = temp_step
                         else:
                             # if the output is not a dictionary, extract the value using the appropriate key
                             try:
-                                self.value = self.value[temp_step]
-                            except KeyError as e:
-                                self.value = temp_step
+                                value = value[temp_step]
+                            except KeyError:
+                                value = temp_step
                 else:
                     # otherwise, it is a normal key and should be used to access the next dictionary entry
-                    self.value = self.value[step]
+                    value = value[step]
             except:
-                self.value = "Unknown"
-        return self.value
+                value = "Unknown"
+        return value
 
     @classmethod
     def check_removal(cls, config_info, match, vars_list, filters, oldest_match_days):
@@ -150,11 +137,10 @@ class Var:
 
         # Handle prep steps in x and y if necessary
         for step in vars_list[cls.names.index(y_var_name)].path + vars_list[cls.names.index(x_var_name)].path:
-            if type(step) is types.FunctionType:
+            if isinstance(step, types.FunctionType):
                 if step.__name__[0:5] == "prep_":
                     # prep functions go through all matches, updating config info for subsequent steps
                     config_info = step(config_info, match_data)
-
 
         for game_id in game_ids:
             # Grab hold of the match getting checked
@@ -229,7 +215,7 @@ Vars = [
     Var("Vision Wards Bought", "f", ["participants", get_pid, "stats", "visionWardsBoughtInGame"]),
     Var("First Blood", "b", ["participants", get_pid, "stats", "firstBloodKill", clean_binary]),
     # NOTE: First blood assist not implemented by Riot in API; is always false as of 20171101
-    # Var("First Blood (Assisted)", "xy", ["participants", get_pid, "stats", "firstBloodAssist", clean_binary]),
+    # Var("First Blood (Assisted)", "b", ["participants", get_pid, "stats", "firstBloodAssist", clean_binary]),
     Var("First Tower", "b", ["participants", get_pid, "stats", "firstTowerKill", clean_binary]),
     Var("First Tower (Assisted)", "b", ["participants", get_pid, "stats", "firstTowerAssist", clean_binary]),
     Var("Gold Earned", "f", ["participants", get_pid, "stats", "goldEarned"]),

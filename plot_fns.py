@@ -19,11 +19,11 @@
 #    This is free software, and you are welcome to redistribute it
 #    under certain conditions. See license.txt for details.
 
-from matplotlib import use as matplotlib_use  # for setting the plot renderer backend
+import matplotlib  # for setting the plot renderer backend
 import matplotlib.pyplot as plt  # for making plots
 import math  # This is for various math functions (ceiling, sqrt, etc.)
 
-matplotlib_use("TkAgg")  # set the backend to use Agg rendering to a Tk canvas (requires TkInter)
+matplotlib.use("TkAgg")  # set the backend to use Agg rendering to a Tk canvas (requires TkInter)
 
 
 def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval="90%", dict_type="Bar"):
@@ -34,6 +34,7 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
     :param threshold: a cutoff for number of matches to exclude (e.g. exclude data with n<3 matches)
     :param z_scores: a dictionary of z scores for various confidence intervals
     :param conf_inverval: confidence interval (e.g. 0.9) in which conf_interval fraction of measurements will reside
+    :param dict_type: type of dictioanry to make. Differentiates between averaged or cumulative data
     :return: plot_dict: a dictionary of:
             var_list: list of unique variable strings (e.g. champion names or roles)
             n_by_var: instances of each unique variable (e.g. number of matches played on each champion in var_list)
@@ -150,11 +151,11 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
 
     pl_avg, = plt.plot([startx, endx], [plot_dict["overall_avg"], plot_dict["overall_avg"]],
                        label="Overall Average For \"" + y_label + "\" = " + str(round(plot_dict["overall_avg"], 2)),
-                       linestyle="--", color="b")
+                       linestyle="--", color="b", alpha=0.5)
 
     pl_hlf, = plt.plot([startx, endx], [plot_dict["half_max"], plot_dict["half_max"]],
                        label="Half-Max = " + str(round(plot_dict["half_max"], 2)) + " " + y_label,
-                       linestyle=":", color="k")
+                       linestyle=":", color="k", alpha=0.5)
 
     plt.plot([startx, endx], [0, 0], label="Zero", linestyle="-", color="k")
 
@@ -199,7 +200,10 @@ def make_barchart(plot_dict, title_string="", x_label="", y_label=""):
 
 
 def simple_bar_plotter(x_var, y_var, threshold=1, title_string="", x_label="", y_label="Win Rate",
-                       z_scores={"68%": 0.99}, conf_interval="68%", dict_type="Bar"):
+                       z_scores=None, conf_interval="68%", dict_type="Bar"):
+
+    if z_scores is None:
+        z_scores = {"68%": 0.99}
 
     plot_dict = make_plottable_dictionary(
         x_var,
@@ -236,7 +240,6 @@ def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_labe
 
     x_min = sorted(x_list_clean)[0]
     x_max = sorted(x_list_clean)[-1]
-    y_min = sorted(y_list_clean)[0]
     y_max = sorted(y_list_clean)[-1]
 
     y_avg = float(sum(y_list_clean) / len(y_list_clean))
@@ -244,12 +247,12 @@ def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_labe
     # create objects to plot
 
     pl_avg, = plt.plot([x_min, x_max], [y_avg, y_avg],
-                       label="Overall Average For \""+ y_label + "\" is " + str(round(y_avg, 2)),
-                       linestyle="--", color="b")
+                       label="Overall Average For \"" + y_label + "\" is " + str(round(y_avg, 2)),
+                       linestyle="--", color="b", alpha=0.5)
 
     pl_hlf, = plt.plot([x_min, x_max], [y_max * 0.5, y_max * 0.5],
-                       label="Half-Max is " + str(round(y_max, 2)) + " " +  y_label,
-                       linestyle=":", color="k")
+                       label="Half-Max is " + str(round(y_max, 2)) + " " + y_label,
+                       linestyle=":", color="k", alpha=0.5)
 
     plt.plot(x_list_clean, y_list_clean, "r.", label=y_name)
 
@@ -298,13 +301,13 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
     fig, ax = plt.subplots()
     fig.subplots_adjust(top=0.75, bottom=0.1)
     (_, _, p1) = plt.hist(green_list, bins=n_bins, range=[b_min, b_max],
-                          label= y_label + " True", histtype="bar", normed=0, color="green", alpha=0.5)
+                          label=y_label + " True", histtype="bar", normed=0, color="green", alpha=0.5)
     (_, _, p2) = plt.hist(red_list, bins=n_bins, range=[b_min, b_max],
-                          label= y_label + " False", histtype="bar", normed=0, color="red", alpha=0.5)
+                          label=y_label + " False", histtype="bar", normed=0, color="red", alpha=0.5)
     m_g = plt.axvline(green_mean, color="green", linestyle="dashed",
-                      label="Average, " + y_label + " True = " + str(round(green_mean, 2)))
+                      label="Average, " + y_label + " True = " + str(round(green_mean, 2)), alpha=0.5)
     m_r = plt.axvline(red_mean, color="red", linestyle="dashed",
-                      label="Average, " + y_label + " False = " + str(round(red_mean, 2)))
+                      label="Average, " + y_label + " False = " + str(round(red_mean, 2)), alpha=0.5)
 
     if x_label != "":
         plt.xlabel(x_label)
@@ -331,13 +334,13 @@ def compute_error(data_list, z_scores, conf_interval="90%"):
             continuous += 1
 
     if continuous:
-        n = float(len(data_list) + 0.01)  # can never be 0
+        n = float(len(data_list) + 0.001)  # can never be 0
         u = sum(data_list) / n
         s = math.sqrt(sum((x - u) ** 2 for x in data_list) / len(data_list))
         ci = z_score * s / math.sqrt(len(data_list))
 
     else:
-        n = float(len(data_list) + 0.01)  # can never be zero
+        n = float(len(data_list) + 0.001)  # can never be zero
         u = sum(data_list) / n
         ci = z_score * math.sqrt(u * (1 - u) / n)
 

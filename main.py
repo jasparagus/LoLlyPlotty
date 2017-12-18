@@ -19,10 +19,6 @@
 #    This is free software, and you are welcome to redistribute it
 #    under certain conditions. See license.txt for details.
 
-# Module-level import(s)
-from webbrowser import open_new as webbrowser_open_new
-from matplotlib.pyplot import show as pyplot_show
-
 # Custom module/ imports
 import api_fns
 import parse
@@ -34,6 +30,8 @@ import json
 import time
 import pathlib
 import tkinter  # future: import tkinter.ttk
+import matplotlib.pyplot
+import webbrowser
 
 
 def refresh():
@@ -129,7 +127,7 @@ def get_data():
 
         # Refresh the GUI one last time from the saved files
         refresh()
-        b_get_data.config(relief="raised", text="Get Game Data")
+        b_get_data.config(relief="raised", text="Get Game Data", bg=Filter.bg_CT)
         Params.status_string.set(
             "Downloaded " +
             str(len(Params.match_data)) +
@@ -167,7 +165,7 @@ def plot_generation():
                 plot_fns.simple_bar_plotter(x_list, y_list, threshold=Params.config_info["Threshold"],
                                             x_label=x_var.get(), y_label=y_var.get(),
                                             z_scores=plot_fns.z_scores, conf_interval=ci_var.get())
-                pyplot_show()
+                matplotlib.pyplot.show()
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
 
             # If the x variable isn't countable and the y variable is cumulative, use "cumulative" bar chart
@@ -177,7 +175,7 @@ def plot_generation():
                                             dict_type="Cumulative")
 
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-                pyplot_show()
+                matplotlib.pyplot.show()
 
             # If the x variable and y variable are numeric (e.g. "Damage" vs. "CS"), use a scatter plot
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.f_vars:
@@ -185,14 +183,14 @@ def plot_generation():
                                           x_label=x_var.get(), y_label=y_var.get())
 
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-                pyplot_show()
+                matplotlib.pyplot.show()
 
             # If the x is a float and y is discrete, use two stacked histograms
             elif x_var.get() in parse.Var.f_vars and y_var.get() in parse.Var.b_vars:
                 plot_fns.make_hist(x_list, y_list, bins_var.get(),
                                    x_label=x_var.get(), y_label=y_var.get())
                 Params.status_string.set(value="Plotted data from " + str(n_kept) + " games")
-                pyplot_show()
+                matplotlib.pyplot.show()
 
             else:
                 Params.status_string.set(value="Can't make a useful plot. Try swapping the variables if possible.")
@@ -310,7 +308,6 @@ class Filter:
         self.rb.bind("<Double-Button-1>", self.update_r2l)
         self.rsb.config(command=self.rb.yview)
         self.rsb.grid(row=0, column=1, sticky="NSEW")
-
 
     def sort_my_list(self, my_list):
         my_list_sorted = []
@@ -465,7 +462,7 @@ region_dropdown.grid(row=1, column=1, sticky="NSEW")
 
 
 def open_dev_site(event):
-    webbrowser_open_new(r"https://developer.riotgames.com/")
+    webbrowser.open_new(r"https://developer.riotgames.com/")
 
 
 api_key = tkinter.StringVar()
