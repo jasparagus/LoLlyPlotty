@@ -41,8 +41,8 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
   + If desired, filters may be used to exclude/include only specific options (e.g. champions, roles, or seasons)
   + You may filter by recency (e.g. only games in the last 30 days)
   + You may exclude uncommon options from your plots (e.g. exclude champions on which you've played fewer than 10 games) using the appropriate box
-  + Choose the confidence interval you'd like shown on the plot (the black "error bar" line) using the appropriate dropdown; this is estimated from the data using
-   [z-scores](https://en.wikipedia.org/wiki/Standard_score) and [standard error](https://en.wikipedia.org/wiki/Standard_error). Only applies to bar charts.
+  + Choose the [confidence interval](https://en.wikipedia.org/wiki/Confidence_interval) you'd like shown on the plot (appears as a vertical black "error bar") using the appropriate dropdown; this is estimated from the data using
+   [z-scores](https://en.wikipedia.org/wiki/Standard_score) and either the [standard deviation](https://en.wikipedia.org/wiki/Standard_deviation) or the [binomial proportion confidence interval](https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval), as applicable. Error bars are drawn on bar charts only (for now).
 + Plots to try:
   + "Win/Loss" vs. "Champion": your wintrate on various champions. Try filtering by ranked only, normals only, or ARAMs only and compare the results.
   + "Win/Loss" vs. "Champion (Played by Enemy)": note what champions you often lose against and reconsider your typical bans.
@@ -62,6 +62,8 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
 + Riot's API sometimes returns an incorrect number of total matches from the MATCH-V3 Matchlist API. This may cause the total number displayed in-app to be incorrect. 
 
 ## To-Do
++ Make horizontal lines (half-max and average lines) partially transparent
+
 + Add a Teammate filter (a filter for games that include specific teammate(s)), along the same lines as the Champion filter. This will require identifying "Teammates" on startup or via a button press. Best way will probably be to make a "settings" window and include a "# Games to be considered a 'Teammate'" option on that pane.
 
 + Add a summoner spell filter (a filter for games where summoner spell 1 or 2 was a specific spell, e.g. ignite)
