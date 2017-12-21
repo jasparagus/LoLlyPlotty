@@ -21,7 +21,7 @@
 
 
 import types
-import time
+import time  # pycharm sees this as unused, but it is not unused
 from parse.clean import *
 from parse.get import *
 from parse.prep import *
@@ -107,9 +107,19 @@ class Var:
                 keys_failed = 0
                 for filter_key in flt.filter_keys:
                     # See if the match (after parsing) is missing all the choices made in the GUI
-                    if (str(vars_list[cls.names.index(filter_key)].extract(config_info, match)) not in
-                            flt.choices_list):
-                        keys_failed += 1
+                    game_data = vars_list[cls.names.index(filter_key)].extract(config_info, match)
+                    # if your extracted data is a list of things, check each thing to see if it's OK
+                    if type(game_data) is list:
+                        data_fails = 0
+                        for data in game_data:
+                            if str(data) not in flt.choices_list:
+                                data_fails += 1
+                        if data_fails == len(game_data):
+                            keys_failed += 1
+                    # In the event that your extracted data is a single value, check the list for it
+                    else:
+                        if str(game_data) not in flt.choices_list:
+                            keys_failed += 1
                 # See if the game failed every key check (if so, exclude it)
                 if keys_failed == len(flt.filter_keys):
                     remove += 1

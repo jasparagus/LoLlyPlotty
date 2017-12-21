@@ -160,6 +160,14 @@ def config(region, summoner_name):
     return config_info
 
 
+def config_overwrite(config_info):
+
+    with open("Configuration.json", 'w') as file:
+        json.dump(config_info, file)
+
+    return config_info
+
+
 def summoner_by_name(config_info):
     """ Get summoner ID from summoner name. Summoner name must be lower-case letters only """
     account_id = ""

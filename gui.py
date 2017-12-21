@@ -64,9 +64,7 @@ def make_resizable(frame):
         return
 
 
-
 class App:
-
     # Colors: dark blue #15232b; darker blue #04090c; gold-ish #b0863e; light gold #cdbe91; near-white #f0e6d2
     bg_BG = "#15232b"  # the primary background color         "light slate gray"   "SteelBLue4"  "gray40"
     bg_CT = "#b0863e"  # the contrasting color (for buttons, dropdowns, etc.)
@@ -81,17 +79,17 @@ class App:
     rel_btn = tkinter.RAISED  # Relief for buttons
     rel_SB = tkinter.SUNKEN  # relief for scrollboxes (e.g. season list with its scrollbar)
 
-    pad_root = 10  # padding before frame borders
+    pad_main = 10  # padding before frame borders
     bd_root = 1  # border width for root-level frames
     rel_root = tkinter.GROOVE
 
     def __init__(self):
         self.root = tkinter.Tk()  # prepare a widget to hold the UI
-        self.root.configure(background="white")
+        self.root.configure(background=self.bg_BG)
         self.root.title("LoLlyPlotty")
         self.root.iconbitmap('icon.ico')
+        # self.root.geometry("1200x680")  # TODO: set this up
         self.root.resizable(width=True, height=True)
-
 
         self.status_string = tkinter.StringVar(value="App Started")
 
@@ -105,58 +103,78 @@ class App:
         try:
             fp = "MatchData_" + str(self.config_info["SummonerName"]) + "_" + str(self.config_info["Region"]) + ".json"
             with open(fp, "r") as file:
-                match_data = json.loads(file.read())
+                self.match_data = json.loads(file.read())
         except (FileNotFoundError, json.decoder.JSONDecodeError):
-            match_data = {}
+            self.match_data = {}
 
-        self.config_frame = ConfigFrame(self, self.root)
+        self.canvas = tkinter.Canvas(self.root, borderwidth=0)
+        self.mainframe = tkinter.Frame(self.canvas, width=1100, height=670)
+        self.mainframe_sb = tkinter.Scrollbar(self.root, command=self.canvas.yview)
+        self.canvas.config(yscrollcommand=self.mainframe_sb.set)
+        self.canvas.grid(row=0, column=0, sticky="NSEW")
+        self.mainframe.grid(row=0, column=0, sticky="NSEW")
+        self.mainframe_sb.grid(row=0, column=2, rowspan=2, sticky="NSEW")
+
+        self.config_frame = ConfigFrame(self, self.mainframe)
 
         # Make the middle frame to contain the filtering options
-        self.filter_frame = tkinter.Frame(self.root, borderwidth=self.bd_root, relief=self.rel_root, padx=self.pad_root, pady=self.pad_root, bg=self.bg_BG)
+        self.filter_frame = tkinter.Frame(self.mainframe, borderwidth=self.bd_root, relief=self.rel_root,
+                                          padx=self.pad_main, pady=self.pad_main, bg=self.bg_BG)
         self.filter_frame.grid(row=0, column=1, rowspan=2, sticky="NSEW")
 
-        filter_frame_label = tkinter.Label(self.filter_frame, text="Select Desired Filter(s)", bg=self.bg_BG, fg=self.fg_txt)
-        filter_frame_label.config(font="Helvetica 12 bold")
-        filter_frame_label.grid(sticky="NSEW")
-
-        self.scrollable_filters = [
-            ScrollableFilter(self, self.filter_frame, "Champion(s)", 0, 5, "champion", ["Champion"],
-                             sort_by="values"),
-            ScrollableFilter(self, self.filter_frame, "Season(s)", 0, 5, "seasons.gameconstants", ["Season"],
-                           sort_by="keys"),
-            ScrollableFilter(self, self.filter_frame, "Role(s)", 0, 7, "roles.gameconstants", ["Role"],
-                             sort_by="keys"),
-            ScrollableFilter(self, self.filter_frame, "Queue(s)", 0, 8, "queues.gameconstants", ["Queue Type"],
-                           sort_by="values")
-        ]
+        self.filter_frame_label = tkinter.Label(self.filter_frame, text="Select Desired Filter(s)",
+                                                bg=self.bg_BG, fg=self.fg_txt)
+        self.filter_frame_label.config(font="Helvetica 12 bold")
+        self.filter_frame_label.grid(sticky="NSEW")
 
         # Recency filter
         recency_filter_subframe = tkinter.Frame(self.filter_frame, borderwidth=self.bd_ssxn, relief=self.rel_ssxn)
-        recency_filter_subframe.config(bg=self.bg_BG, padx=self.pad_root, pady=self.pad_root)
+        recency_filter_subframe.config(bg=self.bg_BG, padx=self.pad_main, pady=self.pad_main)
         recency_filter_subframe.grid(sticky="NSEW")
 
         self.recency_filter = tkinter.IntVar(value=0)
-        recency_filter_label = tkinter.Label(recency_filter_subframe, text="Include last ", font="Helvetica 10", anchor="e",
-                                             bg=self.bg_BG, fg=self.fg_txt)
-        recency_filter_label.grid(row=0, column=0, sticky="NSEW")
+        self.recency_filter_label = tkinter.Label(recency_filter_subframe, text="Include last ", font="Helvetica 10",
+                                                  anchor="e", bg=self.bg_BG, fg=self.fg_txt)
+        self.recency_filter_label.grid(row=0, column=0, sticky="NSEW")
 
-        recency_entry = tkinter.Entry(recency_filter_subframe, width=4, justify="center", textvariable=self.recency_filter)
-        recency_entry.grid(row=0, column=1, sticky="NSEW")
+        self.recency_entry = tkinter.Entry(recency_filter_subframe, textvariable=self.recency_filter, width=4,
+                                           justify="center")
+        self.recency_entry.grid(row=0, column=1, sticky="NSEW")
 
-        recency_entry_label = tkinter.Label(recency_filter_subframe,
-                                            text=" days worth of games (0 = include all)", font="Helvetica 10", anchor="w",
-                                            bg=self.bg_BG, fg=self.fg_txt)
-        recency_entry_label.grid(row=0, column=2, sticky="NSEW")
+        self.recency_entry_label = tkinter.Label(recency_filter_subframe,
+                                                 text=" days worth of games (0 = include all)", font="Helvetica 10",
+                                                 anchor="w", bg=self.bg_BG, fg=self.fg_txt)
+        self.recency_entry_label.grid(row=0, column=2, sticky="NSEW")
 
-        self.plotter_frame = PlotterBox(self, self.root)
+        self.scrollable_filters = [
+            FilterListbox(self, self.filter_frame, "Champion(s)", 0, 7, "champion",
+                          ["Champion"], sort_by="values"),
+            FilterListbox(self, self.filter_frame, "Season(s)", 0, 7, "seasons.gameconstants",
+                          ["Season"], sort_by="keys"),
+            FilterListbox(self, self.filter_frame, "Role(s)", 0, 7, "roles.gameconstants",
+                          ["Role"], sort_by="keys"),
+            FilterListbox(self, self.filter_frame, "Queue(s)", 0, 8, "queues.gameconstants",
+                          ["Queue Type"], sort_by="values"),
+            # TODO: figure out how to handle these filters
+            # FilterListbox(self, self.filter_frame, "Item(s)", 0, 8, "item",
+            #               ["Item"], sort_by="values"),
+            # FilterListbox(self, self.filter_frame, "Summoner Spell(s)", 0, 8, "summoner",
+            #               ["Summoner Spell 1", "Summoner Spell 2"], sort_by="values"),
+            FilterListbox(self, self.filter_frame, "Teammate(s)", 0, 8, "Teammates",
+                          ["Teammate (By Name)"], sort_by="values", display_keyval="keys"),
+        ]
+
+        self.plotter_frame = PlotterBox(self, self.mainframe)
 
         # Build a status label at the bottom of the UI to keep the user informed using the status string
-        status_label = tkinter.Label(self.root, textvariable=self.status_string, relief=self.rel_root, bd=self.bd_root)
-        status_label.config(font="Helvetica 13 bold", foreground=self.bg_HL, bg=self.bg_BG, padx=self.pad_root, pady=self.pad_root)
-        status_label.grid(columnspan=2, sticky="NSEW")
+        self.status_label = tkinter.Label(self.mainframe, textvariable=self.status_string,
+                                          relief=self.rel_root, bd=self.bd_root)
+        self.status_label.config(font="Helvetica 13 bold", foreground=self.bg_HL, bg=self.bg_BG,
+                                 padx=self.pad_main, pady=self.pad_main)
+        self.status_label.grid(columnspan=2, sticky="NSEW")
 
     def refresh(self):
-        # Updates variables from files on disk; updates GUI from variables
+        # Updates variables and then GUI from disk; no other changes
 
         try:
             if self.config_info["Region"] is not "":
@@ -179,6 +197,12 @@ class App:
         except (FileNotFoundError, NameError, KeyError):
             self.match_data = {}
             self.status_string.set(value="Game data not found - check options, then try \"Get Game Data\" button")
+
+        try:
+            self.plotter_frame.threshold_var.set(int(self.config_info["Threshold"]))
+        except KeyError:
+            self.plotter_frame.threshold_var.set(int(5))
+            self.config_info["Threshold"] = int(self.plotter_frame.threshold_var.get())
 
         try:
             key, expiry = api_fns.get_api_key()
@@ -207,7 +231,7 @@ class App:
         for flt in self.scrollable_filters:
             flt.reset_box()
 
-        return
+        self.config_info = api_fns.config_overwrite(self.config_info)
 
     def purge(self, purge_all=False):
 
@@ -230,7 +254,7 @@ class ConfigFrame:
         self.parent_frame = parent_frame
         self.sub_frame = tkinter.Frame(self.parent_frame, borderwidth=self.parent_app.bd_root,
                                        relief=self.parent_app.rel_root, bg=self.parent_app.bg_BG,
-                                       pady=self.parent_app.pad_root, padx=self.parent_app.pad_root)
+                                       pady=self.parent_app.pad_main, padx=self.parent_app.pad_main)
         self.sub_frame.grid(row=0, column=0, sticky="NSEW")
 
         self.summname = tkinter.StringVar()
@@ -279,7 +303,7 @@ class ConfigFrame:
         riot_link.bind("<Button-1>", self.open_dev_site)
 
         self.b_get_data = tkinter.Button(self.sub_frame, text="Get Game Data", command=self.get_data)
-        self.b_get_data.config(font="Helvetica 12 bold", width=5, relief=self.parent_app.rel_btn)
+        self.b_get_data.config(font="Helvetica 12 bold", relief=self.parent_app.rel_btn)
         self.b_get_data.config(fg=self.parent_app.fg_btn, bd=self.parent_app.bd_btn, bg=self.parent_app.bg_CT,
                                activebackground=self.parent_app.bg_HL)
         self.b_get_data.grid(columnspan=2, sticky="NSEW")
@@ -299,7 +323,7 @@ class ConfigFrame:
                                                          self.summname.get())  # update configuration info from GUI
             self.reg.set(self.parent_app.config_info["Region"])  # update the GUI
             self.summname.set(self.parent_app.config_info["SummonerName"])
-            self.parent_app.refresh()
+            self.parent_app.refresh()  # TODO: is this necessary here?
 
             if self.parent_app.config_info["AccountID"] == "" or self.parent_app.config_info["SummonerID"] == "":
                 self.parent_app.status_string.set("Check summoner name, region, and API key." +
@@ -328,6 +352,9 @@ class ConfigFrame:
                     api_fns.append_match(self.parent_app.config_info, match, game_id)
                     mm += 1
 
+            # Get a list of teammates from the data (given the current "threshold")
+            parse.prep_teammates(self.parent_app.config_info, self.parent_app.match_data)
+            self.parent_app.status_string.set("Compiling a list of friends/teammates")
             # Refresh the GUI one last time from the saved files
             self.parent_app.refresh()
             self.b_get_data.config(relief="raised", text="Get Game Data", bg=self.parent_app.bg_CT)
@@ -343,21 +370,19 @@ class ConfigFrame:
         local_threads.append(threading.Thread(target=callback, args=(self, )))
         local_threads[-1].start()
 
-        return
-
     @staticmethod
     def open_dev_site(_event):
         webbrowser.open_new(r"https://developer.riotgames.com/")
 
 
-class ScrollableFilter:
+class FilterListbox:
     pad_amt = 4
     longest_filter_item = 47
     games_to_remove = []  # an empty list to eventually hold game_ids for removal
 
     # Define the class FilterPane, including options for the pane (such as its name, etc.)
     def __init__(self, parent_app, parent_frame, title_string, subcolumn, box_height,
-                 config_key, filter_keys, sort_by="values"):
+                 config_key, filter_keys, sort_by="values", display_keyval="values"):
         self.parent_app = parent_app  # the app in which you're making the set of filters
         self.parent_frame = parent_frame  # which frame to put the filter inside of
         self.title_string = title_string  # name of the filter boxes
@@ -366,6 +391,7 @@ class ScrollableFilter:
         self.config_key = config_key  # the filter's source from the config file
         self.filter_keys = filter_keys  # list of key names in parsed_data to check through
         self.sort_by = sort_by  # whether or not to sort the filter list alphabetically
+        self.display_keyval = display_keyval  # whether to display the keys or values in the filter list
         self.choices_list = []  # a list of the stored choices for the filter, extracted from listboxes
 
         # Build the subframe to hold the filter panes
@@ -504,14 +530,22 @@ class ScrollableFilter:
 
     def reset_box(self):
         try:
-            options_list = list(self.parent_app.config_info[str(self.config_key)].copy().values())
+            options_list = []
+            if self.display_keyval == "values":
+                options_list = list(self.parent_app.config_info[str(self.config_key)].copy().values())
+            elif self.display_keyval == "keys":
+                options_list = list(self.parent_app.config_info[str(self.config_key)].copy().keys())
             options_list = self.sort_my_list(options_list)
             # Populate the left and right panes with their initial values
             self.filter_options.set(options_list)
             self.filter_choices.set([])
+            self.lb.config(state=tkinter.NORMAL)
+            self.rb.config(state=tkinter.NORMAL)
         except KeyError:
-            self.filter_options.set("Error Getting " + str(self.config_key) + " Data")
+            self.filter_options.set(["Couldn't Initialize " + str(self.config_key) + " Data"])
             self.parent_app.status_string.set("Unable to find " + str(self.config_key) + " Data")
+            self.lb.config(state=tkinter.DISABLED)
+            self.rb.config(state=tkinter.DISABLED)
 
         # clear out residual mouse selections on both panes and update the choices list (empty at this point)
         self.lb.selection_clear(0, tkinter.END)
@@ -528,7 +562,7 @@ class PlotterBox:
 
         self.sub_frame = tkinter.Frame(parent_frame, borderwidth=self.parent_app.bd_root,
                                        relief=self.parent_app.rel_root, bg=self.parent_app.bg_BG,
-                                       padx=self.parent_app.pad_root, pady=self.parent_app.pad_root)
+                                       padx=self.parent_app.pad_main, pady=self.parent_app.pad_main)
         self.sub_frame.grid(row=1, column=0, sticky="NSEW")
 
         self.sub_frame_label = tkinter.Label(self.sub_frame, text="Plots", font="Helvetica 12 bold",
@@ -629,6 +663,7 @@ class PlotterBox:
 
     def plot_generation(self):
         self.parent_app.config_info["Threshold"] = int(self.threshold_var.get())
+        self.parent_app.config_info = api_fns.config_overwrite(self.parent_app.config_info)
 
         # Check that valid variables have been selected
         if self.y_var.get() in (parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars

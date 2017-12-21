@@ -146,7 +146,7 @@ def get_num_teammates(config_info, match):
     num_teammates = 0
 
     for teammate in teammates_game:
-        if teammate in config_info["Teammates"]:
+        if teammate in config_info["Teammates"].keys():
             num_teammates += 1
 
     return num_teammates
