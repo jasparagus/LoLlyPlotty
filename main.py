@@ -23,8 +23,10 @@
 import gui
 
 my_app = gui.App()
-gui.make_resizable(my_app.root)
 
 # Refresh everything, setting it for first-run, then start the GUI mainloop
 my_app.refresh()
+
+gui.make_resizable(my_app.root)
+
 my_app.root.mainloop()
