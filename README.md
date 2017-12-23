@@ -22,7 +22,7 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
 + IF UPGRADING FROM A PREVIOUS VERSION
   + Move your MatchData files (they end in .json) from the old folder to the new folder, otherwise they may be re-downloaded unnecessarily. If you accidentally begin to re-download match data, you can quit the program, copy over your old files, and re-start the program. It should find your old data without requiring a re-download. 
   + Move your configuration file (Configuration.json) from the old folder to the new folder if desired (not necessary)
-+ Run "main.exe" from the extracted files (.exe for Windows x64). If you copied your config info file, it should 
++ Run "main.exe" from the extracted files (tested on Windows 10 64-bit only)
 
 *OR*
 #### Running LoLlyPlotty from Source
