@@ -69,6 +69,9 @@ def make_plottable_dictionary(x_list, y_list, threshold, z_scores, conf_inverval
         except ValueError:
             pass
 
+    if len(x_list_clean) < 2:
+        return
+
     # Sort by x_list using a Schwartzian transform (thanks, Ignacio Vazquez-Abrams from stackoverflow)
     x_list_clean, y_list_clean = zip(*sorted(zip(x_list_clean, y_list_clean)))
 
@@ -235,6 +238,9 @@ def make_scatterplot(x_list, y_list, y_name, title_string="", x_label="", y_labe
         except ValueError:
             pass
 
+    if len(x_list_clean) < 2:
+        return
+
     fig, ax = plt.subplots()
     fig.subplots_adjust(top=0.8, bottom=0.25)
 
@@ -287,6 +293,9 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
         except ValueError:
             pass
 
+    if len(red_list + green_list) < 2:
+        return
+
     if len(green_list) > 0:
         green_mean = sum(green_list) / len(green_list)
     else:
@@ -295,6 +304,7 @@ def make_hist(hist_list, bool_list, n_bins, title="", x_label="", y_label=""):
         red_mean = sum(red_list) / len(red_list)
     else:
         red_mean = 0
+
     b_min = sorted(red_list + green_list)[0]
     b_max = sorted(red_list + green_list)[-1]
 

@@ -128,7 +128,7 @@ class Var:
 
         # Remove the match if it's too old or was a remake
         if int(match["gameCreation"]) < int((time.time() * 1000) - (int(oldest_match_days) * 24 * 60 * 60 * 1000)):
-            if oldest_match_days != 0:
+            if int(oldest_match_days) != 0:
                 remove += 10000
         if int(match["gameDuration"]) < 360:
             remove += 1000

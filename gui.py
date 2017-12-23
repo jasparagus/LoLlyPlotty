@@ -29,23 +29,7 @@ import time
 import pathlib
 import tkinter  # future: import tkinter.ttk
 import threading
-
 import matplotlib.pyplot
-
-
-def make_resizable(frame, weight=0):
-    for ii in [0] + list(range(frame.grid_size()[0])):
-        frame.grid_columnconfigure(ii, weight=weight)
-    for ii in [0] + list(range(frame.grid_size()[1])):
-        frame.grid_rowconfigure(ii, weight=100)
-
-    slaves = frame.grid_slaves()
-    if len(slaves) == 0:
-        return
-    else:
-        for slave in slaves:
-            make_resizable(slave, weight)
-        return
 
 
 class App:
@@ -57,13 +41,13 @@ class App:
     rel_btn = tkinter.RAISED  # Relief for buttons
     rel_SB = tkinter.SUNKEN  # relief for scrollboxes (e.g. season list with its scrollbar)
 
-    fnt_1 = "Helvetica 11 bold"  # largest font (titles, status)
-    fnt_2 = "Helvetica 10"  # font for various inner labels. DO NOT use bold, italic, etc.
-    fnt_3 = "Helvetica 9"  # font for text boxes and listboxes. DO NOT use bold, italic, etc.
+    ft_1 = "Helvetica 11 bold"  # largest font (titles, status)
+    ft_2 = "Helvetica 10"  # font for various inner labels. DO NOT use bold, italic, etc.
+    ft_3 = "Helvetica 9"  # font for text boxes and listboxes. DO NOT use bold, italic, etc.
 
     pad_main = 10  # padding before frame borders for mainframe-level frames
     bd_main = 1  # border width for mainframe-level frames with rel_main relief
-    rel_main = tkinter.GROOVE  # relief for the mainframe-level frames
+    rel_main = tkinter.FLAT  # relief for the mainframe-level frames
 
     wid_main = 1216  # full window width
     ht_main = 660  # full window height
@@ -71,25 +55,14 @@ class App:
     wid_SB = 40  # width in px of the scrollbar
     wid_cfg = 360  # width of the config column
 
-    def __init__(self):
-        # TODO: link all of these to the a theme object instead of these instance variables
-        # # Colors: dark blue #15232b; darker blue #04090c; gold-ish #b0863e; light gold #cdbe91; near-white #f0e6d2
-        self.bg_BG = "#15232b"  # the primary background color
-        self.bg_CT = "#b0863e"  # the contrasting color (for buttons, dropdowns, etc.)
-        self.bg_HL = "#cdbe91"  # the highlight color
-        self.bg_box = "#ffffff"  # the background for entry and list boxes
-        self.fg_txt = "#f0e6d2"  # the foreground (text) color - contrasts w/ BG color
-        self.fg_btn = "#04090c"  # the foreground (text) color on buttons - contrasts with CT color
-        self.fg_box = "#000000"  # the foreground (text) color for entry and list boxes
-        self.fg_warn = "#ff0000"  # the foreground (text) color for a warning (e.g. "API Key expired" text)
-
+    def __init__(self, theme_id=0):
         # ------------------------------------------------------------------------
         # CREATE THE TOPLEVEL (tkinter.Tk) WIDGET TO HOLD THE GUI
         # ------------------------------------------------------------------------
         self.root = tkinter.Tk()
         self.root.title("LoLlyPlotty")
         self.root.iconbitmap('icon.ico')
-        self.root.geometry(str(self.wid_main) + "x" + str(self.ht_main))  # TODO: set this up
+        self.root.geometry(str(self.wid_main) + "x" + str(self.ht_main))
         self.root.resizable(width=True, height=True)
         self.root.minsize(self.root.winfo_width(), self.root.winfo_height())
 
@@ -97,14 +70,14 @@ class App:
         # INITIALIZE VARIABLES THAT ARE LINKED TO THE MAIN APP
         # ------------------------------------------------------------------------
         self.status_string = tkinter.StringVar(value="App Started")
-
+        # Load or create a configuration file
         try:
             with open("Configuration.json", "r") as file:
                 self.config_info = json.loads(file.read())
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.config_info = api_fns.config("", "")
             pass
-
+        # Load match data if any exists
         try:
             fp = "MatchData_" + str(self.config_info["SummonerName"]) + "_" + str(self.config_info["Region"]) + ".json"
             with open(fp, "r") as file:
@@ -112,12 +85,14 @@ class App:
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.match_data = {}
 
-        # Get theme data from config file or use default
+        # Get theme data from config file or use default theme
         try:
             self.theme = GUITheme(self.config_info["GUITheme"])
-        except:
-            self.theme = GUITheme(0)
-        self.root.configure(bg=self.theme.bg_BG)
+        except KeyError:
+            self.theme = GUITheme(theme_id)
+            self.config_info["GUITheme"] = theme_id
+            api_fns.config_overwrite(self.config_info)
+        self.root.configure(bg=self.theme.B1, highlightthickness=0)
 
         # ------------------------------------------------------------------------
         # CREATE THE OUTERMOST FRAMES FOR THE GUI
@@ -134,14 +109,14 @@ class App:
         # ------------------------------------------------------------------------
         # First is the config frame, which gets filled with a config object
         self.config_frame = tkinter.Frame(self.main_left_frame, bd=self.bd_main,
-                                          relief=self.rel_main, bg=self.bg_BG,
+                                          relief=self.rel_main, bg=self.theme.B1,
                                           pady=self.pad_main, padx=self.pad_main)
         self.config_frame.grid(row=0, column=0, sticky="NSEW")
         self.config_obj = ConfigObj(self, self.config_frame)
 
         # Second is a plotter frame, which gets filled with a plotter object
         self.plotter_frame = tkinter.Frame(self.main_left_frame, bd=self.bd_main,
-                                           relief=self.rel_main, bg=self.bg_BG,
+                                           relief=self.rel_main, bg=self.theme.B1,
                                            padx=self.pad_main, pady=self.pad_main)
         self.plotter_frame.grid(row=1, column=0, sticky="NSEW")
 
@@ -151,38 +126,34 @@ class App:
         # BUILD THE RIGHT SIDE OF THE GUI
         # ------------------------------------------------------------------------
         # One: Label the right pane
-        self.filter_frame_label = tkinter.Label(self.main_right_frame, text="Select Desired Filter(s)",
-                                                bg=self.bg_BG, fg=self.fg_txt, bd=self.bd_main, relief=self.rel_main)
-        self.filter_frame_label.config(font=self.fnt_1)
+        self.filter_frame_label = tkinter.Label(self.main_right_frame, text="Select Desired Filter(s)", bd=self.bd_main,
+                                                bg=self.theme.B1, fg=self.theme.T1, relief=self.rel_main)
+        self.filter_frame_label.config(font=self.ft_1)
         self.filter_frame_label.grid(row=0, column=0, columnspan=2, sticky="NSEW")
 
-        # Two: making a canvas, then put a scrollable window into that canvas for holding widgets
-        self.canvas = tkinter.Canvas(self.main_right_frame, bd=0, bg=self.bg_BG, highlightthickness=0) # "green"  # self.bg_BG
+        # Two: make a canvas, then put a scrollable window into that canvas for holding widgets
+        self.canvas = tkinter.Canvas(self.main_right_frame, bd=0, bg=self.theme.B1, highlightthickness=0)
         self.canvas.grid(row=1, column=0, sticky="NSEW")
         self.app_sb = tkinter.Scrollbar(self.main_right_frame, command=self.canvas.yview)
         self.app_sb.grid(row=1, column=1, sticky="NSE")  # stick the scrollbar on root's rightmost edge
         self.canvas.config(yscrollcommand=self.app_sb.set)
-        self.canvas.config(width=self.wid_main - self.wid_cfg - self.wid_SB, height= self.ht_main - self.ht_status)
+        self.canvas.config(width=self.wid_main - self.wid_cfg - self.wid_SB, height=self.ht_main - self.ht_status)
 
         self.canvas.bind("<Configure>", self.on_configure)
 
-        self.scrollframe = tkinter.Frame(self.canvas, padx=0, pady=0, bg=self.bg_BG, highlightthickness=0
-                                         , bd=self.bd_main, relief=self.rel_main)
-        self.canvas.create_window((0, 0), window=self.scrollframe, anchor="nw")  #
+        self.scrollframe = tkinter.Frame(self.canvas, padx=0, pady=0, bg=self.theme.B1, highlightthickness=0,
+                                         bd=self.bd_main, relief=self.rel_main)
+        self.canvas.create_window((0, 0), window=self.scrollframe, anchor="nw")
 
-        # Make the filter frame, then fill it with the filtering objects
-        # self.filter_frame = tkinter.Frame(self.scrollframe, bd=0, padx=0, pady=0)
-        # self.filter_frame.grid(row=1, column=0, sticky="NSEW")
-
-        # Recency filter
+        # Three: put recency filter inside scrollable frame
         self.recency_filter_frame = tkinter.Frame(self.scrollframe, bd=self.bd_ssxn)
-        self.recency_filter_frame.config(bg=self.bg_BG, padx=self.pad_main, pady=self.pad_main)
+        self.recency_filter_frame.config(bg=self.theme.B1, padx=self.pad_main, pady=self.pad_main)
         self.recency_filter_frame.grid(row=1, column=0, sticky="NSEW")
         self.recency_filter_obj = RecencyFilter(self, self.recency_filter_frame)
 
-        # Scrollable filters
+        # Four: put the listbox filters into the scrollable frame one by one
         self.scrollable_filters_frame = tkinter.Frame(self.scrollframe, bd=self.bd_ssxn)
-        self.scrollable_filters_frame.config(bg=self.bg_BG, padx=self.pad_main, pady=self.pad_main)
+        self.scrollable_filters_frame.config(bg=self.theme.B1, padx=self.pad_main, pady=self.pad_main)
         self.scrollable_filters_frame.grid(row=2, column=0, sticky="NSEW")
         self.scrollable_filters = [
             FilterListbox(self, self.scrollable_filters_frame, "Champion(s)", 0, 7, "champion",
@@ -207,12 +178,38 @@ class App:
         # ------------------------------------------------------------------------
         self.status_label = tkinter.Label(self.main_bottom_frame, textvariable=self.status_string,
                                           relief=self.rel_main, bd=self.bd_main)
-        self.status_label.config(font=self.fnt_1, padx=self.pad_main, pady=self.pad_main, fg=self.bg_HL, bg=self.bg_BG)
+        self.status_label.config(font=self.ft_1 + " italic", padx=self.pad_main, pady=self.pad_main,
+                                 fg=self.theme.T1, bg=self.theme.B1)
         self.status_label.grid(row=0, column=0, sticky="NSEW")
+
         # ------------------------------------------------------------------------
+        # HANDLE RESIZABILITY, ETC.
+        # ------------------------------------------------------------------------
+        # Enable resizing of everything
+        self.make_resizable(self.root, weight=1000)
+        # Un-do resizing on specific sections as applicable
+        self.root.grid_columnconfigure(0, weight=0)  # prevent the config column from stretching horizontally
+        self.root.grid_rowconfigure(1, weight=0)  # prevent the status bar from stretching vertically
+        self.main_right_frame.grid_rowconfigure(0, weight=0)  # prevent the filters label from stretching vertically
+        self.main_right_frame.grid_columnconfigure(1, weight=0)  # prevent the filters label from stretching vertically
+        # TODO: prevent resizing (.grid_columnconfigure(X, weight=0)) for the optionmenus
 
     def on_configure(self, _event=None):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def make_resizable(self, frame, weight=0):
+        for ii in [0] + list(range(frame.grid_size()[0])):
+            frame.grid_columnconfigure(ii, weight=weight)
+        for ii in [0] + list(range(frame.grid_size()[1])):
+            frame.grid_rowconfigure(ii, weight=100)
+
+        slaves = frame.grid_slaves()
+        if len(slaves) == 0:
+            return
+        else:
+            for slave in slaves:
+                self.make_resizable(slave, weight)
+            return
 
     def refresh(self):
         # Updates variables and then GUI from disk; no other changes
@@ -247,9 +244,9 @@ class App:
             key, expiry = api_fns.get_api_key()
             self.config_obj.api_key.set(key)
             if float(expiry) < float(time.time()):
-                self.config_obj.api_key_entry.config(fg=self.fg_warn)
+                self.config_obj.api_key_entry.config(fg=self.theme.T5)
             else:
-                self.config_obj.api_key_entry.config(fg=self.fg_box)
+                self.config_obj.api_key_entry.config(fg=self.theme.T4)
         except (NameError, ValueError):
             self.config_obj.api_key.set("Key Not Found")
 
@@ -294,55 +291,62 @@ class ConfigObj:
 
         self.summname = tkinter.StringVar()
 
-        summ_name_label = tkinter.Label(self.parent_frame, text="Summoner", font=self.parent_app.fnt_1, anchor="w",
-                                        bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        summ_name_label = tkinter.Label(self.parent_frame, text="Summoner", font=self.parent_app.ft_1, anchor="w",
+                                        bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         summ_name_label.grid(row=0, column=0, sticky="NSEW")
 
-        summ_name_entry = tkinter.Entry(self.parent_frame, justify="center", textvariable=self.summname, width=40)
-        summ_name_entry.config(bg=self.parent_app.bg_box, fg=self.parent_app.fg_box, font=self.parent_app.fnt_2)
+        summ_name_entry = tkinter.Entry(self.parent_frame, justify="center", textvariable=self.summname, width=40,
+                                        selectbackground=self.parent_app.theme.B3,
+                                        selectforeground=self.parent_app.theme.T2)
+        summ_name_entry.config(bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4, font=self.parent_app.ft_2)
         summ_name_entry.grid(row=1, column=0, sticky="NSEW")
 
         self.reg = tkinter.StringVar(value="Choose")
 
-        region_label = tkinter.Label(self.parent_frame, text="Region", font=self.parent_app.fnt_1, anchor="e",
-                                     bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        region_label = tkinter.Label(self.parent_frame, text="Region", font=self.parent_app.ft_1, anchor="e",
+                                     bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         region_label.grid(row=0, column=1, sticky="NSEW")
 
         self.region_dropdown = tkinter.OptionMenu(self.parent_frame, self.reg, *["Choose"])
         self.region_dropdown["anchor"] = "w"
         self.region_dropdown["width"] = 6   # width to hold default "Choose" prompt
-        self.region_dropdown["relief"] = tkinter.FLAT
         self.region_dropdown["bd"] = 0
-        self.region_dropdown["fg"] = self.parent_app.fg_btn
-        self.region_dropdown["font"] = self.parent_app.fnt_2
-        self.region_dropdown["borderwidth"] = 0
-        self.region_dropdown["padx"] = 5
+        self.region_dropdown["relief"] = tkinter.FLAT
+        self.region_dropdown["padx"] = 3  # was 5
         self.region_dropdown["pady"] = 2
         self.region_dropdown["highlightthickness"] = 0
-        self.region_dropdown["bg"] = self.parent_app.bg_CT
-        self.region_dropdown["activebackground"] = self.parent_app.bg_HL
-        self.region_dropdown["activeforeground"] = self.parent_app.fg_btn
+        self.region_dropdown["font"] = self.parent_app.ft_2
+        self.region_dropdown["bg"] = self.parent_app.theme.B2
+        self.region_dropdown["fg"] = self.parent_app.theme.T2
+        self.region_dropdown["activebackground"] = self.parent_app.theme.B3
+        self.region_dropdown["activeforeground"] = self.parent_app.theme.T3
+        self.region_dropdown["menu"].config(bg=self.parent_app.theme.B2, fg=self.parent_app.theme.T2,
+                                            activebackground=self.parent_app.theme.B3,
+                                            activeforeground=self.parent_app.theme.T3)
+
         self.region_dropdown.grid(row=1, column=1, sticky="NSEW")
 
         self.api_key = tkinter.StringVar()
-        api_key_label = tkinter.Label(self.parent_frame, text="Your API Key:", font=self.parent_app.fnt_1,
-                                      bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        api_key_label = tkinter.Label(self.parent_frame, text="Your API Key:", font=self.parent_app.ft_1,
+                                      bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         api_key_label.grid(columnspan=2, sticky="NSEW")
 
-        self.api_key_entry = tkinter.Entry(self.parent_frame, width=20, justify="center", textvariable=self.api_key)
-        self.api_key_entry.config(bg=self.parent_app.bg_box, fg=self.parent_app.fg_box, font=self.parent_app.fnt_2)
+        self.api_key_entry = tkinter.Entry(self.parent_frame, width=20, justify="center", textvariable=self.api_key,
+                                           selectbackground=self.parent_app.theme.B3,
+                                           selectforeground=self.parent_app.theme.T2)
+        self.api_key_entry.config(bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4, font=self.parent_app.ft_2)
         self.api_key_entry.grid(columnspan=2, sticky="NSEW")
 
         riot_link = tkinter.Label(self.parent_frame, text="Get API key (free) from developer.riotgames.com",
-                                  font=self.parent_app.fnt_2 + " underline", cursor="hand2",
-                                  bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+                                  font=self.parent_app.ft_2 + " underline", cursor="hand2",
+                                  bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         riot_link.grid(columnspan=2, sticky="NSEW")
         riot_link.bind("<Button-1>", self.open_dev_site)
 
         self.b_get_data = tkinter.Button(self.parent_frame, text="Get Game Data", command=self.get_data)
-        self.b_get_data.config(font=self.parent_app.fnt_1, relief=self.parent_app.rel_btn)
-        self.b_get_data.config(fg=self.parent_app.fg_btn, bd=self.parent_app.bd_btn, bg=self.parent_app.bg_CT,
-                               activebackground=self.parent_app.bg_HL)
+        self.b_get_data.config(font=self.parent_app.ft_1, relief=self.parent_app.rel_btn)
+        self.b_get_data.config(fg=self.parent_app.theme.T2, bd=self.parent_app.bd_btn, bg=self.parent_app.theme.B2,
+                               activebackground=self.parent_app.theme.B3, activeforeground=self.parent_app.theme.T3)
         self.b_get_data.grid(columnspan=2, sticky="NSEW")
 
     def get_data(self):
@@ -353,23 +357,24 @@ class ConfigObj:
             api_fns.get_api_key(write_mode=True, key_in=self.api_key.get())
 
             self.parent_app.status_string.set("Updating settings...")
-            self.b_get_data.config(relief="sunken", text="Please Wait...", bg=self.parent_app.bg_HL)
+            self.b_get_data.config(relief="sunken", text="Please Wait...", bg=self.parent_app.theme.B3)
 
             # Update app information from the GUI, then refresh the app
-            self.parent_app.config_info = api_fns.config(self.reg.get(),
-                                                         self.summname.get())  # update configuration info from GUI
+            self.parent_app.config_info = api_fns.config(self.reg.get(), self.summname.get(),
+                                                         status=self.parent_app.status_string)
             self.reg.set(self.parent_app.config_info["Region"])  # update the GUI
             self.summname.set(self.parent_app.config_info["SummonerName"])
-            # self.parent_app.refresh()  # TODO: Don't think this is necessary here. Delete later. 20171221, JDC
+            self.parent_app.refresh()  # This is necessary here for when things are changed
 
             if self.parent_app.config_info["AccountID"] == "" or self.parent_app.config_info["SummonerID"] == "":
                 self.parent_app.status_string.set("Check summoner name, region, and API key." +
                                                   " New keys often don't work immediately.")
-                self.b_get_data.config(relief="raised", text="Get Game Data", bg=self.parent_app.bg_CT)
+                self.b_get_data.config(relief="raised", text="Get Game Data", bg=self.parent_app.theme.B2)
                 return
 
             self.parent_app.status_string.set("Getting match list from Riot servers...")
-            full_matchlist, len_full_matchlist = api_fns.get_full_matchlist(self.parent_app.config_info)
+            full_matchlist, len_full_matchlist = api_fns.get_full_matchlist(self.parent_app.config_info,
+                                                                            status=self.parent_app.status_string)
             self.parent_app.status_string.set("Found " + str(len_full_matchlist) + " matches online")
 
             # Check that every match in matchlist is also in the match data; retrieve missing matches
@@ -381,12 +386,14 @@ class ConfigObj:
                     # download missing match
                     self.parent_app.status_string.set(
                         "Downloading game: ID #" + str(game_id) +
-                        ". Got " + str(len(game_ids_in_file) + mm) + " of " +
+                        ". Currently have " + str(len(game_ids_in_file) + mm) + " of " +
                         str(len_full_matchlist) + " matches."
                     )
-                    match = api_fns.get_match(self.parent_app.config_info, game_id, self.parent_app.status_string)
+                    match = api_fns.get_match(self.parent_app.config_info, game_id,
+                                              status=self.parent_app.status_string)
 
-                    api_fns.append_match(self.parent_app.config_info, match, game_id)
+                    api_fns.append_match(self.parent_app.config_info, match, game_id,
+                                         status=self.parent_app.status_string)
                     mm += 1
 
             # Store the threshold value in config_info
@@ -400,12 +407,11 @@ class ConfigObj:
 
             # Refresh the GUI using all of the new files
             self.parent_app.refresh()
-            self.b_get_data.config(relief="raised", text="Get Game Data", bg=self.parent_app.bg_CT)
+            self.b_get_data.config(relief="raised", text="Get Game Data", bg=self.parent_app.theme.B2)
             self.parent_app.status_string.set(
-                "Downloaded " +
+                "Loaded " +
                 str(len(self.parent_app.match_data)) +
-                " of " + str(len_full_matchlist) +
-                " matches. Ready to plot stuff!"
+                " matches. Ready to make plots."
             )
 
             return
@@ -439,7 +445,7 @@ class FilterListbox:
         self.choices_list = []  # a list of the stored choices for the filter, extracted from listboxes
 
         # Build the subframe to hold the filter panes
-        self.outer_frame = tkinter.Frame(self.parent_frame, bg=self.parent_app.bg_BG)
+        self.outer_frame = tkinter.Frame(self.parent_frame, bg=self.parent_app.theme.B1)
         self.outer_frame.config(bd=0, relief=self.parent_app.rel_ssxn,
                                 padx=self.pad_amt, pady=self.pad_amt)
         self.outer_frame.grid(column=self.subcolumn, sticky="NSEW")
@@ -450,20 +456,21 @@ class FilterListbox:
 
         # Label left frame
         self.left_label = tkinter.Label(self.outer_frame, text="Select " + self.title_string + ":")
-        self.left_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.left_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.left_label.grid(row=0, column=0)
 
         # Create left frame
         self.left_frame = tkinter.Frame(self.outer_frame, relief=self.parent_app.rel_SB,
-                                        bg=self.parent_app.bg_box, bd=self.parent_app.bd_SB)
+                                        bg=self.parent_app.theme.B4, bd=self.parent_app.bd_SB)
         self.left_frame.grid(row=1, column=0)
 
         # Add left frame contents
         self.lsb = tkinter.Scrollbar(self.left_frame)  # create a scrollbar
         self.lb = tkinter.Listbox(self.left_frame, listvariable=self.filter_options, selectmode=tkinter.EXTENDED)
         self.lb.config(bd=self.parent_app.bd_pad, relief=tkinter.FLAT, activestyle="none", height=self.box_height,
-                       highlightthickness=0, bg=self.parent_app.bg_box, fg=self.parent_app.fg_box)
-        self.lb.config(font=self.parent_app.fnt_3, width=self.longest_filter_item, yscrollcommand=self.lsb.set)
+                       highlightthickness=0, bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4,
+                       selectbackground=self.parent_app.theme.B3, selectforeground=self.parent_app.theme.T3)
+        self.lb.config(font=self.parent_app.ft_3, width=self.longest_filter_item, yscrollcommand=self.lsb.set)
         self.lb.grid(row=0, column=0, sticky="NSEW")
         self.lb.bind("<Double-Button-1>", self.update_l2r)
         self.lsb.config(command=self.lb.yview)
@@ -471,46 +478,47 @@ class FilterListbox:
 
         # Create middle frame
         self.middle_frame = tkinter.Frame(self.outer_frame, padx=self.pad_amt, pady=self.pad_amt,
-                                          relief=tkinter.FLAT, bg=self.parent_app.bg_BG)
+                                          relief=tkinter.FLAT, bg=self.parent_app.theme.B1)
         self.middle_frame.grid(row=1, column=1, sticky="NSEW")
 
         # Add arrow button to middle frame
         self.add_button = tkinter.Button(self.middle_frame, text="\u2192", command=self.update_l2r)
         self.add_button.config(font="Helvetica 16 bold", width=self.btn_wid, relief=self.parent_app.rel_btn)
-        self.add_button.config(fg=self.parent_app.fg_btn, bd=self.parent_app.bd_btn, bg=self.parent_app.bg_CT,
-                               activebackground=self.parent_app.bg_HL)
+        self.add_button.config(fg=self.parent_app.theme.T2, bd=self.parent_app.bd_btn, bg=self.parent_app.theme.B2,
+                               activebackground=self.parent_app.theme.B3, activeforeground=self.parent_app.theme.T3)
         self.add_button.grid(row=0, column=0, sticky="EW")  # this was "sew"
 
         # Add 2nd arrow button to middle frame for moving things in the other direction
         self.remove_button = tkinter.Button(self.middle_frame, text="\u2190", command=self.update_r2l)
         self.remove_button.config(font="Helvetica 16 bold", width=self.btn_wid, relief=self.parent_app.rel_btn)
-        self.remove_button.config(fg=self.parent_app.fg_btn, bd=self.parent_app.bd_btn, bg=self.parent_app.bg_CT,
-                                  activebackground=self.parent_app.bg_HL)
+        self.remove_button.config(fg=self.parent_app.theme.T2, bd=self.parent_app.bd_btn, bg=self.parent_app.theme.B2,
+                                  activebackground=self.parent_app.theme.B3, activeforeground=self.parent_app.theme.T3)
         self.remove_button.grid(row=1, column=0, sticky="EW")
 
         # Add clear button to middle frame
         self.reset_button = tkinter.Button(self.middle_frame, text="Reset", command=self.reset_box)
-        self.reset_button.config(font=self.parent_app.fnt_1, width=self.btn_wid, relief=self.parent_app.rel_btn)
-        self.reset_button.config(fg=self.parent_app.fg_btn, bd=self.parent_app.bd_btn, bg=self.parent_app.bg_CT,
-                                 activebackground=self.parent_app.bg_HL)
+        self.reset_button.config(font=self.parent_app.ft_1, width=self.btn_wid, relief=self.parent_app.rel_btn)
+        self.reset_button.config(fg=self.parent_app.theme.T2, bd=self.parent_app.bd_btn, bg=self.parent_app.theme.B2,
+                                 activebackground=self.parent_app.theme.B3, activeforeground=self.parent_app.theme.T3)
         self.reset_button.grid(row=2, column=0, sticky="EW")
 
         # Label the right pane
         self.right_label = tkinter.Label(self.outer_frame, text="Selected " + self.title_string + " (Blank = All):")
-        self.right_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.right_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.right_label.grid(row=0, column=2)
 
         # Create right frame
         self.right_frame = tkinter.Frame(self.outer_frame, relief=self.parent_app.rel_SB,
-                                         bg=self.parent_app.bg_box, bd=self.parent_app.bd_SB)
+                                         bg=self.parent_app.theme.B4, bd=self.parent_app.bd_SB)
         self.right_frame.grid(row=1, column=2)
 
         # Add right pane contents
         self.rsb = tkinter.Scrollbar(self.right_frame)  # create a scrollbar
         self.rb = tkinter.Listbox(self.right_frame, listvariable=self.filter_choices, selectmode=tkinter.EXTENDED)
         self.rb.config(bd=self.parent_app.bd_pad, relief=tkinter.FLAT, activestyle="none", height=self.box_height,
-                       highlightthickness=0, bg=self.parent_app.bg_box, fg=self.parent_app.fg_box)
-        self.rb.config(font=self.parent_app.fnt_3, width=self.longest_filter_item, yscrollcommand=self.rsb.set)
+                       highlightthickness=0, bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4,
+                       selectbackground=self.parent_app.theme.B3, selectforeground=self.parent_app.theme.T3)
+        self.rb.config(font=self.parent_app.ft_3, width=self.longest_filter_item, yscrollcommand=self.rsb.set)
         self.rb.grid(row=0, column=0, sticky="NSEW")
         self.rb.bind("<Double-Button-1>", self.update_r2l)
         self.rsb.config(command=self.rb.yview)
@@ -588,8 +596,9 @@ class FilterListbox:
             self.lb.config(state=tkinter.NORMAL)
             self.rb.config(state=tkinter.NORMAL)
         except KeyError:
-            self.filter_options.set(["Couldn't Initialize " + str(self.config_key) + " Data"])
-            self.parent_app.status_string.set("Unable to find " + str(self.config_key) + " Data")
+            self.filter_options.set([str(self.title_string) + " Data Not Found"])
+            self.parent_app.status_string.set("Couldn't get " + str(self.title_string) +
+                                              " data. Try \"Get Game Data\" button.")
             self.lb.config(state=tkinter.DISABLED)
             self.rb.config(state=tkinter.DISABLED)
 
@@ -607,20 +616,22 @@ class RecencyFilter:
         self.parent_app = parent_app
         self.parent_frame = parent_frame
 
-        self.recency_filter = tkinter.IntVar(value=0)
+        self.recency_filter = tkinter.StringVar(value=0)
         self.recency_filter_label = tkinter.Label(self.parent_frame, text="Include last ",
-                                                  font=self.parent_app.fnt_2, anchor="e",
-                                                  bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+                                                  font=self.parent_app.ft_2, anchor="e",
+                                                  bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.recency_filter_label.grid(row=0, column=0, sticky="NSEW")
 
         self.recency_entry = tkinter.Entry(self.parent_frame, textvariable=self.recency_filter, width=4,
-                                           justify="center", font=self.parent_app.fnt_2,
-                                           bg=self.parent_app.bg_box, fg=self.parent_app.fg_box)
+                                           justify="center", font=self.parent_app.ft_2,
+                                           bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4,
+                                           selectbackground=self.parent_app.theme.B3,
+                                           selectforeground=self.parent_app.theme.T2)
         self.recency_entry.grid(row=0, column=1, sticky="NSEW")
 
         self.recency_entry_label = tkinter.Label(self.parent_frame, text=" days worth of games (0 = include all)",
-                                                 font=self.parent_app.fnt_2, anchor="w",
-                                                 bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+                                                 font=self.parent_app.ft_2, anchor="w",
+                                                 bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.recency_entry_label.grid(row=0, column=2, sticky="NSEW")
 
 
@@ -629,8 +640,8 @@ class PlotterBox:
         self.parent_app = parent_app
         self.parent_frame = parent_frame
 
-        self.parent_frame_label = tkinter.Label(self.parent_frame, text="Plots", font=self.parent_app.fnt_1,
-                                                bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.parent_frame_label = tkinter.Label(self.parent_frame, text="Plots", font=self.parent_app.ft_1,
+                                                bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.parent_frame_label.grid()
 
         # Identify the longest variable to set the width of the x and y variable boxes
@@ -641,98 +652,110 @@ class PlotterBox:
         self.y_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.c_vars))
 
         self.y_var_label = tkinter.Label(self.parent_frame, text="Select Y Variable:")
-        self.y_var_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.y_var_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.y_var_label.grid()
 
         self.y_frame = tkinter.Frame(self.parent_frame, relief=self.parent_app.rel_SB,
-                                     bg=self.parent_app.bg_box, bd=self.parent_app.bd_SB)
+                                     bg=self.parent_app.theme.B4, bd=self.parent_app.bd_SB)
         self.y_frame.grid(sticky="NSEW")
 
         self.y_sb = tkinter.Scrollbar(self.y_frame)
         self.y_box = tkinter.Listbox(self.y_frame, listvariable=self.y_vars, selectmode=tkinter.SINGLE)
         self.y_box.config(activestyle="none", exportselection=False, width=self.long_var, height=6,
                           yscrollcommand=self.y_sb.set)
-        self.y_box.config(font=self.parent_app.fnt_3, relief=tkinter.FLAT, bd=self.parent_app.bd_pad,
-                          bg=self.parent_app.bg_box, fg=self.parent_app.fg_box, highlightthickness=0)
+        self.y_box.config(font=self.parent_app.ft_3, relief=tkinter.FLAT, bd=self.parent_app.bd_pad,
+                          bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4, highlightthickness=0,
+                          selectbackground=self.parent_app.theme.B3, selectforeground=self.parent_app.theme.T3)
         self.y_box.grid(row=0, column=0, sticky="NSEW")
         self.y_box.bind("<<ListboxSelect>>", lambda event: self.assign(event, string_var=self.y_var))
         self.y_sb.config(command=self.y_box.yview, relief=tkinter.GROOVE)
         self.y_sb.grid(row=0, column=1, sticky="NSE")
 
         self.x_var_label = tkinter.Label(self.parent_frame, text="Select X Variable:")
-        self.x_var_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.x_var_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.x_var_label.grid()
 
         self.x_var = tkinter.StringVar(value="Choose X Variable")
         self.x_vars = tkinter.StringVar(value=sorted(parse.Var.b_vars + parse.Var.f_vars + parse.Var.s_vars))
 
         self.x_frame = tkinter.Frame(self.parent_frame, relief=self.parent_app.rel_SB,
-                                     bg=self.parent_app.bg_box, bd=self.parent_app.bd_SB)
+                                     bg=self.parent_app.theme.B4, bd=self.parent_app.bd_SB)
         self.x_frame.grid(sticky="NSEW")
 
         self.x_sb = tkinter.Scrollbar(self.x_frame)
         self.x_box = tkinter.Listbox(self.x_frame, listvariable=self.x_vars, selectmode=tkinter.SINGLE)
         self.x_box.config(activestyle="none", exportselection=False, width=self.long_var, height=6,
                           yscrollcommand=self.x_sb.set)
-        self.x_box.config(font=self.parent_app.fnt_3, relief=tkinter.FLAT, bd=self.parent_app.bd_pad,
-                          bg=self.parent_app.bg_box, fg=self.parent_app.fg_box, highlightthickness=0)
+        self.x_box.config(font=self.parent_app.ft_3, relief=tkinter.FLAT, bd=self.parent_app.bd_pad,
+                          bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4, highlightthickness=0,
+                          selectbackground=self.parent_app.theme.B3, selectforeground=self.parent_app.theme.T3)
         self.x_box.grid(row=0, column=0, sticky="NSEW")
         self.x_box.bind("<<ListboxSelect>>", lambda event: self.assign(event, string_var=self.x_var))
         self.x_sb.config(command=self.x_box.yview)
         self.x_sb.grid(row=0, column=1, sticky="NSE")
 
         self.plotter_opts_frame = tkinter.Frame(self.parent_frame, bd=0, relief=tkinter.FLAT, padx=0, pady=5,
-                                                bg=self.parent_app.bg_BG)
+                                                bg=self.parent_app.theme.B1)
         self.plotter_opts_frame.grid(sticky="NSEW")
 
         self.threshold_label = tkinter.Label(self.plotter_opts_frame, text="Specify minimum instances:", anchor="w")
-        self.threshold_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.threshold_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.threshold_label.grid(row=0, column=0, sticky="NSEW")
         self.threshold_var = tkinter.StringVar(value=5)
         self.threshold_entry = tkinter.Entry(self.plotter_opts_frame, textvariable=self.threshold_var, width=3,
-                                             bg=self.parent_app.bg_box, fg=self.parent_app.fg_box,
-                                             font=self.parent_app.fnt_2, )
+                                             bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4,
+                                             font=self.parent_app.ft_2,
+                                             selectbackground=self.parent_app.theme.B3,
+                                             selectforeground=self.parent_app.theme.T2)
         self.threshold_entry.grid(row=0, column=1, sticky="NSEW")
 
         self.ci_label = tkinter.Label(self.plotter_opts_frame, text="Confidence Interval (Error Bars):", anchor="w")
-        self.ci_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.ci_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.ci_label.grid(row=1, column=0, sticky="NSEW")
         self.ci_var = tkinter.StringVar(value="68%")
         self.ci_menu = tkinter.OptionMenu(self.plotter_opts_frame, self.ci_var, *sorted(list(plot_fns.z_scores.keys())))
         self.ci_menu["anchor"] = "w"
         self.ci_menu["width"] = 3
-        self.ci_menu["relief"] = tkinter.FLAT
         self.ci_menu["bd"] = 0
-        self.ci_menu["fg"] = self.parent_app.fg_btn
-        self.ci_menu["font"] = self.parent_app.fnt_2
-        self.ci_menu["borderwidth"] = 0
+        self.ci_menu["relief"] = tkinter.FLAT
         self.ci_menu["padx"] = 3
         self.ci_menu["pady"] = 2
         self.ci_menu["highlightthickness"] = 0
-        self.ci_menu["bg"] = self.parent_app.bg_CT
-        self.ci_menu["activebackground"] = self.parent_app.bg_HL
-        self.ci_menu["activeforeground"] = self.parent_app.fg_btn
+        self.ci_menu["font"] = self.parent_app.ft_2
+        self.ci_menu["bg"] = self.parent_app.theme.B2
+        self.ci_menu["fg"] = self.parent_app.theme.T2
+        self.ci_menu["activebackground"] = self.parent_app.theme.B3
+        self.ci_menu["activeforeground"] = self.parent_app.theme.T3
+        self.ci_menu["menu"].config(bg=self.parent_app.theme.B2, fg=self.parent_app.theme.T2,
+                                    activebackground=self.parent_app.theme.B3,
+                                    activeforeground=self.parent_app.theme.T3)
 
         self.ci_menu.grid(row=1, column=1, sticky="NSEW")
 
         self.bins_label = tkinter.Label(self.plotter_opts_frame, text="Number of Bins (For Histograms):", anchor="w")
-        self.bins_label.config(font=self.parent_app.fnt_2, bg=self.parent_app.bg_BG, fg=self.parent_app.fg_txt)
+        self.bins_label.config(font=self.parent_app.ft_2, bg=self.parent_app.theme.B1, fg=self.parent_app.theme.T1)
         self.bins_label.grid(row=2, column=0, sticky="NSEW")
         self.bins_var = tkinter.StringVar(value=10)
         self.bins_entry = tkinter.Entry(self.plotter_opts_frame, textvariable=self.bins_var, width=3,
-                                        bg=self.parent_app.bg_box, fg=self.parent_app.fg_box,
-                                        font=self.parent_app.fnt_2)
+                                        bg=self.parent_app.theme.B4, fg=self.parent_app.theme.T4,
+                                        font=self.parent_app.ft_2,
+                                        selectbackground=self.parent_app.theme.B3,
+                                        selectforeground=self.parent_app.theme.T2)
         self.bins_entry.grid(row=2, column=1, sticky="NSEW")
 
         self.plot_button = tkinter.Button(self.parent_frame,
                                           text="Please See Above To Select\nY Variable\nand\nX Variable",
                                           command=self.plot_generation, width=5)
-        self.plot_button.config(font=self.parent_app.fnt_3 + " bold", relief=self.parent_app.rel_btn)
-        self.plot_button.config(fg=self.parent_app.fg_btn, bd=self.parent_app.bd_btn, bg=self.parent_app.bg_CT,
-                                activebackground=self.parent_app.bg_HL)
+        self.plot_button.config(font=self.parent_app.ft_3 + " bold", relief=self.parent_app.rel_btn)
+        self.plot_button.config(fg=self.parent_app.theme.T2, bd=self.parent_app.bd_btn, bg=self.parent_app.theme.B2,
+                                activebackground=self.parent_app.theme.B3, activeforeground=self.parent_app.theme.T3)
         self.plot_button.grid(sticky="NSEW")
 
     def plot_generation(self):
+        self.validate(self.threshold_var)
+        self.validate(self.bins_var)
+        self.validate(self.parent_app.recency_filter_obj.recency_filter)
+
         self.parent_app.config_info["Threshold"] = int(self.threshold_var.get())
         self.parent_app.config_info = api_fns.config_overwrite(self.parent_app.config_info)
 
@@ -806,39 +829,93 @@ class PlotterBox:
 
         self.plot_button.config(text="Make Plot:\n" + self.y_var.get() + "\nvs.\n" + self.x_var.get())
 
+    @staticmethod
+    def validate(entry_var):
+        if not entry_var.get():
+            entry_var.set(0)
+
 
 class GUITheme:
     def __init__(self, theme_id):
+        # note = "XXX"  # a string describing the color palette
+
+        # B1 = "#XXXXX"  # background color for main app. Contrast w/ T1.
+        # B2 = "#000000"  # background color for buttons, dropdowns. Contrast with T2 AND ALSO B1.
+        # B3 = "#333333"  # background color for highlighted elements (dropdowns on mouse-over, clicked buttons)
+        # B4 = "#ffffff"  # background color for entry and list boxes; contrast w/ T4.
+
+        # T1 = "#000000"  # foreground (text) color for main app. Contrast w/ B1.
+        # T2 = "#ffffff"  # foreground (text) color for buttons, dropdowns). Contrast with B2.
+        # T3 = "#ffffff"  # foreground (text) color for highlighted items (e.g. the status label)
+        # T4 = "#000000"  # foreground (text) color for entry and list boxes
+        # T5 = "#ff0000"  # foreground (text) color for a warning (e.g. "API Key expired" text)
+
         if theme_id == 1:
-            self.description = "Simple black on white"
-            self.bg_BG = "#ffffff"  # the primary background color
-            self.bg_CT = "#000000"  # the contrasting color (for buttons, dropdowns, etc.)
-            self.bg_HL = "#333333"  # the highlight color
-            self.bg_box = "#ffffff"  # the background for entry and list boxes
-            self.fg_txt = "#000000"  # the foreground (text) color - contrasts w/ BG color
-            self.fg_btn = "#ffffff"  # the foreground (text) color on buttons - contrasts with CT color
-            self.fg_box = "#000000"  # the foreground (text) color for entry and list boxes
-            self.fg_warn = "#ff0000"  # the foreground (text) color for a warning (e.g. "API Key expired" text)
+            self.note = "Black on white"
+
+            self.B1 = "#ffffff"
+            self.B2 = "#000000"
+            self.B3 = "#555555"
+            self.B4 = "#ffffff"
+
+            self.T1 = "#000000"
+            self.T2 = "#ffffff"
+            self.T3 = "#ffffff"
+            self.T4 = "#000000"
+            self.T5 = "#ff0000"
+
         elif theme_id == 2:
-            self.description = "The Matrix"
-            # TODO: naming convention for these that doesn't suck
-            self.BG = "#000000"  # the primary app background color
-            self.BT = "#00ff00"  # the contrasting color (for buttons, dropdowns, etc.)
-            self.HL = "#009900"  # the highlight color (dropdowns with mouse-over, clicked buttons, status text)
-            self.BGB = "#000000"  # the box background (for entry and list boxes)
-            self.Tx = "#00ff00"  # the foreground (text) color - contrasts w/ BG color
-            self.BTx = "#000000"  # the foreground (text) color on buttons - contrasts with CT color
-            self.XTx = "#000000"  # the foreground (text) color for entry and list boxes
-            self.WN = "#ff0000"  # the foreground (text) color for a warning (e.g. "API Key expired" text)
-        else:
-            # handle default (theme_id = 0) and other unforeseen disasters
-            self.description = "Default: dark blue #15232b; darker blue #04090c; gold #b0863e; " + \
-                               "light gold #cdbe91; white gold #f0e6d2"
-            self.bg_BG = "#15232b"  # the primary background color
-            self.bg_CT = "#b0863e"  # the contrasting color (for buttons, dropdowns, etc.)
-            self.bg_HL = "#cdbe91"  # the highlight color
-            self.bg_box = "#ffffff"  # the background for entry and list boxes
-            self.fg_txt = "#f0e6d2"  # the foreground (text) color - contrasts w/ BG color
-            self.fg_btn = "#04090c"  # the foreground (text) color on buttons - contrasts with CT color
-            self.fg_box = "#000000"  # the foreground (text) color for entry and list boxes
-            self.fg_warn = "#ff0000"  # the foreground (text) color for a warning (e.g. "API Key expired" text)
+            self.note = "Shades of grey"
+
+            self.B1 = "#bbbbbb"
+            self.B2 = "#333333"
+            self.B3 = "#dddddd"
+            self.B4 = "#ffffff"
+
+            self.T1 = "#000000"
+            self.T2 = "#eeeeee"
+            self.T3 = "#000000"
+            self.T4 = "#000000"
+            self.T5 = "#ff0000"
+
+        elif theme_id == 3:
+            self.note = "Ugly reds"
+
+            self.B1 = "#440000"
+            self.B2 = "#771111"
+            self.B3 = "#ff5555"
+            self.B4 = "#ffffff"
+
+            self.T1 = "#ffffff"
+            self.T2 = "#eeeeee"
+            self.T3 = "#ffffff"
+            self.T4 = "#000000"
+            self.T5 = "#ff0000"
+
+        elif theme_id == 1999:
+            self.note = "TheMatrix"
+
+            self.B1 = "#000000"
+            self.B2 = "#00bb00"
+            self.B3 = "#55ff55"
+            self.B4 = "#000000"
+
+            self.T1 = "#009900"
+            self.T2 = "#000000"
+            self.T3 = "#000000"
+            self.T4 = "#00bb00"
+            self.T5 = "#ffffff"
+
+        else:  # handle default (theme_id = 0) and other unforeseen disasters
+            self.note = "dark blue #15232b; darker blue #04090c; gold #b0863e; light gold #cdbe91; white gold #f0e6d2"
+
+            self.B1 = "#15232b"
+            self.B2 = "#b0863e"
+            self.B3 = "#cdbe91"
+            self.B4 = "#ffffff"
+
+            self.T1 = "#f0e6d2"
+            self.T2 = "#04090c"
+            self.T3 = "#04090c"
+            self.T4 = "#000000"
+            self.T5 = "#dd0000"

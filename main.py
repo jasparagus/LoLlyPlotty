@@ -23,17 +23,10 @@
 import gui
 
 # Create the app and gui
-my_app = gui.App()
+my_app = gui.App(theme_id=0)
 
 # Refresh the variables in the app from the drive, if applicable, or set it for first-run
 my_app.refresh()
-
-# Touch up the GUI for resizability
-gui.make_resizable(my_app.root, weight=1000)
-my_app.root.grid_columnconfigure(0, weight=0)  # prevent the config column from stretching horizontally
-my_app.root.grid_rowconfigure(1, weight=0)  # prevent the status bar from stretching vertically
-my_app.main_right_frame.grid_rowconfigure(0, weight=0)  # prevent the filters label from stretching vertically
-my_app.main_right_frame.grid_columnconfigure(1, weight=0)  # prevent the filters label from stretching vertically
 
 # Start the app
 my_app.root.mainloop()
