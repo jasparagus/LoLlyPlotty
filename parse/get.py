@@ -1,8 +1,10 @@
 def get_count(config_info, match):
+    # always returns 1. For incrementing games played, etc.
     return 1
 
 
 def get_enemy_champs(config_info, match):
+    # get a list of champions played by the enemy team
     enemy_champs = []
     pid = get_pid(config_info, match)
     n_players = len(match["participantIdentities"])
@@ -18,6 +20,7 @@ def get_enemy_champs(config_info, match):
 
 
 def get_fractions(config_info, match):
+    # get shares of damage, etc., for a variety of statistics
     fractions_dict = {
         "goldEarned": "Unknown",
         "totalDamageDealt": "Unknown",
@@ -66,6 +69,7 @@ def get_fractions(config_info, match):
 
 
 def get_gold_diffs(config_info, match):
+    # compare player gold vs. lane opponent
     gold_diffs_dict = {}
     pid = get_pid(config_info, match)
     oid = get_oid(config_info, match)
@@ -84,6 +88,7 @@ def get_gold_diffs(config_info, match):
 
 
 def get_items(config_info, match):
+    # player's items
     items = []
     pid = get_pid(config_info, match)
 
@@ -98,6 +103,7 @@ def get_items(config_info, match):
 
 
 def get_kda(config_info, match):
+    # player's KDA
     pid = get_pid(config_info, match)
 
     kills = match["participants"][pid]["stats"]["kills"]
@@ -118,6 +124,7 @@ def get_kda(config_info, match):
 
 
 def get_non_player_champs(config_info, match):
+    # list of champIDs for champs played by everyone in the game besides the selected summoner
     non_player_champs = []
     pid = get_pid(config_info, match)
     n_players = len(match["participantIdentities"])
@@ -134,19 +141,19 @@ def get_non_player_champs(config_info, match):
 
 
 def get_num_teammates(config_info, match):
-
+    # figure out how many friends were in a given game
     teammates_game = get_teammates(config_info, match)
     num_teammates = 0
 
     for teammate in teammates_game:
-        if teammate in config_info["Teammates"]:
+        if teammate in config_info["Teammates"].keys():
             num_teammates += 1
 
     return num_teammates
 
 
 def get_oid(config_info, match):
-    # Gets the player's ID for the match
+    # Gets the player's opponent's ID for the match
     pid = get_pid(config_info, match)
     oid = "Unknown"
     n_players = len(match["participantIdentities"])
@@ -164,6 +171,7 @@ def get_oid(config_info, match):
 
 
 def get_opponents(config_info, match):
+    # Get all opponents (everyone on the enemy team)
     opponents = []
     pid = get_pid(config_info, match)
 
@@ -193,7 +201,7 @@ def get_pid(config_info, match):
 
 
 def get_role_pretty(config_info, match):
-
+    # get the player's role in a human-readable format
     pid = get_pid(config_info, match)
 
     try:
@@ -223,7 +231,7 @@ def get_role_pretty(config_info, match):
 
 
 def get_teammate_champs(config_info, match):
-    # TODO: check this and enemy version
+    # Get the list of champ IDs played by teammates (not the player)
     teammate_champs = []
     pid = get_pid(config_info, match)
     n_players = len(match["participantIdentities"])
@@ -240,6 +248,7 @@ def get_teammate_champs(config_info, match):
 
 
 def get_teammates(config_info, match):
+    # Get a list of teammates (people on the player's team)
     teammates = []
     pid = get_pid(config_info, match)
 

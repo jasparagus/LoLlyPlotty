@@ -1,3 +1,6 @@
+import api_fns
+
+
 def prep_teammates(config_info, match_data):
 
     match_ids = sorted(list(match_data.keys()))
@@ -28,7 +31,10 @@ def prep_teammates(config_info, match_data):
         else:
             teammates_games_played += [times_played_with]
 
-    config_info["Teammates"] = teammates_unique
-    config_info["TeammatesGamesPlayed"] = teammates_games_played
+    config_info["Teammates"] = {}
+    for ii in range(len(teammates_unique)):
+        config_info["Teammates"][teammates_unique[ii]] = teammates_games_played[ii]
+
+    config_info = api_fns.config_overwrite(config_info)
 
     return config_info

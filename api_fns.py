@@ -47,7 +47,7 @@ def get_api_key(write_mode=False, key_in=""):
         expiry = 0
 
     if write_mode is True and str(key) != str(key_in):
-        print("in write mode")
+        # print("in write mode")
         with open("apikey.txt", "w") as file:
             file.write(str(key_in).replace(" ", "").replace("\n", ""))
             file.seek(0, 2)  # seek point 0 characters away from end of file ("2")
@@ -64,13 +64,15 @@ def json_from_url(url, status=None):
         reply = urllib.request.urlopen(req)  # get the reply from the server
         json_data = json.loads(reply.read())  # create a dictionary the data as a JSON object
         if status is not None:
-            _ = api_wait(reply, status)  # calculate the wait time and wait
+            _ = api_wait(reply, status=status)  # calculate the wait time and wait
         else:
             _ = api_wait(reply)
     except Exception as e:
-        print(url)
-        print(e)
-        print("Error opening URL. Check API Key.")
+        if status is not None:
+            status.set("Error opening URL. Check API Key or wait a few moments if it's a new key.")
+        # print(url)
+        # print(e)
+        # print("Error opening URL. Check API Key.")
         json_data = {}
 
     return json_data
@@ -92,10 +94,10 @@ def api_wait(html_reply, status=None):
         # if <2 attempts remain for this timeframe, wait a half-cycle before retrying
         if att_rem <= 2:
             wait_time += int(timeframe)
-            print(app)  # for debugging; delete later
-            print(app_lim)
-            print(method)
-            print(method_lim)
+            # print(app)  # for debugging; delete later
+            # print(app_lim)
+            # print(method)
+            # print(method_lim)
 
     # Check method limit for each timeframe; add wait(s) if necessary
     for ii in range(len(method)):
@@ -104,25 +106,25 @@ def api_wait(html_reply, status=None):
         # if <2 attempts remain for this timeframe, wait a half-cycle before retrying
         if att_rem <= 2:
             wait_time += int(timeframe)
-            print(app)  # for debugging; delete later
-            print(app_lim)
-            print(method)
-            print(method_lim)
+            # print(app)  # for debugging; delete later
+            # print(app_lim)
+            # print(method)
+            # print(method_lim)
 
     if retry_after is not None:
         # If you hit a wait limit, give things a good long wait
-        print("Retry after was ", retry_after)
+        # print("Retry after was ", retry_after)
         wait_time = int(retry_after) + 1
-        print(app)  # for debugging; delete later
-        print(app_lim)
-        print(method)
-        print(method_lim)
+        # print(app)  # for debugging; delete later
+        # print(app_lim)
+        # print(method)
+        # print(method_lim)
 
     wait_remaining = wait_time
     started_waiting = time.time()
     while wait_remaining > 0:
         wait_remaining = started_waiting + wait_time - time.time()
-        print("Wait remaining: " + str(int(wait_remaining)) + "s")
+        # print("Wait remaining: " + str(int(wait_remaining)) + "s")
         if status is not None:
             status.set("Waiting to make more API calls: " + str(int(wait_remaining)) + " seconds...")
         time.sleep(0.5)
@@ -131,8 +133,10 @@ def api_wait(html_reply, status=None):
     return wait_time
 
 
-def config(region, summoner_name):
+def config(region, summoner_name, status=None):
     """ Take settings info and write a config file. """
+    if status is not None:
+        status.set("Updating configuration file")
     config_info = {}
 
     # Clean up the summoner name and get the account ID
@@ -143,12 +147,12 @@ def config(region, summoner_name):
     # Store the information obtained so far in the configuration dictionary
     config_info["SummonerName"] = summoner_name
     config_info["Region"] = region
-    config_info = add_game_constants(config_info)
-    config_info = add_static_data(config_info)
+    config_info = add_game_constants(config_info, status=status)
+    config_info = add_static_data(config_info, status=status)
 
     if (config_info["SummonerName"] is not "" and
             config_info["Region"] in config_info["regions.gameconstants"].copy().keys()):
-        account_id, summoner_id = summoner_by_name(config_info)  # grab account & summoner IDs from web
+        account_id, summoner_id = summoner_by_name(config_info, status=status)  # grab account & summoner IDs from web
     # Write (or overwrite, as applicable) new settings to a configuration dictionary
     config_info["AccountID"] = account_id
     config_info["SummonerID"] = summoner_id
@@ -160,8 +164,18 @@ def config(region, summoner_name):
     return config_info
 
 
-def summoner_by_name(config_info):
+def config_overwrite(config_info):
+
+    with open("Configuration.json", 'w') as file:
+        json.dump(config_info, file)
+
+    return config_info
+
+
+def summoner_by_name(config_info, status=None):
     """ Get summoner ID from summoner name. Summoner name must be lower-case letters only """
+    if status is not None:
+        status.set("Getting summoner info")
     account_id = ""
     summoner_id = ""
 
@@ -174,7 +188,7 @@ def summoner_by_name(config_info):
 
     for attempt in range(5):
         try:
-            acct_data_json = json_from_url(summoner_by_name_url)
+            acct_data_json = json_from_url(summoner_by_name_url, status=status)
             account_id = acct_data_json["accountId"]
             account_id = str(account_id)
             summoner_id = acct_data_json["id"]
@@ -185,7 +199,7 @@ def summoner_by_name(config_info):
     return account_id, summoner_id
 
 
-def get_matchlist(config_info, begin_index):
+def get_matchlist(config_info, begin_index, status=None):
     """
     Asks for 50 matches starting with begin_index (inclusive) and older
     :param config_info: program configuration information
@@ -193,6 +207,8 @@ def get_matchlist(config_info, begin_index):
     :return: matchlist, an array of strings of gameIds; total_games, the number of games Riot has available.
     Games are returned in chronological order (e.g. first game in "matchlist" is oldest).
     """
+    if status is not None:
+        status.set("Getting matchlist from riot servers. Found " + str(begin_index) + " matches.")
     end_index = "0"
     total_games = "0"
     matchlist = []
@@ -208,7 +224,7 @@ def get_matchlist(config_info, begin_index):
     # Ask for the matchlist up to 5 times, returning an empty matchlist if failed
     for attempt in range(5):
         try:
-            matchlist_json = json_from_url(matchlist_url)  # make the matchlist call
+            matchlist_json = json_from_url(matchlist_url, status=status)  # make the matchlist call
             total_games = str(matchlist_json["totalGames"])  # check the total number of games - isn't always correct
             end_index = str(matchlist_json["endIndex"])  # the last index retrieved, not inclusive
             n_matches = len(matchlist_json["matches"])  # check how many matches were returned
@@ -218,16 +234,18 @@ def get_matchlist(config_info, begin_index):
             break
         except Exception as e:
             print("Error with:", e, "\nMatchlist was:", matchlist)
+            if status is not None:
+                status.set("Unexpected error:" + str(e))
     return matchlist, end_index, total_games
 
 
-def get_full_matchlist(config_info):
+def get_full_matchlist(config_info, status=None):
     begin_index = "0"
     full_matchlist = []
 
     while True:
         # Get the matchlist for this iteration
-        partial_matchlist, end_index, _ = get_matchlist(config_info, begin_index)
+        partial_matchlist, end_index, _ = get_matchlist(config_info, begin_index, status=status)
 
         full_matchlist += partial_matchlist
 
@@ -243,7 +261,7 @@ def get_full_matchlist(config_info):
     return full_matchlist, len_full_matchlist
 
 
-def get_match(config_info, game_id, status):
+def get_match(config_info, game_id, status=None):
     """
     Gets match data for the given match id
     :param config_info: configuration settings for application
@@ -263,21 +281,26 @@ def get_match(config_info, game_id, status):
     # Ask for the match data
     for attempt in range(5):
         try:
-            match = json_from_url(match_url, status)
+            match = json_from_url(match_url, status=status)
             break
-        except Exception as e:
-            print(e)
+        except Exception:
+            if status is not None:
+                status.set("Unable to get game with matchId = " + str(game_id))
             pass
     return match
 
 
-def append_match(config_info, match, match_key):
+def append_match(config_info, match, match_key, status=None):
     """
     Appends the match data from "match" to the match data file
     :param config_info: configuration dictionary
     :param match: dictionary containing match data
     :param match_key: key to which the match will be linked in the file, e.g. the gameId for a game
+    :param status: status string object (tkinter StrinkVar for holding status information)
     """
+    if status is not None:
+        status.set("Appending match \"" + str(match_key) + "\" to file")
+
     fp = "MatchData_" + str(config_info["SummonerName"]) + "_" + str(config_info["Region"]) + ".json"
 
     if pathlib.Path(fp).is_file():
@@ -292,7 +315,7 @@ def append_match(config_info, match, match_key):
     return
 
 
-def verify_matches(config_info, match_data):
+def verify_matches(config_info, match_data, status=None):
     game_ids = list(match_data.copy().keys())
 
     for game_id in game_ids:
@@ -309,6 +332,8 @@ def verify_matches(config_info, match_data):
         except (Exception, ValueError, NameError, KeyError):
             # if there was an issue with the match, remove it from the dictionary and overwrite the data file
             print("Match file had an error with match " + str(game_id) + ". Removing it and updating file.")
+            if status is not None:
+                status.set("Match file had an error with match " + str(game_id) + ". Removing it and updating file.")
             match_data.pop(game_id, None)
             # Overwrite the entire file with the corrected file
             fp = "MatchData_" + str(config_info["SummonerName"]) + "_" + str(config_info["Region"]) + ".json"
@@ -318,10 +343,12 @@ def verify_matches(config_info, match_data):
     return match_data
 
 
-def add_static_data(config_info):
+def add_static_data(config_info, status=None):
     """
     Creates a spell lookup table using Riot's Data Dragon web service or locally if that fails
     """
+    if status is not None:
+        status.set("Getting static data from data dragon")
     # Create a dictionary to hold the lookup tables (keys are Riot-determined names for the variables of interest)
     static_data_list = ["champion",  "summoner", "item"]
     for kk in static_data_list:
@@ -353,7 +380,9 @@ def add_static_data(config_info):
             config_info["item"][lk] = reply["data"][lk]["name"]
 
     except Exception as e:
-        print("Error with:", e)
+        if status is not None:
+            status.set("Couldn't get data from data dragon. Trying to load it from file.")
+        # print("Error with:", e)
         # If data dragon isn't working, try to load the local file
         try:
             with open("Configuration.json", "r") as file:
@@ -361,19 +390,22 @@ def add_static_data(config_info):
                 for kk in static_data_list:
                     config_info[kk] = loaded_config[kk]
         except (FileNotFoundError, KeyError):
-            print("Couldn't connect to data dragon or load static data from file... sorry :(")
-
+            if status is not None:
+                status.set("Couldn't get data from data dragon or load it from file")
+    if status is not None:
+        status.set("Got static data")
     return config_info
 
 
-def add_game_constants(config_info):
+def add_game_constants(config_info, status=None):
     """
     Loads up all game constant files, which are not available through Riot's API.
     Files are tab-delimited with each entry on a new line.
      Each line should consist of "code \t value"; following content is ignored (e.g. trailing \n, subsequent \t, etc.)
     :return: Dictionary of game constants, allowing lookup of, e.g., maps by mapId.
     """
-
+    if status is not None:
+        status.set("Getting game constants from file")
     game_constants_files = [str(p) for p in pathlib.Path(".").iterdir() if "gameconstants" in str(p)]
 
     for constant in game_constants_files:
@@ -388,6 +420,8 @@ def add_game_constants(config_info):
                     # config_info[constant+"_lookup"][str(row[1]).replace("\n", "")] = str(row[0])
                     config_info[constant][str(row[0])] = str(row[1]).replace("\n", "")
         except FileNotFoundError:
+            if status is not None:
+                status.set("Unable to load " + constant + " from file")
             print("Unable to load/open file: " + constant)
             config_info[constant] = {}
             # config_info[constant+"_lookup"] = {}

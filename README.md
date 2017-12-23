@@ -1,8 +1,6 @@
 ![LoLlyPlotty](icon.png)
 # LoLlyPlotty
 ## League of Legends Statistics and Plots
-### Begun March 2017 by jasparagus, cjc77, and PVisnRT
-
 
 **IMPORTANT: Requires an API key, obtained for free from [Riot's API Site](https://developer.riotgames.com "Riot API Site"). You must choose "Sign Up Now", then follow the directions. Keys are linked to your Riot account and expire every 24hrs; do not share them.**
 
@@ -19,8 +17,12 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
 + Copy your API key
 
 #### Running LoLlyPlotty as an Executable (Windows x64 Only)
-+ Download the newest [LoLlyPlotty zip file](LoLlyPlotty_Win_x64_v1.1.zip) (choose "Download" after clicking the link)
-+ Extract downloaded zip and run "main.exe" from the extracted files (.exe for Windows x64)
++ Download the newest [LoLlyPlotty zip file](LoLlyPlotty_Win_x64_v1.2.zip) (choose "Download" after clicking the link)
++ Extract downloaded zip 
++ IF UPGRADING FROM A PREVIOUS VERSION
+  + Move your MatchData files (they end in .json) from the old folder to the new folder, otherwise they may be re-downloaded unnecessarily. If you accidentally begin to re-download match data, you can quit the program, copy over your old files, and re-start the program. It should find your old data without requiring a re-download. 
+  + Move your configuration file (Configuration.json) from the old folder to the new folder if desired (not necessary)
++ Run "main.exe" from the extracted files (.exe for Windows x64). If you copied your config info file, it should 
 
 *OR*
 #### Running LoLlyPlotty from Source
@@ -55,20 +57,17 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
 + Creates a .json data file for each summoner analyzed. This file is saved in the directory where LoLlyPlotty runs. These may be tens of MB in size. Make sure to copy these files when changing versions so you don't have to re-download them.
 + Riot's API keys have associated rate limits. This means it takes a long time to get matches the first time the program is used on a new summoner. Matches are saved to your computer as they download, so you can stop and then resume downloading. Also, updates (e.g. grabbing 10-100 new matches) is fairly quick as it avoids this rate limit.
 + This is a work in progress, and features will be added over time.
++ If you are experiencing unknown difficulties, try deleting your Configuration.json file. If that doesn't work, try deleting your MatchData_XX_XX.json files (back them up first).
 
 ## Known Issues
 + First Blood Assist Doesn't work (Riot always records a 0 for this variable)
-+ Newly generated API keys do not work immediately. Wait ~5s after creating an API key before trying to use it for an API call.
-+ Riot's API sometimes returns an incorrect number of total matches from the MATCH-V3 Matchlist API. This may cause the total number displayed in-app to be incorrect. 
++ Newly generated API keys do not work immediately. Wait ~5s after creating an API key before trying to use it for an API call. This seems(?) to be on Riot's end upon API key creation.
++ Riot's API sometimes returns an incorrect number of total matches from the MATCH-V3 Matchlist API. This may cause the total number displayed in-app to be incorrect.  This seems(?) to be on Riot's end, but is currently circumvented by grabbing the matchlist sequentially rather than in predefined blocks. 
 
 ## To-Do
-+ Make horizontal lines (half-max and average lines) partially transparent
-
-+ Add a Teammate filter (a filter for games that include specific teammate(s)), along the same lines as the Champion filter. This will require identifying "Teammates" on startup or via a button press. Best way will probably be to make a "settings" window and include a "# Games to be considered a 'Teammate'" option on that pane.
-
 + Add a summoner spell filter (a filter for games where summoner spell 1 or 2 was a specific spell, e.g. ignite)
 
-+ Add a progress bar beneath the bottom status text for long tasks (e.g. firstrun getting of match data)
++ Add a progress bar above the bottom status text for long tasks (e.g. firstrun getting of match data)
 
 + Add new fractional variables (for histograms): percentage of team's (VARIABLE) that the player did/earned/etc. (e.g. damage or gold)
   + XP
@@ -78,11 +77,9 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
 + Identify starting item(s) on a per-match basis - this requires "timeline" data api calls, which are not currently implemented
 
 + GUI Update
-  + Change resizing to allow for scrollbars
   + Make it not look hideous
-  + Switch to ttk for theming
-  + Make a menu bar at the top for tabbed navigation (e.g., Options tab)
-  + Add a scrollbar for the list of filters (so that many more filters can be added)
+  + Switch to ttk for better UI?
+  + Switch to tabbed browsing using ttk via a menu bar at the top for tabbed navigation (e.g., Options tab)
 
 + Implement hist2d in matplotlib - really convenient replacement for scatter plots
 
@@ -113,14 +110,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
-under certain conditions. See license.txt for details.
+under certain conditions. See [license.txt](license.txt) for details.
 
 
 ## Changelog
-#### 2017-12-16: Major GUI overhaul (color scheme, added frames everywhere). Version bump to 1.1
+#### 2017-12-22: Broke out GUI (now a module). Added theming (manually via config file). Version bump to 1.2. Various bugfixes throughout.
+#### 2017-12-16: Major GUI overhaul (color scheme, added frames everywhere). Version bump to 1.1.
 #### 2017-12-10: First executable version (for Windows x64); made using the excellent [pyinstaller tool](http://www.pyinstaller.org/)
 #### 2017-11-30: Updated GUI for resizability
 #### 2017-11-21: Implemented fractional plots (e.g. fraction of team damage, etc.)
 #### 2017-10-31: Rebuilt plotting to work with custom plots via dropdown
 #### 2017-10-26: Updated for Riot API v3 with new filtering method and file format
-#### 2017-03-25: Working for Riot API v2
+#### 2017-03-25: Working for Riot API v2 in Python with help from cjc77 and PVisnRT
+#### 2016-October: Working Matlab script by jasparagus and PVisnRT for Riot API v2.
