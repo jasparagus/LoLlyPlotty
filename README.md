@@ -17,10 +17,10 @@ LoLlyPlotty isn’t endorsed by Riot Games and doesn’t reflect the views or op
 + Copy your API key
 
 #### Running LoLlyPlotty as an Executable (Windows x64 Only)
-+ Download the newest [LoLlyPlotty zip file](LoLlyPlotty_Win_x64_v1.2.zip) (choose "Download" after clicking the link)
++ Download the newest [LoLlyPlotty zip file](LoLlyPlotty_v1.3.zip) (choose "Download" after clicking the link)
 + Extract downloaded zip 
 + IF UPGRADING FROM A PREVIOUS VERSION
-  + Move your MatchData files (they end in .json) from the old folder to the new folder, otherwise they may be re-downloaded unnecessarily. If you accidentally begin to re-download match data, you can quit the program, copy over your old files, and re-start the program. It should find your old data without requiring a re-download. 
+  + Move your MatchData files (they end in .json) from the old folder to the new folder, otherwise they will be re-downloaded unnecessarily. If you accidentally begin to re-download match data, you can quit the program, copy over your old files, and re-start the program. It should find your old data without requiring a re-download. 
   + Move your configuration file (Configuration.json) from the old folder to the new folder if desired (not necessary)
 + Run "main.exe" from the extracted files (tested on Windows 10 64-bit only)
 
