@@ -233,8 +233,12 @@ class App:
             self.status_string.set(value="Loaded " + str(len(self.match_data)) + " games")
         except (FileNotFoundError, NameError, KeyError):
             self.match_data = {}
-            self.status_string.set(value="Game data not found - check options, then try \"Get Game Data\" button")
-
+            self.status_string.set(value="Couldn't read game data - " +
+                                         "check options, then try \"Get Game Data\" button")
+        except json.decoder.JSONDecodeError:
+            self.match_data = {}
+            self.status_string.set(value="Game data file (MatchData_summonername.json) may be damaged - " +
+                                         "fix or delete file, then restart app.")
         try:
             self.plotter_obj.threshold_var.set(int(self.config_info["Threshold"]))
         except KeyError:
@@ -597,8 +601,9 @@ class FilterListbox:
             self.rb.config(state=tkinter.NORMAL)
         except KeyError:
             self.filter_options.set([str(self.title_string) + " Data Not Found"])
-            self.parent_app.status_string.set("Couldn't get " + str(self.title_string) +
-                                              " data. Try \"Get Game Data\" button.")
+            # Removing the following status_string update to reduce confusion. Better to update more specifically.
+            #self.parent_app.status_string.set("Couldn't get " + str(self.title_string) +
+            #                                  " data. Try \"Get Game Data\" button.")
             self.lb.config(state=tkinter.DISABLED)
             self.rb.config(state=tkinter.DISABLED)
 

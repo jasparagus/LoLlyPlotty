@@ -10,7 +10,7 @@ debug.py
 apikey.txt
 *.json
 
-# Build files and directories
+# Files and directories for PyInstaller (executable creation)
 *.spec
 dist/**
 build/**
