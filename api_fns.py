@@ -57,6 +57,7 @@ def get_api_key(write_mode=False, key_in=""):
 
 
 def json_from_url(url, status=None):
+    # Makes a request to riot servers using API key, and returns the result in json form
     req = urllib.request.Request(url)  # add the api key header
     api_key, _ = get_api_key()
     req.add_header("X-Riot-Token", api_key)
@@ -67,12 +68,18 @@ def json_from_url(url, status=None):
             _ = api_wait(reply, status=status)  # calculate the wait time and wait
         else:
             _ = api_wait(reply)
+    except urllib.error.HTTPError as e:
+        if status is not None:
+            status.set(
+                "HTTP response code: " + str(e) + ". See https://developer.riotgames.com/response-codes.html")
+        print(e, "See https://developer.riotgames.com/response-codes.html for more details. Attempted URL: " + url)
+        json_data = {}
     except Exception as e:
         if status is not None:
             status.set("Error opening URL. Check API Key or wait a few moments if it's a new key.")
-        # print(url)
-        # print(e)
-        # print("Error opening URL. Check API Key.")
+        print("Non-HTTP error, see below. Also check API Key.")
+        print(e)
+        print("attempted URL:" + url)
         json_data = {}
 
     return json_data
@@ -182,11 +189,11 @@ def summoner_by_name(config_info, status=None):
     summoner_by_name_url = (
         "https://" +
         config_info["regions.gameconstants"][config_info["Region"]] +
-        "/lol/summoner/v3/summoners/by-name/" +
+        "/lol/summoner/v4/summoners/by-name/" +
         config_info["SummonerName"]
         )
 
-    for attempt in range(5):
+    for attempt in range(3):
         try:
             acct_data_json = json_from_url(summoner_by_name_url, status=status)
             account_id = acct_data_json["accountId"]
@@ -216,13 +223,13 @@ def get_matchlist(config_info, begin_index, status=None):
     matchlist_url = (
         "https://" +
         config_info["regions.gameconstants"][config_info["Region"]] +
-        "/lol/match/v3/matchlists/by-account/" +
+        "/lol/match/v4/matchlists/by-account/" +
         config_info["AccountID"] +
         "?beginIndex=" + str(begin_index)
     )
 
     # Ask for the matchlist up to 5 times, returning an empty matchlist if failed
-    for attempt in range(5):
+    for attempt in range(3):
         try:
             matchlist_json = json_from_url(matchlist_url, status=status)  # make the matchlist call
             total_games = str(matchlist_json["totalGames"])  # check the total number of games - isn't always correct
@@ -274,12 +281,12 @@ def get_match(config_info, game_id, status=None):
     match_url = (
         "https://" +
         config_info["regions.gameconstants"][config_info["Region"]] +
-        "/lol/match/v3/matches/" +
+        "/lol/match/v4/matches/" +
         str(game_id)
     )
 
     # Ask for the match data
-    for attempt in range(5):
+    for attempt in range(3):
         try:
             match = json_from_url(match_url, status=status)
             break
