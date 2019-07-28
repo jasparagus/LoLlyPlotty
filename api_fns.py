@@ -328,7 +328,7 @@ def verify_matches(config_info, match_data, status=None):
     for game_id in game_ids:
         try:
             # See if the match has a gameId in its data; if so, assume it's OK. This could be improved.
-            # TODO: figure out a better way to check if a match's data is correct than it's gameId field
+            # TODO: figure out a better way to check if a match's data is correct than its gameId field
             if str(match_data[game_id]["gameId"]) != str(game_id):
                 # If you find the entry but its gameId is wrong, raise an exception
                 raise Exception
