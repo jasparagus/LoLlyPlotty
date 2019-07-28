@@ -12,6 +12,8 @@ copy seasons.gameconstants dist\seasons.gameconstants
 
 "C:\Program Files\7-Zip\7z.exe" a LoLlyPlotty.zip .\dist\*
 
+RMDIR /S /Q build
+RMDIR /S /Q dist
 
 
 rem Following is previous method of building that does not use the "onefile" method
