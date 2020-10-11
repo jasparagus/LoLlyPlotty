@@ -25,6 +25,12 @@ import json  # import ability to parse JSON objects
 import time  # import time to allow for use of time.sleep(secs). Prevents excessive API calls
 import pathlib  # allows checking for whether or not match_data JSON file exists already
 
+#Todo: add new URLs from (https://developer.riotgames.com/docs/lol)
+#    http://static.developer.riotgames.com/docs/lol/seasons.json
+#    http://static.developer.riotgames.com/docs/lol/queues.json
+#    http://static.developer.riotgames.com/docs/lol/maps.json
+#    http://static.developer.riotgames.com/docs/lol/gameModes.json
+#    http://static.developer.riotgames.com/docs/lol/gameTypes.json
 
 def get_api_key(write_mode=False, key_in=""):
     # gets the API key from a text file called "apikey.txt". Modify this function if that changes
