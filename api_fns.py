@@ -418,7 +418,19 @@ def add_game_constants(config_info, status=None):
     :return: Dictionary of game constants, allowing lookup of, e.g., maps by mapId.
     """
     if status is not None:
-        status.set("Getting game constants from file")
+        status.set("Getting game constants...")
+
+    constants = {
+        'maps': 'http://static.developer.riotgames.com/docs/lol/maps.json',
+        'queues': 'http://static.developer.riotgames.com/docs/lol/gameModes.json',
+        'gameTypes': 'http://static.developer.riotgames.com/docs/lol/gameTypes.json',
+        'seasons': 'http://static.developer.riotgames.com/docs/lol/seasons.json'
+    }
+
+    for constant in constants:
+        config_info[constant] = {}
+        reply = json.loads(urllib.request.urlopen(constants[constant]).read())
+
     game_constants_files = [str(p) for p in pathlib.Path(".").iterdir() if "gameconstants" in str(p)]
 
     for constant in game_constants_files:

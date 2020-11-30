@@ -12,14 +12,15 @@ Uses Riot Games API to download complete match data for a summoner (normals, ran
 + Copy your API key
 
 #### Running LoLlyPlotty (64-bit Windows)
-+ Download the newest [LoLlyPlotty zip file](LoLlyPlotty.zip) (choose "Download" after clicking the link)
++ Download the latest [LoLlyPlotty zip file](https://github.com/jasparagus/LoLlyPlotty/raw/master/LoLlyPlotty.zip)
 + Extract downloaded zip (Right-Click > "Extract All")
-+ Run "main.exe" from the extracted files (tested on Windows 10 64-bit only)
++ Run "LoLlyPlotty.exe" from the extracted files (tested on Windows 10 64-bit only)
 + IF UPGRADING FROM A PREVIOUS VERSION
   + Move your MatchData files (they end in .json) from the old folder to the new folder, otherwise they will be re-downloaded unnecessarily. If you accidentally begin to re-download match data, you can quit the program, copy over your old files, and re-start the program. It should find your old data without requiring a re-download. 
   + Move your configuration file (Configuration.json) from the old folder to the new folder if desired (not necessary)
 
 *OR*
+
 #### Running LoLlyPlotty from Python Source Code
 + Download the latest version of Python from [python.org](https://www.python.org/downloads/)
 + Check that you have the required modules (see also [Tutorial: Installing Packages in Python](https://packaging.python.org/tutorials/installing-packages/))

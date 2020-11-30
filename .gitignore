@@ -6,7 +6,7 @@ __pycache__/**
 *.pyc
 debug.py
 
-# Don't track stored application data
+# Stored application data
 apikey.txt
 *.json
 
@@ -14,3 +14,9 @@ apikey.txt
 *.spec
 dist/**
 build/**
+
+# Archived Builds
+archive/**
+
+# Debugging files
+extras and debugging/**
